@@ -8,6 +8,9 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
+# Image: serratus-Aligner
+# Desc : (v0.1) bioinformatics alignment - bowtie2
+# AMI  : ami-059b454759561d9f4 (us-west-2)
 
 # Software
 SAMTOOLSVERSION='1.10'
@@ -20,8 +23,8 @@ sudo yum update
 sudo yum clean all
 
 # Python3 3.7.4 and pip3
-sudo apk install python3
-sudo apk install python3-devel
+sudo yum install python3
+sudo yum install python3-devel
 alias python=python3
 
 curl -O https://bootstrap.pypa.io/get-pip.py
@@ -64,4 +67,3 @@ sudo mv bowtie2-*/bowtie2* /usr/local/bin/
 rm bowtie2*
 
 # Save AMI
-# ami (us-west-2): ami-059b454759561d9f4
