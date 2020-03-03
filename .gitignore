@@ -1,3 +1,9 @@
+# AWS gitignore ===========================================
+# local credentials file
+.env
+
+
+# Python gitignore ========================================
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
