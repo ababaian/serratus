@@ -1,50 +1,42 @@
 #!/bin/sh
 #
-# makeAlinger
-# Script to make "Aligner" AMI
+# makeAlinger v0.1
+# Script to make "serratus-Aligner" AMI
 #
-# Base Image: Alpine Linux 3.11
-# AMI: ami-050dd0423825ae4cd
-# login: alpine@<ipv4>
+# Base Image: Amazon Linux 2
+# AMI: ami-0e8c04af2729ff1bb
+# login: ec2-user@<ipv4>
+# base: 9 Gb
 #
 
 # Software
-# - samtools
 SAMTOOLSVERSION='1.10'
-# - bowtie2
 BOWTIEVERSION='2.4.1'
-# - GATK
+#GATK=''
 
 # DEPENDENCY ====================================
 # Update core
-sudo apk update
-sudo apk upgrade                          # 96 Mb
-sudo apk add bash                         # 97 Mb
+sudo yum update
+sudo yum clean all
 
-## Add edge repositories (required for libtpp)
-## to /etc/apk/repositories
-# http://dl-cdn.alpinelinux.org/alpine/v3.11/main
-# http://dl-cdn.alpinelinux.org/alpine/v3.11/community
-# @edge http://dl-cdn.alpinelinux.org/alpine/edge/main
-# @edgecommunity http://dl-cdn.alpinelinux.org/alpine/edge/community
-# @testing http://dl-cdn.alpinelinux.org/alpine/edge/testing
+# Python3 3.7.4 and pip3
+sudo apk install python3
+sudo apk install python3-devel
+alias python=python3
 
-# Python3
-sudo apk add python3                      #155 Mb
-sudo apk add py-pip                       #208 Mb
-
-# AWS CLI
-sudo pip install boto3 awscli
+curl -O https://bootstrap.pypa.io/get-pip.py
+python3 get-pip.py --user
+rm get-pip.py
 
 # Libraries for htslib
-sudo apk add make gcc libc-dev               #315 Mb
-sudo apk add unzip bzip2-dev xz-dev zlib-dev #316 Mb
-sudo apk add ncurses-dev                     #316 Mb
-sudo apk add curl-dev                        #319 Mb
+sudo yum install make gcc libc-dev
+sudo yum install unzip bzip2-devel xz-devel zlib-devel
+sudo yum install ncurses-devel
+sudo yum install curl-devel
 
 # # Libraries for bowtie2
-sudo apk add g++                             #379 Mb
-sudo apk add perl perl-dev                   #423 Mb
+# sudo apk add g++
+# sudo apk add perl perl-dev
 # sudo apk add libtbb-dev@testing
 
 # SAMTOOLS ======================================
@@ -68,4 +60,8 @@ wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/"$BOWTIEVERSIO
 unzip bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip
 rm    bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip
 
-sudo wget -O tmp.zip https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.4.1/bowtie2-2.4.1-linux-x86_64.zip
+sudo mv bowtie2-*/bowtie2* /usr/local/bin/
+rm bowtie2*
+
+# Save AMI
+# ami (us-west-2): ami-059b454759561d9f4
