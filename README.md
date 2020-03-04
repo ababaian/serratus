@@ -2,13 +2,23 @@
 
 AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 
-## Folders
+## Repo folders
 
 **/ami**: Make scripts for instance images (ami) and their respective ami-id
 
 **/img**: Diagrams of serratus workflows
 
 **/scripts**: Defined units of work (jobs) performed in serratus
+
+# Project S3
+**s3://serratus-public/**
+
+**$S3/resources**: Genome indices
+- hgr1-bt2/ : human rDNA bowtie2 indexed
+
+**$S3/example-data**: Toy data for testing
+- bam/ : aligned bam files for breaking into blocks
+- fq/  : sequencing reads of various length
 
 
 ## Useful links
@@ -20,3 +30,7 @@ AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 - [SRA in the Cloud -- Use SRA Toolkit](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud/)
 - [SRA Data Registry on S3](https://registry.opendata.aws/ncbi-sra/)
 
+
+#### Architecture
+
+![serratus-overview](img/serratus_overview.png)
