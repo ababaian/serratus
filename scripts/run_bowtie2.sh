@@ -6,7 +6,7 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-PIPE_VERSION="0.0"
+PIPE_VERSION="0.1"
 AMI_VERSION='ami-059b454759561d9f4'
 
 #Usage function
@@ -18,12 +18,12 @@ function usage {
   echo "    Default behaviour is to retain mapped-reads and their unmapped-pairs only"
   echo ""
   echo "    Fastq input req: (-1 <1.fq> -2 <2.fq> ) || -0 <0.fq>"
-  echo "    -1    fastq paired-end reads 1"
-  echo "    -2    fastq paired-end reads 2"
-  echo "    -0    fastq unpaired reads"
+  echo "    -1    path to fastq paired-end reads 1"
+  echo "    -2    path to fastq paired-end reads 2"
+  echo "    -0    path to fastq unpaired reads"
   echo ""
   echo "    bowtie2 Alignment Parameters"
-  echo "    -x    Name of bt2-indexed genome in <$WORKDIR>"
+  echo "    -x    path to _name_ of bt2-indexed genome (exclude .fa extension)"
   echo "    -a    Aligner arguments  [--very-sensitive-local]"
   echo "    -p    N parallel threads [1]"
   echo ""
@@ -35,15 +35,16 @@ function usage {
   echo "    -F    Platform ID [ILLUMINA]"
   echo ""
   echo "    Output options"
-  echo "    -d    Working directory [pwd]"
+  echo "    -d    Working directory [$PWD]"
   echo "    -o    <output_filename_prefix>"
+  echo "    -!    Debug mode, will not rm intermediate files"
   echo ""
   echo "    Outputs: <output_prefix>.bam"
   echo "             <output_prefix>.bam.bai"
   echo "             <output_prefix>.flagstat"
   echo ""
-  echo "ex: ./run_bowtie2.sh -0 unpaired.fq -x hg38 -o testLib -I SRAX -S example -P silico"
-  echo "ex: ./run_bowtie2.sh -1 toy.1.fq -2 toy.2.fq -x hgr1 -o toyLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bowtie2.sh -0 ~/unpaired.fq -x ~/hg38 -o testLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bowtie2.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x /tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
   exit 1
 }
 
@@ -67,24 +68,25 @@ RGPO=""
 RGPL="ILLUMINA"
 
 # Output options -do
-WORKDIR=''
+WORKDIR="$PWD"
 OUTNAME=''
+DEBUG='F'
 
-while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o: FLAG; do
+while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
   case $FLAG in
     # Fastq Options ---------
     0)
-      FQ0=$OPTARG
+      FQ0=$(readlink -f $OPTARG)
       ;;
     1)
-      FQ1=$OPTARG
+      FQ1=$(readlink -f $OPTARG)
       ;;
     2)
-      FQ2=$OPTARG
+      FQ2=$(readlink -f $OPTARG)
       ;;
     # bowtie2 options -------
     x)
-      GENOME=$OPTARG
+      GENOME=$(readlink -f $OPTARG)
       ;;
     a)
       BT2_ARG=$OPTARG
@@ -114,6 +116,9 @@ while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o: FLAG; do
     o)
       OUTNAME=$OPTARG
       ;;
+     !)
+      DEBUG="T"
+      ;;
     h)  #show help ----------
       usage
       ;;
@@ -124,6 +129,8 @@ while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o: FLAG; do
   esac
 done
 shift $((OPTIND-1))
+
+# Check inputs --------------
 
 # Fastq required inputs: FQ1 and FQ2 or FQ0
 paired_run=''
@@ -165,12 +172,16 @@ then
 fi
 
 # ALIGN ===================================================
+# Generate random alpha-numeric for run-id
+RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
+
 # Logging to STDOUT
 echo " -- bowtie2 Alignment Pipeline -- "
 echo " date:    $(date)"
 echo " version: $PIPE_VERSION "
 echo " ami:     $AMI_VERSION  "
 echo " output:  $OUTNAME"
+echo " run-id:  $RUNID"
 
 if [ $paired_run = "T" ]
 then
@@ -195,7 +206,12 @@ echo "            PL:   $RGPL"
 echo""
 echo 'Initializing ...'
 echo ""
-cd $WORKDIR
+
+
+# Create RUNID folder in WORKDIR
+mkdir -p $WORKDIR/$RUNID
+cd $WORKDIR/$RUNID
+ln -s "$GENOME"* ./
 
 if [ $paired_run = "T" ]
 then
@@ -212,13 +228,20 @@ then
     -x hgr1 -1 $FQ1 -2 $FQ2 | \
     samtools view -bS - > aligned_unsorted.bam
 
+  echo ""
   echo "Alignment complete."
 
-  # Clean-up FQ files to save space
-  #rm $FQ1 $FQ2 
+  if [ $DEBUG = "F" ]
+  then
+    echo "clearing fq-files"
+    # Clean-up FQ files to save space
+    rm $FQ1 $FQ2
+  fi
+
+  echo "Extracting mapped reads + unmapped pairs"
 
   # Extract aligned reads header
-  samtools view -H aligned_unsorted.bam > align.header.tmp
+    samtools view -H aligned_unsorted.bam > align.header.tmp
 
   # Extract Mapped Reads and their unmapped pairs
     samtools view -b -F 4 aligned_unsorted.bam > align.F4.bam  # mapped
@@ -228,14 +251,21 @@ then
     samtools cat -h align.header.tmp -o align.tmp.bam align.F4.bam align.f4F8.bam
     samtools sort -@ $THREADS -O BAM align.tmp.bam > "$OUTNAME".bam
 
+  echo "Flagstat and index of output"
+
   # Flagstat and index
-  samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
-  samtools index "$OUTNAME".bam
+    samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
+    samtools index "$OUTNAME".bam
 
   # OUTPUT: $OUTNAME.bam
   # OUTPUT: $OUTNAME.bam.bai
   # OUTPUT: $OUTNAME.flagstat
 
+  if [ $DEBUG = "F" ]
+  then
+    # Clean-up temporary files
+    rm *tmp aligned_unsorted.bam align.F4.bam align.f4F8.bam
+  fi
 
 else
   # Unpaired Read Alignment
@@ -251,10 +281,17 @@ else
     -x hgr1 -0 $FQ0 | \
     samtools view -bS - > aligned_unsorted.bam
 
+  echo ""
   echo "Alignment complete."
 
-  # Clean-up FQ files to save space
-  #rm $FQ0
+  if [ $DEBUG = "F" ]
+  then
+    echo "clearing fq-files"
+    # Clean-up FQ
+    rm $FQ0
+  fi
+  
+  echo "Extracting mapped reads + unmapped pairs"
 
   ## NOTE: Possibly skip sort / index steps if
   ## using fq/bam-blocks and not complete bam files
@@ -273,5 +310,10 @@ else
   # OUTPUT: $OUTNAME.se.bam.bai
   # OUTPUT: $OUTNAME.se.flagstat
 
-fi
+  if [ $DEBUG = "F" ]
+  then
+    # Clean-up temporary files
+    rm *tmp aligned_unsorted.bam
+  fi
 
+fi
