@@ -15,6 +15,8 @@ function usage {
   echo "Usage: run_bowtie2.sh -1 READ1.fq(.gz) -2 READ2.fq -x GENOME [-LISPF] -o <output_prefix>"
   echo "   or: run_bowtie2.sh -0 READ0.fq(.gz) -x GENOME [-LISPF] -o <output_prefix>"
   echo ""
+  echo "    Default behaviour is to retain mapped-reads and their unmapped-pairs only"
+  echo ""
   echo "    Fastq input req: (-1 <1.fq> -2 <2.fq> ) || -0 <0.fq>"
   echo "    -1    fastq paired-end reads 1"
   echo "    -2    fastq paired-end reads 2"
@@ -34,13 +36,14 @@ function usage {
   echo ""
   echo "    Output options"
   echo "    -d    Working directory [pwd]"
-  echo "    -o    <output_prefix>"
+  echo "    -o    <output_filename_prefix>"
   echo ""
   echo "    Outputs: <output_prefix>.bam"
   echo "             <output_prefix>.bam.bai"
   echo "             <output_prefix>.flagstat"
   echo ""
   echo "ex: ./run_bowtie2.sh -0 unpaired.fq -x hg38 -o testLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bowtie2.sh -1 toy.1.fq -2 toy.2.fq -x hgr1 -o toyLib -I SRAX -S example -P silico"
   exit 1
 }
 
@@ -174,9 +177,11 @@ then
   echo " type:    paired"
   echo " fq1:     $FQ1"
   echo " fq2:     $FQ2"
+  echo " output:  $OUTNAME.bam"
 else
   echo " type:    single-end"
   echo " fq0:     $FQ0"
+  echo " output:  $OUTNAME.se.bam"
 fi
 
 echo " genome:  $GENOME"
@@ -187,10 +192,10 @@ echo "            SM:   $RGSM"
 echo "            PO:   $RGPO"
 echo "            PL:   $RGPL"
 
+echo""
 echo 'Initializing ...'
 echo ""
 cd $WORKDIR
-mkdir -p align; cd align
 
 if [ $paired_run = "T" ]
 then
@@ -200,6 +205,38 @@ then
   echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
   echo "  -x hgr1 -1 $FQ1 -2 $FQ2 | \\"
   echo "samtools view -bS - > aligned_unsorted.bam"
+
+  bowtie2 $BT2_ARG -p $THREADS \
+    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
+    --rg PL:$RGPL --rg PU:$RGPU \
+    -x hgr1 -1 $FQ1 -2 $FQ2 | \
+    samtools view -bS - > aligned_unsorted.bam
+
+  echo "Alignment complete."
+
+  # Clean-up FQ files to save space
+  #rm $FQ1 $FQ2 
+
+  # Extract aligned reads header
+  samtools view -H aligned_unsorted.bam > align.header.tmp
+
+  # Extract Mapped Reads and their unmapped pairs
+    samtools view -b -F 4 aligned_unsorted.bam > align.F4.bam  # mapped
+    samtools view -b -f 4 -F 8 aligned_unsorted.bam > align.f4F8.bam # unmapped-pair
+
+  # Re-compile bam output
+    samtools cat -h align.header.tmp -o align.tmp.bam align.F4.bam align.f4F8.bam
+    samtools sort -@ $THREADS -O BAM align.tmp.bam > "$OUTNAME".bam
+
+  # Flagstat and index
+  samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
+  samtools index "$OUTNAME".bam
+
+  # OUTPUT: $OUTNAME.bam
+  # OUTPUT: $OUTNAME.bam.bai
+  # OUTPUT: $OUTNAME.flagstat
+
+
 else
   # Unpaired Read Alignment
   echo "bowtie2 $BT2_ARG -p $THREADS \\"
@@ -207,4 +244,34 @@ else
   echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
   echo "  -x hgr1 -0 $FQ0 | \\"
   echo "samtools view -bS - > aligned_unsorted.bam"
+
+  bowtie2 $BT2_ARG -p $THREADS \
+    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
+    --rg PL:$RGPL --rg PU:$RGPU \
+    -x hgr1 -0 $FQ0 | \
+    samtools view -bS - > aligned_unsorted.bam
+
+  echo "Alignment complete."
+
+  # Clean-up FQ files to save space
+  #rm $FQ0
+
+  ## NOTE: Possibly skip sort / index steps if
+  ## using fq/bam-blocks and not complete bam files
+  # samtools flagstat > "$OUTNAME".flagstat
+  # samtools view -bh -F 4 aligned_unsorted > "$OUTNAME".se.bam
+  
+  # Extract Mapped Reads and sort (flag 0x4)
+  samtools view -bh -F 4 aligned_unsorted.bam | \
+  samtools sort -@ $THREADS -O BAM - > "$OUTNAME".se.bam
+
+  # Flagstat and index
+  samtools flagstat aligned_unsorted.bam > "$OUTNAME".se.flagstat
+  samtools index "$OUTNAME".se.bam
+
+  # OUTPUT: $OUTNAME.se.bam
+  # OUTPUT: $OUTNAME.se.bam.bai
+  # OUTPUT: $OUTNAME.se.flagstat
+
 fi
+
