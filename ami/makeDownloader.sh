@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# makeDownloader v0.1
+# makeDownloader v0.1.1
 # Script to make "serratus-Downloader" AMI
 #
 # Base Image: Amazon Linux 2
@@ -8,15 +8,16 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-# Image: serratus-Downloader
-# Desc : (v0.1) bioinformatics seq-database access
-# AMI  : ami-01c471b9b490a03f3 (us-west-2)
+# Image: serratus-Downloader v0.1.1
+# Desc : bioinformatics seq-database (SRA GDC) access
+# AMI  : ami-0fdf24f2ce3c33243 (us-west-2)
 
 # Software
 # AWSCLI -- pre-installed on amazon linux
 SAMTOOLSVERSION='1.10'
 SRATOOLKITVERSION='2.10.4'
 GDCVERSION='1.5.0'
+BIOBAMBAM='2.x' #NA
 
 # DEPENDENCY ====================================
 # Update core
@@ -37,6 +38,13 @@ sudo yum install make gcc libc-dev
 sudo yum install unzip bzip2-devel xz-devel zlib-devel
 sudo yum install ncurses-devel
 sudo yum install curl-devel
+
+# Assorted libs for scripts
+sudo yum install pigz
+
+# Libraries for biobambam2
+#sudo yum install autoconf automake libtool
+#sudo yum install autoheader
 
 # SAMTOOLS ======================================
 # /usr/local/bin/samtools
@@ -78,3 +86,13 @@ sudo rm -rf /var/cache/yum
 
 # Save AMI
 # ami (us-west-2): ami-059b454759561d9f4
+
+# BIOBAMBAM2 ====================================
+# libmaus2.0.705 dependency
+# wget https://gitlab.com/german.tischler/libmaus2/-/archive/2.0.705-release-20200303192236/libmaus2-2.0.705-release-20200303192236.zip
+# unzip libmaus2*
+
+# cd libmaus2
+#   ./configure --with-zlib-include=/usr/include
+#   make
+

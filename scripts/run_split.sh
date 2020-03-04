@@ -1,13 +1,13 @@
 #!/bin/bash
 # run_split
 #
-# Base: serratus-Aligner (>0.1)
-# AMI : ami-059b454759561d9f4
+# Base: serratus-Downloader (>0.1.1)
+# AMI : aami-0fdf24f2ce3c33243
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-PIPE_VERSION="0.0"
-AMI_VERSION='ami-059b454759561d9f4'
+PIPE_VERSION="0.1"
+AMI_VERSION='ami-0fdf24f2ce3c33243'
 
 #Usage function
 function usage {
