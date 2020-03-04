@@ -2,7 +2,14 @@
 
 AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 
-## 
+## Folders
+
+**/ami**: Make scripts for instance images (ami) and their respective ami-id
+
+**/img**: Diagrams of serratus workflows
+
+**/scripts**: Defined units of work (jobs) performed in serratus
+
 
 ## Useful links
 - **S3 Bucket:** s3://serratus-public/ (public-readable)
@@ -12,3 +19,4 @@ AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 - [FSx Shared file-system for HPC](https://aws.amazon.com/blogs/storage/using-amazon-fsx-for-lustre-for-genomics-workflows-on-aws/)
 - [SRA in the Cloud -- Use SRA Toolkit](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud/)
 - [SRA Data Registry on S3](https://registry.opendata.aws/ncbi-sra/)
+
