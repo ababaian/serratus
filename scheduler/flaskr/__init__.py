@@ -10,25 +10,18 @@ def add_endpoints(app):
     def start_split_job():
         """Get a job id and mark it as "running" in the DB
         returns: a job JSON file"""
-        c = db.get_db().cursor()
+        session = db.get_session()
         states = db.acc_states()
 
-        c.execute('BEGIN')
         # get an item where state = new and update its state
-        c.execute('SELECT * FROM acc WHERE acc_state_id = ? LIMIT 1',
-                  [states['new']])
-        job = c.fetchone()
-        if job is None:
+        acc = session.query(db.Accession).filter_by(state=states['new']).first()
+        if acc is None:
             return jsonify({'action': 'shutdown'})
 
-        # There's something left.
-        c.execute('''UPDATE acc SET acc_state_id = ?
-                     WHERE acc_id = ?''', (states['splitting'], job['acc_id']))
+        acc.state = states['splitting']
+        session.commit()
 
-        # Stop transaction
-        c.execute('COMMIT')
-
-        response = dict(job)
+        response = dict(acc)
         response['action'] = 'process'
 
         # Send the response as JSON
@@ -44,8 +37,9 @@ def add_endpoints(app):
         if status not in ('new', 'split_err', 'split_done'):
             raise ValueError()
 
-        c = db.get_db().cursor()
-        c.execute('''UPDATE acc SET acc_state_id = ?''', [state_ids[status]])
+        session = db.get_session()
+        acc = session.query(db.Accession).filter_by(acc_id=job_id)
+        acc.acc_state_id = state_ids[status]
 
         return jsonify('success')
 
