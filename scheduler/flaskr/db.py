@@ -96,17 +96,18 @@ def init_db_command(job_csv):
         session.add(FastQState(name=state))
 
     states = acc_states()
-    import csv
+
+    session.close()
+
+    # Using sqlite3 instead of SQLAlchemy here because SQLAlchemy uses a
+    # transaction, which is slowwwwwwww (2M lines = 300s vs 5s)
+    import csv, sqlite3
+    cursor = sqlite3.connect(current_app.config['DATABASE']).cursor()
     with open(job_csv) as f:
         for line in csv.reader(f):
-            acc = Accession(acc_state_id=states['new'],
-                            acc=line[0],
-                            sra_url=line[1],
-                            split_cmd=line[2],
-                            merge_cmd=line[3])
-            session.add(acc)
+            cursor.execute('INSERT INTO acc VALUES (null, ?, ?, ?, ?, ?)',
+                           [states['new']] + line)
 
-    session.commit()
     click.echo('Initialized the database.')
 
 def init_app(app):
