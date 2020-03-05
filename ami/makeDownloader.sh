@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# makeDownloader v0.1.1
+# makeDownloader v0.1.2
 # Script to make "serratus-Downloader" AMI
 #
 # Base Image: Amazon Linux 2
@@ -8,21 +8,25 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-# Image: serratus-Downloader v0.1.1
+# Image: serratus-Downloader v0.1.2
 # Desc : bioinformatics seq-database (SRA GDC) access
-# AMI  : ami-0fdf24f2ce3c33243 (us-west-2)
+# AMI  : ami-0614da38b644ca19e (us-west-2)
 
 # Software
 # AWSCLI -- pre-installed on amazon linux
 SAMTOOLSVERSION='1.10'
 SRATOOLKITVERSION='2.10.4'
 GDCVERSION='1.5.0'
-BIOBAMBAM='2.x' #NA
+PICARDVERSION='2.22.0'
+GATKVERSION='4.1.5.0'
+#LIBMAUSVERSION='2.0.705'
+#BIOBAMBAMVERSION='2.0.157'
 
 # DEPENDENCY ====================================
 # Update core
 sudo yum update
 sudo yum clean all
+sudo yum install git
 
 # Python3 3.7.4 and pip3
 sudo yum install python3
@@ -34,17 +38,19 @@ python3 get-pip.py --user
 rm get-pip.py
 
 # Libraries for htslib
-sudo yum install make gcc libc-dev
-sudo yum install unzip bzip2-devel xz-devel zlib-devel
-sudo yum install ncurses-devel
+sudo yum install make gcc
+sudo yum install unzip bzip2 bzip2-devel xz-devel zlib-devel
 sudo yum install curl-devel
+sudo yum install ncurses-devel openssl-devel
+
+# Libraries/software for GATK/JAVA
+sudo yum install java
 
 # Assorted libs for scripts
 sudo yum install pigz
 
 # Libraries for biobambam2
-#sudo yum install autoconf automake libtool
-#sudo yum install autoheader
+#sudo yum install gcc-c++
 
 # SAMTOOLS ======================================
 # /usr/local/bin/samtools
@@ -79,7 +85,6 @@ unzip gdc-client_v"$GDCVERSION"_Ubuntu_x64.zip
 rm    gdc-client_v"$GDCVERSION"_Ubuntu_x64.zip
 sudo mv gdc-client /usr/local/bin/
 
-
 # Clean-up
 sudo yum clean all
 sudo rm -rf /var/cache/yum
@@ -87,12 +92,50 @@ sudo rm -rf /var/cache/yum
 # Save AMI
 # ami (us-west-2): ami-059b454759561d9f4
 
-# BIOBAMBAM2 ====================================
-# libmaus2.0.705 dependency
+# PICARD ========================================
+wget https://github.com/broadinstitute/picard/releases/download/"$PICARDVERSION"/picard.jar
+chmod 755 picard.jar
+
+# ENV VARIABLE
+PICARD='/usr/local/bin/picard.jar'
+sudo mv picard.jar $PICARD
+
+# Default: picard -h
+alias picard="java -jar $PICARD"
+# Java optimized
+# "java -jvm-args -jar $PICARD -h"
+
+# GATK ==========================================
+wget https://github.com/broadinstitute/gatk/releases/download/"$GATKVERSION"/gatk-"$GATKVERSION".zip
+unzip gatk*
+rm gatk*zip
+
+sudo mv gatk-$GATKVERSION /usr/local/share/gatk
+sudo ln -s /usr/local/share/gatk/gatk /usr/local/bin/
+
+# # BIOBAMBAM2 ====================================
+# # DEPENDENCY HELL -- ABANDON HOPE ALL YE WHO ENTER HERE
+# # libmaus2.0.705 dependency
 # wget https://gitlab.com/german.tischler/libmaus2/-/archive/2.0.705-release-20200303192236/libmaus2-2.0.705-release-20200303192236.zip
 # unzip libmaus2*
 
-# cd libmaus2
-#   ./configure --with-zlib-include=/usr/include
-#   make
+# cd libmaus2*
+#   sudo mkdir /usr/local/libmaus2
+#   sudo chown ec2-user /usr/local/libmaus2
+
+#   ./configure --prefix=/usr/local/libmaus2
+#   make 
+#   make install
+# cd ..
+
+# # biobambam2
+# wget https://gitlab.com/german.tischler/biobambam2/-/archive/2.0.156-release-20200224081934/biobambam2-2.0.156-release-20200224081934.zip
+# unzip biobambam2*
+
+# cd biobambam2*
+#   sudo mkdir /usr/local/biobambam2
+#   sudo chown ec2-user /usr/local/biobambam2
+
+#   sudo ./configure --with-libmaus2=/usr/local/libmaus2/2.0.705
+# make install
 
