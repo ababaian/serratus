@@ -14,14 +14,15 @@ def add_endpoints(app):
         states = db.acc_states()
 
         # get an item where state = new and update its state
-        acc = session.query(db.Accession).filter_by(state=states['new']).first()
+        acc = session.query(db.Accession).filter_by(acc_state_id=states['new']).first()
         if acc is None:
             return jsonify({'action': 'shutdown'})
 
-        acc.state = states['splitting']
+        acc.acc_state_id = states['splitting']
+        session.add(acc)
         session.commit()
 
-        response = dict(acc)
+        response = acc.to_dict()
         response['action'] = 'process'
 
         # Send the response as JSON

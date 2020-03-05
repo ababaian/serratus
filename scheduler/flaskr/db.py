@@ -37,6 +37,15 @@ class Accession(Base):
     split_cmd = Column(String)
     merge_cmd = Column(String)
 
+    def to_dict(self):
+        return {
+            'acc_id': self.acc_id,
+            'acc': self.acc,
+            'sra_url': self.sra_url,
+            'split_cmd': self.split_cmd,
+            'merge_cmd': self.merge_cmd,
+        }
+
 class FastQ(Base):
     __tablename__ = 'fastq'
 
@@ -97,16 +106,19 @@ def init_db_command(job_csv):
 
     states = acc_states()
 
-    session.close()
+    session.commit()
 
     # Using sqlite3 instead of SQLAlchemy here because SQLAlchemy uses a
     # transaction, which is slowwwwwwww (2M lines = 300s vs 5s)
     import csv, sqlite3
-    cursor = sqlite3.connect(current_app.config['DATABASE']).cursor()
+    conn = sqlite3.connect(current_app.config['DATABASE'])
+    cursor = conn.cursor()
     with open(job_csv) as f:
         for line in csv.reader(f):
             cursor.execute('INSERT INTO acc VALUES (null, ?, ?, ?, ?, ?)',
                            [states['new']] + line)
+
+    conn.commit()
 
     click.echo('Initialized the database.')
 
