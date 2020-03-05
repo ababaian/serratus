@@ -61,20 +61,20 @@ def init_db_command(job_csv):
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-    # Using sqlite3 instead of SQLAlchemy here because SQLAlchemy uses a
-    # transaction, which is slowwwwwwww (2M lines = 300s vs 5s)
-    import csv, sqlite3
-    conn = sqlite3.connect(current_app.config['DATABASE'])
-    cursor = conn.cursor()
+    session = get_session()
+
+    import csv
     with open(job_csv) as f:
         for line in csv.reader(f):
-            cursor.execute('INSERT INTO acc VALUES (null, ?, ?, ?, ?, ?)',
-                           ['new'] + line)
+            acc = Accession(acc_state='new',
+                            acc=line[0],
+                            sra_url=line[1],
+                            split_cmd=line[2],
+                            merge_cmd=line[3])
+            session.add(acc)
 
-    conn.commit()
-
+    session.commit()
     click.echo('Initialized the database.')
 
 def init_app(app):
     app.cli.add_command(init_db_command)
-
