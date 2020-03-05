@@ -11,14 +11,12 @@ def add_endpoints(app):
         """Get a job id and mark it as "running" in the DB
         returns: a job JSON file"""
         session = db.get_session()
-        states = db.acc_states()
-
         # get an item where state = new and update its state
-        acc = session.query(db.Accession).filter_by(acc_state_id=states['new']).first()
+        acc = session.query(db.Accession).filter_by(acc_state='new').first()
         if acc is None:
             return jsonify({'action': 'shutdown'})
 
-        acc.acc_state_id = states['splitting']
+        acc.acc_state = 'splitting'
         session.add(acc)
         session.commit()
 
@@ -33,14 +31,12 @@ def add_endpoints(app):
         job_id = request.args.get('job_id')
         status = request.args.get('status')
 
-        state_ids = db.acc_states()
-
         if status not in ('new', 'split_err', 'split_done'):
             raise ValueError()
 
         session = db.get_session()
         acc = session.query(db.Accession).filter_by(acc_id=job_id)
-        acc.acc_state_id = state_ids[status]
+        acc.acc_state = status
 
         return jsonify('success')
 
