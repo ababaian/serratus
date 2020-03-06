@@ -44,10 +44,13 @@ class FastQ(Base):
     align_cmd = Column(String)
     paired = Column(Boolean)
 
-def get_engine(echo=False):
-    path = 'sqlite:///' + current_app.config['DATABASE']
-    print(path)
-    return create_engine(path, echo=echo)
+def get_engine(echo=False, engine=[]):
+    #path = 'postgresql://postgres@localhost/'
+    if not engine:
+        path = 'sqlite:///' + current_app.config['DATABASE']
+        engine.append(create_engine(path, echo=echo))
+
+    return engine[0]
 
 def get_session(**kwargs):
     return sessionmaker(bind=get_engine(**kwargs))()
