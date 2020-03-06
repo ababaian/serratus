@@ -1,85 +1,94 @@
-import sqlite3
-
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 
+from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
 ACC_STATES = ('new', 'splitting', 'split_done', 'merge_wait', 'merging',
               'merge_done', 'split_err', 'merge_err')
 
-FQ_STATES = ('new', 'aligning', 'done', 'fail')
+class Printer():
+    """Give Base class option to output dicts"""
+    __table__ = None
+    def to_dict(self):
+        ret = {}
+        for col in self.__table__.columns:
+            ret[col.name] = getattr(self, col.name)
 
-def get_db():
-    if 'db' not in g:
-        print('Creating new connection')
-        g.db = sqlite3.connect(
-            current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
+        return ret
 
-    return g.db
+class Accession(Base, Printer):
+    __tablename__ = 'acc'
 
-def acc_states():
-    """Return accession states as a dictionary"""
-    if 'acc_states' not in g:
-        g.acc_states = {}
-        c = get_db().cursor()
-        c.execute("SELECT acc_state_id,name FROM acc_state_defn")
-        for id, name in c.fetchall():
-            g.acc_states[name] = id
+    acc_id = Column(Integer, primary_key=True)
+    state = Column(Enum(name='state', *ACC_STATES))
 
-    return g.acc_states
+    acc = Column(String)
+    sra_url = Column(String)
+    split_cmd = Column(String)
+    merge_cmd = Column(String)
+    align_cmd = Column(String)
+    paired = Column(Boolean)
 
-def fastq_states():
-    """Return fastq states as a dictionary"""
-    if 'fq_states' not in g:
-        g.fq_states = {}
+CHUNK_STATES = ('new', 'aligning', 'done', 'fail')
 
-        c = get_db().cursor()
-        c.execute("SELECT fastq_state_id,name FROM fastq_state_defn")
-        for id, name in c.fetchall():
-            g.fq_states[name] = id
+class Chunk(Base, Printer):
+    __tablename__ = 'chunks'
 
-    return g.fq_states
+    chunk_id = Column(Integer, primary_key=True)
+    state = Column(Enum(name='state', *CHUNK_STATES))
+    acc_id = Column(Integer, ForeignKey('acc.acc_id'))
+    n = Column(Integer)
 
-def close_db(e=None):
-    db = g.pop('db', None)
+def get_engine(echo=False, engine=[]):
+    if not engine:
+        path = 'sqlite:///' + current_app.config['DATABASE']
+        engine.append(create_engine(path, echo=echo))
 
-    if db is not None:
-        db.close()
+    return engine[0]
 
-def init_db(job_csv):
-    db = get_db()
+def get_session():
+    print('get')
+    if 'session' not in g:
+        g.session = sessionmaker(bind=get_engine())()
+    return g.session
 
-    with current_app.open_resource('schema.sql') as f:
-        db.executescript(f.read().decode('utf8'))
+def teardown_session(e=None):
+    print('teardown')
+    session = g.pop('session', None)
 
-    cursor = db.cursor()
-    for state in ACC_STATES:
-        cursor.execute('INSERT INTO acc_state_defn VALUES (null, ?)', (state,))
-
-    for state in FQ_STATES:
-        cursor.execute('INSERT INTO fastq_state_defn VALUES (null, ?)', (state,))
-
-    states = acc_states()
-    import csv
-    with open(job_csv) as f:
-        for line in csv.reader(f):
-            cursor.execute('INSERT INTO acc VALUES (null, ?, ?, ?, ?, ?)',
-                           [states['new']] + line)
-
-    db.commit()
+    if session is not None:
+        session.close()
 
 @click.command('init-db')
 @click.argument('job_csv', type=str)
 @with_appcontext
 def init_db_command(job_csv):
     """Clear the existing data and create new tables."""
-    init_db(job_csv)
+    engine = get_engine(echo=False)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+    session = get_session()
+
+    import csv
+    with open(job_csv) as f:
+        for line in csv.reader(f):
+            acc = Accession(state='new',
+                            acc=line[0],
+                            sra_url=line[1],
+                            split_cmd=line[2],
+                            merge_cmd=line[3])
+            session.add(acc)
+
+    session.commit()
     click.echo('Initialized the database.')
 
 def init_app(app):
-    app.teardown_appcontext(close_db)
+    app.teardown_appcontext(teardown_session)
     app.cli.add_command(init_db_command)
-
