@@ -18,7 +18,7 @@ class Accession(Base):
     __tablename__ = 'acc'
 
     acc_id = Column(Integer, primary_key=True)
-    acc_state = Column(Enum(*ACC_STATES))
+    acc_state = Column(Enum(name='acc_states', *ACC_STATES))
 
     acc = Column(String)
     sra_url = Column(String)
@@ -38,7 +38,7 @@ class FastQ(Base):
     __tablename__ = 'fastq'
 
     fastq_id = Column(Integer, primary_key=True)
-    fastq_state = Column(Enum(*FQ_STATES))
+    fastq_state = Column(Enum(name='fq_states', *FQ_STATES))
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
     n = Column(Integer)
     align_cmd = Column(String)
