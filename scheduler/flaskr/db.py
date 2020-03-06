@@ -46,7 +46,6 @@ class Chunk(Base, Printer):
     n = Column(Integer)
 
 def get_engine(echo=False, engine=[]):
-    #path = 'postgresql://postgres@localhost/'
     if not engine:
         path = 'sqlite:///' + current_app.config['DATABASE']
         engine.append(create_engine(path, echo=echo))
