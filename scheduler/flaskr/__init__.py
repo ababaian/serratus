@@ -15,12 +15,13 @@ def add_endpoints(app):
         acc = session.query(db.Accession).filter_by(acc_state='new').first()
         if acc is None:
             return jsonify({'action': 'shutdown'})
-
         acc.acc_state = 'splitting'
         session.add(acc)
-        session.commit()
 
         response = acc.to_dict()
+
+        session.commit()
+        session.close()
         response['action'] = 'process'
 
         # Send the response as JSON
@@ -37,6 +38,7 @@ def add_endpoints(app):
         session = db.get_session()
         acc = session.query(db.Accession).filter_by(acc_id=job_id)
         acc.acc_state = status
+        session.close()
 
         return jsonify('success')
 
