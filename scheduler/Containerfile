@@ -20,5 +20,5 @@ RUN flask init-db job_list.csv
 
 # Do NOT enable multithreading here, as the underlying app is
 # thread-unsafe.
-CMD gunicorn 'flaskr:create_app()' --bind '0.0.0.0/8000'
+CMD gunicorn 'flaskr:create_app()' --bind '0.0.0.0:8000'
 
