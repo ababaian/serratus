@@ -1,12 +1,17 @@
 #!/bin/bash
 # run_split
 #
-# Base: serratus-Downloader (>0.1.1)
-# Amazon Linux 2 with Docker
+# Base: serratus-Merge (>0.1.1)
 # AMI : aami-0fdf24f2ce3c33243
-# Container: 
 # login: ec2-user@<ipv4>
 # base: 9 Gb
+#
+# TODO: Consider switching to an external definition for RUNID
+# such that downstream scripts can easily access the 
+# $RUNID/ folder and it's files.
+# TODO: Script assumes a single fastq file (-f) is single-end reads
+# and not interleaved or mixed paire-end reads. Adapt script
+# to deal with these edge cases
 #
 PIPE_VERSION="0.1"
 AMI_VERSION='ami-0fdf24f2ce3c33243'

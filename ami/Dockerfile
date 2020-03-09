@@ -10,9 +10,6 @@ FROM amazonlinux:2 AS build_base
 # sudo docker build -t serratus-dl:0 .
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
 
-# Run container with /dev/fuse access point
-# sudo docker run --rm --entrypoint /bin/bash -it --privileged --cap-add SYS_ADMIN --cap-add MKNOD --device /dev/fuse serratus-dl:0
-
 #==========================================================
 # Container Meta-data =====================================
 #==========================================================
@@ -114,24 +111,44 @@ RUN echo 'export PATH=/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin:"$
 RUN adduser serratus
 ENV WORKDIR=/home/serratus
 RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
-CMD cd $WORKDIR
+RUN cd $WORKDIR; mkdir -p scripts
 
-# Download serratus scripts
+# Serratus Scripts ==============================
+# URL to latest serratus repo (raw)
+GIT_SERRATUS="https://raw.githubusercontent.com/ababaian/serratus/master/"
 
+## /home/serratus/serratus-dl.sh
+RUN wget -o $WORKDIR/serratus-dl.sh \
+  $GIT_SERRATUS/scripts/serratus-dl.sh
 
-# # Testing ---
+## /home/serratus/scripts/
+  # run_download.sh
+RUN wget -o $WORKDIR/scripts/run_download.sh \
+  $GIT_SERRATUS/scripts/run_download.sh
 
-# # SRA toolkit
-# vdb-config -i & read -t 3 ;  kill $!
+  # run_split.sh (latest)
+RUN wget -o $WORKDIR/scripts/run_split.sh \
+  $GIT_SERRATUS/scripts/run_split.sh
 
-# # Create aws key (read from ec2 IAM) (run at start-up of container)
-# AWS_ACCESSKEYID=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance/ | jq -r '.AccessKeyId' )
-# AWS_SECRETKEY=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance/ | jq -r '.SecretAccessKey' )
-# echo User name,Password,Access key ID,Secret access key,Console login link > key.csv
-# echo default,,$AWS_ACCESSKEYID,$AWS_SECRETKEY, >> $WORKDIR/key.csv
+  # run_upload.sh
+RUN wget -o $WORKDIR/scripts/run_upload.sh \
+  $GIT_SERRATUS/scripts/run_upload.sh
+  
+#==========================================================
+# ENTRYPOINT ==============================================
+#==========================================================
+#Usage: docker exec serratus-dl -s <SRA Accession> [OPTIONS]
 
-# vdb-config --accept-aws-charges yes \
-#   --report-cloud-identity yes \
-#   --set-aws-credentials $WORKDIR/key.csv
+ENTRYPOINT ["bash", "/home/serratus/serratus-dl.sh"]
+
+#==========================================================
+# DEV  ====================================================
+#==========================================================
+## EC2
+# sudo yum -y install docker
+# sudo service docker start
+
+# sudo docker build -t serratus-dl:0 .
+# sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
 
 # fastq-dump SRR11183200
