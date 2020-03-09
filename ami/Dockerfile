@@ -100,19 +100,7 @@ RUN wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}/sratool
 
 RUN echo 'export PATH=/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin:"$PATH"' >> /root/.bashrc
 
-# FUSERA ========================================
-# # installed as user `serratus`
-# # fusera cannot be run as root
-# RUN wget https://raw.githubusercontent.com/mitre/fusera/master/install.sh &&\
-#     chmod 755 install.sh &&\
-#     bash install.sh &&\
-#     rm install.sh &&\
-#     yum install -y fuse.x86_64
-# # Edit fuse config to allow root to access mount
-# RUN echo "user_allow_other" >> /etc/fuse.conf
-
-
- # GDC-CLIENT ===================================
+# GDC-CLIENT ===================================
  RUN wget https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
     unzip gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
     rm    gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
@@ -125,16 +113,11 @@ RUN echo 'export PATH=/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin:"$
 # Create a serratus user fro use of FUSE / fusera
 RUN adduser serratus
 ENV WORKDIR=/home/serratus
+RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
 CMD cd $WORKDIR
 
-# Create serratus alias
-RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
-RUN echo 'alias fusera="sudo -u serratus /usr/local/bin/fusera"' >> /root/.bashrc
+# Download serratus scripts
 
-## SRA Mounting Directory
-#  First create a directory to mount data.
-#  does not work
-#  RUN serratus mkdir ./sra-mount
 
 # # Testing ---
 
@@ -152,60 +135,3 @@ RUN echo 'alias fusera="sudo -u serratus /usr/local/bin/fusera"' >> /root/.bashr
 #   --set-aws-credentials $WORKDIR/key.csv
 
 # fastq-dump SRR11183200
-
-
-# # Example mount command:
-
-# ## Command works; unsure if it's an S3-mount or goes via network
-# ## need to confirm!
-# wget https://serratus-public.s3-us-west-2.amazonaws.com/tmp/prj_phs710EA_test.ngc
-# wget https://serratus-public.s3-us-west-2.amazonaws.com/tmp/SRR_Acc_List_Example.txt
-
-# fusera mount -t ./prj_phs710EA_test.ngc -a ./SRR_Acc_List_Example.txt  ./sra-mount > output.log 2>&1 &
-
-# fusera mount -t ./prj_phs710EA_test.ngc -a SRR5572888 ./sra-mount > output.log 2>&1 &
-
-# serratus mkdir sra-mount
-
-# fusera mount \
-#  --a SRR5754947 \
-#   ./sra-mount 2>&1 &
-
-#  --aws-profile Default \
-# --location s3.us-east-1 \
-# -v \
-# #Note: still requires switch to bash to even see the file
-# # cannot read file yet, only see it exists (maybe)
-
-# ## Unmount
-# fusera unmount ./sra-mount
-
-
-# sudo -u serratus /usr/local/bin/fusera mount -a "" ./sra-mount > output.log 2>&1 & 
-
-# # sudo -u serratus /usr/local/bin/fusera mount -a "https://sra-pub-src-1.us-east-1.s3.amazonaws.com/SRR8388666" ./sra-mount > output.log 2>&1 & 
-
-
-
-
-
-# #  Next run this fusera command to mount runs using the included repository key and accession list.
-
-# fusera mount -t ./prj_phs710EA_test.ngc -a ./SRR_Acc_List_Example.txt ./example_mount > output.log 2>&1 &
-
-# serratus mkdir $WORKDIR/sra
-
-#   The example_mount directory will contain four SRR directories containing source data files and output.log will contain any messages or errors from the mount process.
-
-
-# ## READING DATA
-
-#   The mounted files can be read by commons tools as normal
-
-# samtools view -H ~/example/example_mount/SRR1270860/NA19451.unmapped.ILLUMINA.bwa.LWK.low_coverage.20120522.bam
-
-
-# ## UNMOUNTING DATA
-#   Run the following command to unmount the data files
-
-# fusera unmount ~/example/example_mount
