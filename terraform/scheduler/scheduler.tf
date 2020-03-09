@@ -4,14 +4,20 @@ provider "aws" {
 }
 
 data "aws_ami" "amazon_linux_2" {
+  # A simple AMI, built from Amazon Linux 2, plus the following script:
+  # yum update -yq
+  # yum install docker -yq
+  # systemctl enable docker
+  #
+  # TODO: Put this in packer, so we can switch Regions / Clouds more easily
   most_recent = true
-  
+
   filter {
-    name = "name"
-    values = ["amzn2-ami-hvm-2.0.20200207.1-x86_64-gp2"]
+    name   = "name"
+    values = ["amazon_linux_2_docker"]
   }
 
-  owners = ["137112412989"] # AWS
+  owners = ["241748083751"] # Jeff Taylor
 }
 
 data "aws_region" "current" {}
@@ -37,25 +43,25 @@ variable "allow_ssh" {
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
   ingress {
-    from_port   = var.scheduler_port
-    to_port     = var.scheduler_port
+    from_port       = var.scheduler_port
+    to_port         = var.scheduler_port
     security_groups = var.input_security_group_ids
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]
   }
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
   dynamic "ingress" {
     for_each = var.allow_ssh ? [0] : []
 
     content {
-      from_port = 22
-      to_port = 22
-      protocol = "tcp"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
     }
   }
@@ -87,10 +93,10 @@ resource "aws_iam_instance_profile" "scheduler" {
 }
 
 resource "aws_iam_role_policy" "scheduler" {
-	name = "scheduler"
-	role = aws_iam_role.scheduler.id
+  name = "scheduler"
+  role = aws_iam_role.scheduler.id
 
-	policy = <<EOF
+  policy = <<EOF
 {
 	"Version": "2012-10-17",
 	"Statement": [
@@ -112,23 +118,19 @@ resource "aws_cloudwatch_log_group" "scheduler" {
 }
 
 resource "aws_instance" "scheduler" {
-  ami        = data.aws_ami.amazon_linux_2.id
+  ami                                  = data.aws_ami.amazon_linux_2.id
   instance_initiated_shutdown_behavior = "terminate"
-  instance_type   = "t3.nano"
-  vpc_security_group_ids = [aws_security_group.scheduler.id]
-  key_name = "jeff@rosario"
-  iam_instance_profile = aws_iam_instance_profile.scheduler.name
+  instance_type                        = "t3.nano"
+  vpc_security_group_ids               = [aws_security_group.scheduler.id]
+  key_name                             = "jeff@rosario"
+  iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
 
   user_data = <<-EOF
-              #!/bin/bash
-							set -eux
-              yum update -yq
-              yum install docker -yq
-              systemctl start docker
               docker run -d -p "${var.scheduler_port}":8000 \
                 --log-driver=awslogs \
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
                 --log-opt awslogs-group="${aws_cloudwatch_log_group.scheduler.name}" \
+                --name sch \
                 jefftaylor42/serratus-scheduler
               EOF
 
