@@ -2,6 +2,8 @@
 # local credentials file
 .env
 
+# Sublime
+*sublime*
 
 # Python gitignore ========================================
 # Byte-compiled / optimized / DLL files
