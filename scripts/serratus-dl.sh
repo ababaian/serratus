@@ -157,7 +157,8 @@ aws s3 cp s3://serratus-public/aws-test-token.jpg $WORKDIR/aws-test-token.jpg
 if [ ! -s './aws-test-token.jpg' ]
 then
   echo "    ERROR: AWS Test did not download"
-  echo "    Credentials are not valid"
+  echo "    Ensure the EC2 instance has correct IAM permissions"
+  echo "      - requires S3 Read/Write"
   usage
 fi
 

@@ -95,7 +95,7 @@ RUN wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}/sratool
     chmod 755 /etc/profile.d/sratoolkit.sh &&\
     mkdir /etc/ncbi
 
-RUN echo 'export PATH=/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin:"$PATH"' >> /root/.bashrc
+ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 
 # GDC-CLIENT ===================================
  RUN wget https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
@@ -109,29 +109,30 @@ RUN echo 'export PATH=/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin:"$
 # Set working directory to /home/serratus
 # Create a serratus user fro use of FUSE / fusera
 RUN adduser serratus
+ARG WORKDIR=/home/serratus
 ENV WORKDIR=/home/serratus
 RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
 RUN cd $WORKDIR; mkdir -p scripts
 
 # Serratus Scripts ==============================
 # URL to latest serratus repo (raw)
-GIT_SERRATUS="https://raw.githubusercontent.com/ababaian/serratus/master/"
+ARG GIT_SERRATUS="https://raw.githubusercontent.com/ababaian/serratus/master/"
 
 ## /home/serratus/serratus-dl.sh
-RUN wget -o $WORKDIR/serratus-dl.sh \
+RUN wget -O $WORKDIR/serratus-dl.sh \
   $GIT_SERRATUS/scripts/serratus-dl.sh
 
 ## /home/serratus/scripts/
   # run_download.sh
-RUN wget -o $WORKDIR/scripts/run_download.sh \
+RUN wget -O $WORKDIR/scripts/run_download.sh \
   $GIT_SERRATUS/scripts/run_download.sh
 
   # run_split.sh (latest)
-RUN wget -o $WORKDIR/scripts/run_split.sh \
+RUN wget -O $WORKDIR/scripts/run_split.sh \
   $GIT_SERRATUS/scripts/run_split.sh
 
   # run_upload.sh
-RUN wget -o $WORKDIR/scripts/run_upload.sh \
+RUN wget -O $WORKDIR/scripts/run_upload.sh \
   $GIT_SERRATUS/scripts/run_upload.sh
   
 #==========================================================
@@ -139,7 +140,7 @@ RUN wget -o $WORKDIR/scripts/run_upload.sh \
 #==========================================================
 #Usage: docker exec serratus-dl -s <SRA Accession> [OPTIONS]
 
-ENTRYPOINT ["bash", "/home/serratus/serratus-dl.sh"]
+ENTRYPOINT ["/bin/bash", "/home/serratus/serratus-dl.sh"]
 
 #==========================================================
 # DEV  ====================================================
@@ -149,6 +150,9 @@ ENTRYPOINT ["bash", "/home/serratus/serratus-dl.sh"]
 # sudo service docker start
 
 # sudo docker build -t serratus-dl:0 .
+# sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
+
+# sudo docker run --rm serratus-dl:0
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
 
 # fastq-dump SRR11183200
