@@ -120,7 +120,9 @@ then
   usage
 fi
 
-echo " -- fq-split Alignment Pipeline -- "
+echo "============================"
+echo "    serratus-dl Pipeline    "
+echo "============================"
 echo " date:      $(date)"
 echo " version:   $PIPE_VERSION"
 echo " ami:       $AMI_VERSION"
@@ -133,7 +135,6 @@ echo ""
 # Default /home/serratus
 cd $WORKDIR
 
-
 # AUTHENTICATE AWS ========================================
 echo "  Authenticating AWS credentials"
 
@@ -145,11 +146,15 @@ echo default,,$AWS_ACCESSKEYID,$AWS_SECRETKEY, >> $WORKDIR/key.csv
 chmod 400 $WORKDIR/key.csv
 
 # Pass credentials to sra-toolkit via vdb-config
-vdb-config -i & read -t 3 ;  kill $!
+# Current version requires a manual
+# vdb-config -i initialization
+# ugly hack is to copy a blank config file and bypass this
+mkdir -p /root/.ncbi
+aws s3 cp s3://serratus-public/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
+chmod 500 /root/.ncbi/user-settings.mkfg
 vdb-config --accept-aws-charges yes \
   --report-cloud-identity yes \
   --set-aws-credentials $WORKDIR/key.csv
-
 
 # Download AWS S3 test token
 aws s3 cp s3://serratus-public/aws-test-token.jpg $WORKDIR/aws-test-token.jpg
@@ -162,7 +167,7 @@ then
   usage
 fi
 
-echo '  ...complete'
+echo '  ...authentication token was download successfully'
 echo ""
 
 # RUN DOWNLOAD ============================================

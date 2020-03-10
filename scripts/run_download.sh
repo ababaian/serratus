@@ -89,3 +89,6 @@ echo ""
 
 # Default /home/serratus
 cd $WORKDIR
+
+
+# TODO: Clean NCBI cache of pre-fetch data
