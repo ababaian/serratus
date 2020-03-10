@@ -93,6 +93,7 @@ sudo rm -rf /var/cache/yum
 # ami (us-west-2): ami-059b454759561d9f4
 
 # PICARD ========================================
+# --> PICARD MISSED IN v0.1.2 <--
 wget https://github.com/broadinstitute/picard/releases/download/"$PICARDVERSION"/picard.jar
 chmod 755 picard.jar
 

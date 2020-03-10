@@ -5,6 +5,13 @@
 # Sublime
 *sublime*
 
+# temporary files
+*scratch*
+*tmp*
+
+# R Project files
+*.Rproj
+
 # Python gitignore ========================================
 # Byte-compiled / optimized / DLL files
 __pycache__/
