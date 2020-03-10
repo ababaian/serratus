@@ -47,7 +47,7 @@ resource "aws_security_group" "scheduler" {
     to_port         = var.scheduler_port
     security_groups = var.input_security_group_ids
     protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"]
+    cidr_blocks     = ["0.0.0.0/0"] # TODO Testing only, delete me
   }
   egress {
     from_port   = 0
@@ -126,6 +126,7 @@ resource "aws_instance" "scheduler" {
   iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
 
   user_data = <<-EOF
+              #!/bin/bash
               docker run -d -p "${var.scheduler_port}":8000 \
                 --log-driver=awslogs \
                 --log-opt awslogs-region="${data.aws_region.current.name}" \

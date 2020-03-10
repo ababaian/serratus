@@ -70,6 +70,7 @@ def add_endpoints(app):
 
         if status in ('new', 'split_err'):
             # Not ready to process more
+            session.commit()
             return 'updated db'
 
         # Insert N align jobs into the alignment table.
