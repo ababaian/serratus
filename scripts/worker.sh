@@ -21,6 +21,11 @@ function terminate_handler {
 
 function main_loop {
     trap terminate_handler SIGUSR1
+
+    # Note: The "& wait"s are important.  Without them, bash will wait for
+    # the command to finish before executing its traps.  When we use "& wait",
+    # the command will recieve the same trap (killing it), and then run our
+    # trap handler, which tells the server our job failed.
     while true; do
         # Get a job
         JOB_JSON=$(curl -s "$SCHED/start_split_job")
