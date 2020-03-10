@@ -19,7 +19,7 @@ def add_endpoints(app):
 
         if acc is None:
             # TODO: Think about this behaviour
-            return 'shutdown\n'
+            return jsonify({'action': 'shutdown'})
 
         acc.state = 'splitting'
         session.add(acc)
@@ -96,7 +96,7 @@ def add_endpoints(app):
             # TODO: If we got no results, then could be:
             #    * Waiting for split nodes: hang tight
             #    * No more work: shutdown
-            return 'nothing to do\n'
+            return jsonify({'action': 'shutdown'})
 
         chunk, acc = query
 
