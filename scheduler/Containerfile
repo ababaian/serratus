@@ -15,7 +15,7 @@ ENV LANG=C.UTF-8
 
 # TODO: Implement a way to ADD jobs to the server
 #       Or some persistence?
-RUN bash -c 'for i in $(seq 1 10); do echo a,a,a,a >> job_list.csv; done'
+RUN bash -c 'for i in $(seq 1 10000); do echo a,a,a,a >> job_list.csv; done'
 RUN flask init-db job_list.csv
 
 # Do NOT enable multithreading here, as the underlying app is
