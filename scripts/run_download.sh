@@ -21,7 +21,7 @@ function usage {
   echo ""
   echo "    Output options"
   echo "    -d    Working directory [/home/serratus]"
-  echo "    -o    <output_prefix>"
+  echo "    -o    <output_prefix> [SRA_ACCESSION]"
   echo ""
   echo "    Outputs: <output_prefix>.fq.0"
   echo "             <output_prefix>.fq.1"
@@ -77,18 +77,8 @@ then
   usage
 fi
 
-echo " -- fq-split Alignment Pipeline -- "
-echo " date:      $(date)"
-echo " version:   $PIPE_VERSION"
-echo " ami:       $AMI_VERSION"
-echo " container: $CONTAINER_VERSION"
-echo " sra:       $SRA"
-echo " args:      ..."
-echo "$@"
-echo ""
-
-# Default /home/serratus
+# Script --------------------
 cd $WORKDIR
 
-
-# TODO: Clean NCBI cache of pre-fetch data
+echo "      fastq-dump --split-e $SRA"
+fastq-dump --split-e $SRA

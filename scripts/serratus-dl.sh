@@ -174,6 +174,8 @@ echo ""
 echo "  Running -- run_download.sh --"
 echo "  ./scripts/run_download.sh -s $SRA $DL_ARGS"
 
+./scripts/run_download.sh -s $SRA $DL_ARGS
+
 # RUN SPLIT ===============================================
 # Add FQ0 vs. FQ1+FQ2 logic here
 echo "  Running -- run_split.sh --"
