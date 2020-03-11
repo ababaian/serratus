@@ -102,9 +102,15 @@ def finish_split_job(acc_id):
     for i in range(int(number_split)):
         chunk = db.Block(state='new', acc_id=acc.acc_id, n=i)
         session.add(chunk)
+
+    row_count = session.query(db.Block).count()
     session.commit()
 
-    return jsonify('inserted {} jobs'.format(number_split))
+    return jsonify({
+        'result': 'success',
+        'inserted_rows': number_split,
+        'total_rows': row_count,
+    })
 
 @bp.route('/align/', methods=['POST'])
 def start_align_job():
