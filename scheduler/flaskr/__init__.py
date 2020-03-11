@@ -43,7 +43,7 @@ def add_endpoints(app):
         Examples:
 
         Successful split into 10 blocks:
-            http://scheduler/finish_split_job?job_id=1&status=split_done&N=10
+            http://scheduler/finish_split_job?job_id=1&status=split_done&N_paired=10
 
         Failed split (bug in code or bad data):
             http://scheduler/finish_split_job?job_id=1&status=split_err
@@ -53,7 +53,8 @@ def add_endpoints(app):
         """
         job_id = request.args.get('job_id')
         status = request.args.get('status')
-        number_split = request.args.get('N')
+        number_split = request.args.get('N_unpaired')
+        number_split = request.args.get('N_paired')
 
         # Update the accessions table
         if status not in ('new', 'split_err', 'split_done'):
@@ -75,7 +76,7 @@ def add_endpoints(app):
 
         # Insert N align jobs into the alignment table.
         for i in range(int(number_split)):
-            chunk = db.Chunk(state='new', acc_id=acc.acc_id, n=i)
+            chunk = db.Block(state='new', acc_id=acc.acc_id, n=i)
             session.add(chunk)
         session.commit()
 
@@ -88,9 +89,9 @@ def add_endpoints(app):
         returns: a job JSON file"""
         session = db.get_session()
         # get an item where state = new and update its state
-        query = session.query(db.Chunk, db.Accession)\
-            .filter(db.Chunk.state == 'new')\
-            .filter(db.Chunk.acc_id == db.Accession.acc_id)\
+        query = session.query(db.Block, db.Accession)\
+            .filter(db.Block.state == 'new')\
+            .filter(db.Block.acc_id == db.Accession.acc_id)\
             .first()
 
         if query is None:
@@ -122,7 +123,7 @@ def add_endpoints(app):
             raise ValueError()
 
         session = db.get_session()
-        chunk = session.query(db.Chunk).filter(chunk_id=chunk_id).one()
+        chunk = session.query(db.Block).filter(chunk_id=chunk_id).one()
         chunk.state = state
 
         return 'success'

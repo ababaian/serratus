@@ -29,20 +29,21 @@ class Accession(Base, Printer):
     state = Column(Enum(name='state', *ACC_STATES))
 
     acc = Column(String)
-    sra_url = Column(String)
-    split_cmd = Column(String)
-    merge_cmd = Column(String)
-    align_cmd = Column(String)
-    paired = Column(Boolean)
+    contains_paired = Column(Boolean)
+    contains_unpaired = Column(Boolean)
+
+    # TODO: Add SRA Run Info (as its own table?)
 
 CHUNK_STATES = ('new', 'aligning', 'done', 'fail')
 
-class Chunk(Base, Printer):
+class Block(Base, Printer):
     __tablename__ = 'chunks'
 
     chunk_id = Column(Integer, primary_key=True)
     state = Column(Enum(name='state', *CHUNK_STATES))
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
+    contains_paired = Column(Boolean)
+    contains_unpaired = Column(Boolean)
     n = Column(Integer)
 
 def get_engine(echo=False, engine=[]):
