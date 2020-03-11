@@ -3,7 +3,7 @@ from flask import current_app, g
 from flask.cli import with_appcontext
 
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum
+from sqlalchemy import Column, Integer, JSON, ForeignKey, Boolean, Enum
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -12,7 +12,7 @@ Base = declarative_base()
 ACC_STATES = ('new', 'splitting', 'split_done', 'merge_wait', 'merging',
               'merge_done', 'split_err', 'merge_err')
 
-class Printer():
+class Dicter():
     """Give Base class option to output dicts"""
     __table__ = None
     def to_dict(self):
@@ -22,24 +22,22 @@ class Printer():
 
         return ret
 
-class Accession(Base, Printer):
+class Accession(Base, Dicter):
     __tablename__ = 'acc'
 
     acc_id = Column(Integer, primary_key=True)
     state = Column(Enum(name='state', *ACC_STATES))
 
-    acc = Column(String)
     contains_paired = Column(Boolean)
     contains_unpaired = Column(Boolean)
-
-    # TODO: Add SRA Run Info (as its own table?)
+    sra_run_info = Column(JSON)
 
 CHUNK_STATES = ('new', 'aligning', 'done', 'fail')
 
-class Block(Base, Printer):
-    __tablename__ = 'chunks'
+class Block(Base, Dicter):
+    __tablename__ = 'blocks'
 
-    chunk_id = Column(Integer, primary_key=True)
+    block_id = Column(Integer, primary_key=True)
     state = Column(Enum(name='state', *CHUNK_STATES))
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
     contains_paired = Column(Boolean)
@@ -54,40 +52,26 @@ def get_engine(echo=False, engine=[]):
     return engine[0]
 
 def get_session():
-    print('get')
     if 'session' not in g:
         g.session = sessionmaker(bind=get_engine())()
     return g.session
 
 def teardown_session(e=None):
-    print('teardown')
     session = g.pop('session', None)
 
     if session is not None:
         session.close()
 
-@click.command('init-db')
-@click.argument('job_csv', type=str)
-@with_appcontext
-def init_db_command(job_csv):
+def init_db():
     """Clear the existing data and create new tables."""
     engine = get_engine(echo=False)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-    session = get_session()
-
-    import csv
-    with open(job_csv) as f:
-        for line in csv.reader(f):
-            acc = Accession(state='new',
-                            acc=line[0],
-                            sra_url=line[1],
-                            split_cmd=line[2],
-                            merge_cmd=line[3])
-            session.add(acc)
-
-    session.commit()
+@click.command('init-db')
+@with_appcontext
+def init_db_command():
+    init_db()
     click.echo('Initialized the database.')
 
 def init_app(app):
