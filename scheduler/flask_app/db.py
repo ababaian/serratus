@@ -32,16 +32,14 @@ class Accession(Base, Dicter):
     contains_unpaired = Column(Boolean)
     sra_run_info = Column(JSON)
 
-CHUNK_STATES = ('new', 'aligning', 'done', 'fail')
+BLOCK_STATES = ('new', 'aligning', 'done', 'fail')
 
 class Block(Base, Dicter):
     __tablename__ = 'blocks'
 
     block_id = Column(Integer, primary_key=True)
-    state = Column(Enum(name='state', *CHUNK_STATES))
+    state = Column(Enum(name='state', *BLOCK_STATES))
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
-    contains_paired = Column(Boolean)
-    contains_unpaired = Column(Boolean)
     n = Column(Integer)
 
 def get_engine(echo=False, engine=[]):

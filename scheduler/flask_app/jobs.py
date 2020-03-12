@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request, abort
+from sqlalchemy import func
 from . import db
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
@@ -58,30 +59,30 @@ def finish_split_job(acc_id):
     """Mark a split job as finished, setting off N alignment jobs.
 
     param acc_id: The acc_id, as returned by start_split_job
-    param status: Resulting status, see sched_states.dia
+    param state: Resulting state, see sched_states.dia
     param N_paired: Number of paired blocks the split resulted in
     param N_unpaired: Number of unpaired blocks the split resulted in
 
     Examples:
 
     Successful split into 10 blocks:
-        http://scheduler/jobs/split/1?status=split_done&N_paired=10
+        http://scheduler/jobs/split/1?state=split_done&N_paired=10
 
     Failed split (bug in code or bad data):
-        http://scheduler/jobs/split/1?status=split_err
+        http://scheduler/jobs/split/1?state=split_err
 
     Terminated node (please redo this work):
-        http://scheduler/jobs/split/1?status=new
+        http://scheduler/jobs/split/1?state=new
     """
-    status = request.args.get('status')
+    state = request.args.get('state')
     try:
-        number_split = int(request.args.get('N_unpaired', 0))
-        number_split = int(request.args.get('N_paired', 0))
+        n_unpaired = int(request.args.get('N_unpaired', 0))
+        n_paired = int(request.args.get('N_paired', 0))
     except TypeError:
         abort(400)
 
     # Update the accessions table
-    if status not in ('new', 'split_err', 'split_done'):
+    if state not in ('new', 'split_err', 'split_done'):
         abort(400)
 
     session = db.get_session()
@@ -91,17 +92,23 @@ def finish_split_job(acc_id):
 
     if acc.state != 'splitting':
         abort(400)
-    acc.state = status
+    acc.state = state
 
-    if status in ('new', 'split_err'):
+    if state in ('new', 'split_err'):
         # Not ready to process more
         session.commit()
         return jsonify({'result': 'success'})
 
+    acc.contains_paired = n_paired > 0
+    acc.contains_unpaired = n_unpaired > 0
+
+    # AB: if there is paired-read data then ignore unpaired data
+    number_split = n_paired or n_unpaired
+
     # Insert N align jobs into the alignment table.
     for i in range(int(number_split)):
-        chunk = db.Block(state='new', acc_id=acc.acc_id, n=i)
-        session.add(chunk)
+        block = db.Block(state='new', acc_id=acc.acc_id, n=i)
+        session.add(block)
 
     row_count = session.query(db.Block).count()
     session.commit()
@@ -130,12 +137,12 @@ def start_align_job():
         #    * No more work: shutdown
         return jsonify({'action': 'shutdown'})
 
-    chunk, acc = query
+    block, acc = query
 
-    chunk.state = 'aligning'
-    session.add(chunk)
+    block.state = 'aligning'
+    session.add(block)
 
-    response = chunk.to_dict()
+    response = block.to_dict()
     response.update(acc.to_dict())
     session.commit()
 
@@ -143,29 +150,90 @@ def start_align_job():
     return jsonify(response)
 
 @bp.route('/align/<block_id>', methods=['POST'])
-def finish_align_job():
-    """Finished job, chunk_id is the same parameter from the start_job,
+def finish_align_job(block_id):
+    """Finished job, block_id is the same parameter from the start_job,
     state is one of (new, done, fail)"""
-    chunk_id = request.args.get('chunk_id')
     state = request.args.get('state')
 
-    if state not in db.CHUNK_STATES:
+    if state not in db.BLOCK_STATES:
         abort(400)
 
     session = db.get_session()
-    chunk = session.query(db.Block).filter(chunk_id=chunk_id).one()
-    chunk.state = state
+    block = session.query(db.Block).filter_by(block_id=block_id).one()
+    block.state = state
 
-    return 'success'
+    # Check the other blocks---are there any waiting or running still?
+    state_counts_q = session.query(db.Block.state,
+                                   func.count(db.Block.block_id))\
+        .filter(db.Block.acc_id == block.acc_id)\
+        .group_by(db.Block.state)\
+        .all()
+
+    state_counts = {k: 0 for k in db.BLOCK_STATES}
+    state_counts.update(state_counts_q)
+
+    if state_counts.get('new', 0) > 0 or state_counts.get('aligning', 0) > 0:
+        # This is not the last block
+        session.commit()
+        return jsonify({
+            'result': 'success'
+        })
+    elif state_counts.get('fail', 0) > 0:
+        # :(  TODO What to do here?  Ideally we move Accession into a failed
+        # state when a single align fails, so this should be no-op?
+        session.commit()
+        return jsonify({
+            'result': ':('
+        })
+    else:
+        # All blocks are done.  Move Accession into the merge_wait state.
+        accession = session.query(db.Accession)\
+            .filter(db.Accession.acc_id == block.acc_id)\
+            .one()
+        accession.state = 'merge_wait'
+        session.commit()
+        return jsonify({
+            'result': 'success',
+        })
 
 @bp.route('/merge/', methods=['POST'])
 def start_merge_job():
-    pass
+    session = db.get_session()
+    # Get an Acc where all blocks have been aligned.
+    acc = session.query(db.Accession)\
+        .filter_by(state='merge_wait')\
+        .first()
 
+    if acc is None:
+        # TODO: Think about this behaviour
+        return jsonify({'action': 'shutdown'})
+
+    acc.state = 'merging'
+    session.add(acc)
+    response = acc.to_dict()
+    session.commit()
+    response['action'] = 'process'
+
+    # Send the response as JSON
+    return jsonify(response)
 
 @bp.route('/merge/<acc_id>', methods=['POST'])
 def finish_merge_job(acc_id):
-    pass
+    state = request.args.get('state')
+    if state not in ('merge_wait', 'merge_err', 'merge_done'):
+        abort(400)
 
+    session = db.get_session()
+    acc = session.query(db.Accession)\
+        .filter_by(acc_id=int(acc_id))\
+        .one()
 
+    if acc.state != 'merging':
+        abort(400)
+
+    acc.state = state
+    session.commit()
+    return jsonify({
+        'result': 'success'
+    })
 
