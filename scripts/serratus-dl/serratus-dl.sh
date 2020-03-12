@@ -2,6 +2,7 @@
 # ENTRYPOINT SCRIPT ===================
 # serrtaus-dl
 # =====================================
+set -e
 #
 # Base: serratus-Downloader (>0.1.1)
 # Amazon Linux 2 with Docker
@@ -19,7 +20,6 @@
 # single-end reads and not interleaved or mixed paire-end reads.
 # Adapt script to deal with these edge cases
 #
-
 PIPE_VERSION="0.1"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
 CONTAINER_VERSION='serratus-dl:0.1'
@@ -56,6 +56,9 @@ function usage {
 }
 
 # PARSE INPUT =============================================
+# Generate random alpha-numeric for run-id
+RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
+
 # SRA Accession -S
 SRA=''
 
@@ -76,7 +79,7 @@ while getopts s:ak:D:P:U:d:oh FLAG; do
   case $FLAG in
     # Input Options ---------
     s)
-      SRA=$(readlink -f $OPTARG)
+      SRA=$OPTARG
       ;;
     a)
       AWS_CONFIG='TRUE'
@@ -127,13 +130,18 @@ echo " date:      $(date)"
 echo " version:   $PIPE_VERSION"
 echo " ami:       $AMI_VERSION"
 echo " container: $CONTAINER_VERSION"
+echo " run-id:    $RUNID"
 echo " sra:       $SRA"
 echo " args:      ..."
 echo "$@"
 echo ""
 
-# Default /home/serratus
+# Default base directory is /home/serratus
 cd $WORKDIR
+  BASEDIR=$WORKDIR
+  WORKDIR=$BASEDIR/$RUNID
+  mkdir -p $WORKDIR
+
 
 # AUTHENTICATE AWS ========================================
 echo "  Authenticating AWS credentials"
@@ -149,6 +157,7 @@ chmod 400 $WORKDIR/key.csv
 # Current version requires a manual
 # vdb-config -i initialization
 # ugly hack is to copy a blank config file and bypass this
+# TODO: Move vdb-config -i hack to Dockerfile/installation
 mkdir -p /root/.ncbi
 aws s3 cp s3://serratus-public/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 chmod 500 /root/.ncbi/user-settings.mkfg
@@ -176,10 +185,57 @@ echo "  ./scripts/run_download.sh -s $SRA $DL_ARGS"
 
 ./scripts/run_download.sh -s $SRA $DL_ARGS
 
+echo ''
+
+# Detect downloaded fastq files
+FQ0=$(ls *_0.fastq)
+FQ1=$(ls *_1.fastq)
+FQ2=$(ls *_2.fastq)
+
+if [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
+then
+  paired_exists=true
+  echo "  Paired-end reads detected"
+else
+  paired_exists=false
+  echo "  Paired-end reads not-detected"
+fi
+
+if [[ ( -s $FQ0 && -n $FQ0 ) ]]
+then
+  unpaired_exists=true
+  echo "  Unpaired reads detected"
+else
+  unpaired_exists=false
+  echo "  unpaired reads not-detected"
+fi
+
+if [[ "$paired_exists" = true && "$unpaired_exists" = true ]]
+then
+  # Both paired-end and unpaired exist
+  # use only paired-end data
+  echo "   WARNING: Paired and Unpaired data detected"
+  echo "            Using only Paired-End Reads"
+  unpaired_exists=FALSE
+fi
+
 # RUN SPLIT ===============================================
 # Add FQ0 vs. FQ1+FQ2 logic here
 echo "  Running -- run_split.sh --"
-echo "  ./scripts/run_split.sh -o $OUTNAME $SPLIT_ARGS"
+
+if [[ "$paired_exists" = true ]]
+then
+  echo "  ./scripts/run_split.sh -o $OUTNAME $SPLIT_ARGS"
+  ./scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA $DL_ARGS
+
+elif [[ "$paired_exists" = true ]]
+then
+    echo "  ./scripts/run_split.sh -o $OUTNAME $SPLIT_ARGS"
+  ./scripts/run_split.sh -f $FQ0 -o $SRA $DL_ARGS
+else
+  echo "   ERROR: Neither paired or unpaired reads detected"
+  exit 1
+fi
 
 # RUN UPLOAD ==============================================
 echo "  Running -- run_upload.sh --"
