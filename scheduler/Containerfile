@@ -5,20 +5,19 @@ RUN apt-get install -yqq python3-pip
 
 RUN pip3 install flask sqlalchemy gunicorn
 
-ADD flaskr/ /opt/flaskr
+ADD flask_app/ /opt/flask_app
 WORKDIR /opt/
 
 # Run Python in UTF-8 mode
-ENV FLASK_APP=flaskr
+ENV FLASK_APP=flask_app
 ENV FLASK_ENV=development
 ENV LANG=C.UTF-8
+ENV PYTHONUNBUFFERED=1
 
-# TODO: Implement a way to ADD jobs to the server
-#       Or some persistence?
-RUN bash -c 'for i in $(seq 1 10000); do echo a,a,a,a >> job_list.csv; done'
-RUN flask init-db job_list.csv
+RUN flask init-db
 
 # Do NOT enable multithreading here, as the underlying app is
 # thread-unsafe.
-CMD gunicorn 'flaskr:create_app()' --bind '0.0.0.0:8000'
+#CMD gunicorn 'flask_app:create_app()' --bind '0.0.0.0:8000'
+CMD flask run -p 8000
 
