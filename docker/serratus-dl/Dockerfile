@@ -7,7 +7,7 @@ FROM amazonlinux:2 AS build_base
 # sudo yum -y install docker
 # sudo service docker start
 
-# sudo docker build -t serratus-dl:0 .
+# sudo docker build -t serratus-dl:0 -t serratus-dl:latest .
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
 
 #==========================================================
@@ -120,21 +120,25 @@ ARG GIT_SERRATUS="https://raw.githubusercontent.com/ababaian/serratus/master/"
 
 ## /home/serratus/serratus-dl.sh
 RUN wget -O $WORKDIR/serratus-dl.sh \
-  $GIT_SERRATUS/scripts/serratus-dl.sh
+  $GIT_SERRATUS/scripts/serratus-dl/serratus-dl.sh
 
 ## /home/serratus/scripts/
   # run_download.sh
 RUN wget -O $WORKDIR/scripts/run_download.sh \
-  $GIT_SERRATUS/scripts/run_download.sh
+  $GIT_SERRATUS/scripts/serratus-dl/run_download.sh
 
   # run_split.sh (latest)
 RUN wget -O $WORKDIR/scripts/run_split.sh \
-  $GIT_SERRATUS/scripts/run_split.sh
+  $GIT_SERRATUS/scripts/serratus-dl/run_split.sh
 
   # run_upload.sh
 RUN wget -O $WORKDIR/scripts/run_upload.sh \
-  $GIT_SERRATUS/scripts/run_upload.sh
-  
+  $GIT_SERRATUS/scripts/serratus-dl/run_upload.sh
+
+# Set script permissions
+RUN chmod 755 $WORKDIR/serratus-dl.sh
+RUN chmod 755 $WORKDIR/scripts/*
+
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================

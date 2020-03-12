@@ -1,6 +1,7 @@
 #!/bin/bash
 # run_split
 #
+set -e
 # Base: serratus-Downloader (>0.1.1)
 # Amazon Linux 2 with Docker
 # AMI : aami-0fdf24f2ce3c33243
@@ -128,8 +129,6 @@ then
 fi
 
 # SPLIT ===================================================
-# Generate random alpha-numeric for run-id
-RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Logging to STDOUT
 echo " -- fq-split Alignment Pipeline -- "
@@ -145,10 +144,6 @@ echo " blockSize: $BLOCKSIZE"
 echo""
 echo 'Initializing ...'
 echo ""
-
-# Create RUNID folder in WORKDIR
-mkdir -p $WORKDIR/$RUNID
-cd $WORKDIR/$RUNID
 
 # fq-block generation function ----------------------------
   fq-block-generate () {

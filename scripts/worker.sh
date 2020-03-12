@@ -6,6 +6,9 @@
 #
 # TODO: Add test to ensure docker is installed and can be run
 #       on instance. Else Error exit.
+# TODO: Ensure EC2 instance has correct IAM permissions prior
+#       to committing to serratus-dl container pipeline
+
 set -eux
 
 # USAGE ===================================================

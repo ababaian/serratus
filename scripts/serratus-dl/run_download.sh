@@ -1,6 +1,7 @@
 #!/bin/bash
 # run_download
 #
+set -e
 # Script
 SCRIPT_VERSION='0.1'
 # Container: serratus-dl (0.1)
@@ -20,7 +21,7 @@ function usage {
   echo "    <D>   Arguments from running serratus-dl passed to this script (optional)"
   echo ""
   echo "    Output options"
-  echo "    -d    Working directory [/home/serratus]"
+  echo "    -d    Working directory [$PWD]"
   echo "    -o    <output_prefix> [SRA_ACCESSION]"
   echo ""
   echo "    Outputs: <output_prefix>.fq.0"
@@ -39,17 +40,17 @@ SRA=''
 DL_ARGS=''
 
 # Output options -do
-WORKDIR="/home/serratus"
+WORKDIR="$PWD"
 OUTNAME="$SRA"
 
 while getopts s:ak:D:P:U:d:oh FLAG; do
   case $FLAG in
     # Input Options ---------
     s)
-      SRA=$(readlink -f $OPTARG)
+      SRA=$OPTARG
       ;;
     D)
-      DL_ARGS=$(readlink -f $OPTARG)
+      DL_ARGS=$OPTARG
       ;;
     # output options -------
     d)
@@ -82,3 +83,5 @@ cd $WORKDIR
 
 echo "      fastq-dump --split-e $SRA"
 fastq-dump --split-e $SRA
+
+echo "      Download complete."
