@@ -172,13 +172,13 @@ def finish_align_job(block_id):
     state_counts = {k: 0 for k in db.BLOCK_STATES}
     state_counts.update(state_counts_q)
 
-    if state_counts.get('new', 0) > 0 or state_counts.get('aligning', 0) > 0:
+    if state_counts['new'] > 0 or state_counts['aligning'] > 0:
         # This is not the last block
         session.commit()
         return jsonify({
             'result': 'success'
         })
-    elif state_counts.get('fail', 0) > 0:
+    elif state_counts['fail'] > 0:
         # :(  TODO What to do here?  Ideally we move Accession into a failed
         # state when a single align fails, so this should be no-op?
         session.commit()
