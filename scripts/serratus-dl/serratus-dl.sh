@@ -12,6 +12,7 @@ set -e
 # Container: serratus-dl:0.1
 #
 
+# Test cmd: ./serratus-dl.sh -s SRR11166696 -P "-z"
 # TODO: Consider switching to an external definition for RUNID
 # such that downstream scripts can easily access the 
 # $RUNID/ folder and it's files.
@@ -85,11 +86,11 @@ while getopts s:ak:D:P:U:d:oh FLAG; do
       AWS_CONFIG='TRUE'
       ;;
     k)
-      S3_BUCKET=$(readlink -f $OPTARG)
+      S3_BUCKET=$OPTARG
       ;;
     # SCRIPT ARGUMENTS -------
     D)
-      DL_ARGS=$(readlink -f $OPTARG)
+      DL_ARGS=$OPTARG
       ;;
     P)
       SPLIT_ARGS=$OPTARG
@@ -140,7 +141,7 @@ echo ""
 cd $WORKDIR
   BASEDIR=$WORKDIR
   WORKDIR=$BASEDIR/$RUNID
-  mkdir -p $WORKDIR
+  mkdir -p $WORKDIR; cd $WORKDIR
 
 
 # AUTHENTICATE AWS ========================================
@@ -149,7 +150,7 @@ echo "  Authenticating AWS credentials"
 # Create aws key (read from ec2 IAM) (run at start-up of container)
 AWS_ACCESSKEYID=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance/ | jq -r '.AccessKeyId' )
 AWS_SECRETKEY=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance/ | jq -r '.SecretAccessKey' )
-echo User name,Password,Access key ID,Secret access key,Console login link > key.csv
+echo User name,Password,Access key ID,Secret access key,Console login link > $WORKDIR/key.csv
 echo default,,$AWS_ACCESSKEYID,$AWS_SECRETKEY, >> $WORKDIR/key.csv
 chmod 400 $WORKDIR/key.csv
 
@@ -168,7 +169,7 @@ vdb-config --accept-aws-charges yes \
 # Download AWS S3 test token
 aws s3 cp s3://serratus-public/aws-test-token.jpg $WORKDIR/aws-test-token.jpg
 
-if [ ! -s './aws-test-token.jpg' ]
+if [ ! -s "$WORKDIR/key.csv" ]
 then
   echo "    ERROR: AWS Test did not download"
   echo "    Ensure the EC2 instance has correct IAM permissions"
@@ -181,16 +182,16 @@ echo ""
 
 # RUN DOWNLOAD ============================================
 echo "  Running -- run_download.sh --"
-echo "  ./scripts/run_download.sh -s $SRA $DL_ARGS"
+echo "  $BASEDIR/scripts/run_download.sh -s $SRA $DL_ARGS"
 
-./scripts/run_download.sh -s $SRA $DL_ARGS
+bash $BASEDIR/scripts/run_download.sh -s $SRA $DL_ARGS
 
 echo ''
 
 # Detect downloaded fastq files
-FQ0=$(ls *_0.fastq)
-FQ1=$(ls *_1.fastq)
-FQ2=$(ls *_2.fastq)
+FQ0=$(ls *_0.fastq 2>/dev/null || true)
+FQ1=$(ls *_1.fastq 2>/dev/null || true)
+FQ2=$(ls *_2.fastq 2>/dev/null || true)
 
 if [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
 then
@@ -225,17 +226,21 @@ echo "  Running -- run_split.sh --"
 
 if [[ "$paired_exists" = true ]]
 then
-  echo "  ./scripts/run_split.sh -o $OUTNAME $SPLIT_ARGS"
-  ./scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA $DL_ARGS
+  echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME $SPLIT_ARGS"
+  bash $BASEDIR/scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA $SPLIT_ARGS
 
 elif [[ "$paired_exists" = true ]]
 then
-    echo "  ./scripts/run_split.sh -o $OUTNAME $SPLIT_ARGS"
-  ./scripts/run_split.sh -f $FQ0 -o $SRA $DL_ARGS
+  echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME $SPLIT_ARGS"
+  bash $BASEDIR/scripts/run_split.sh -f $FQ0 -o $SRA $SPLIT_ARGS
 else
   echo "   ERROR: Neither paired or unpaired reads detected"
   exit 1
 fi
+
+# Count output blocks
+N_paired=$( (ls *1.fq.* 2>/dev/null ) | wc -l)
+N_unpaired=$((ls *0.fq.* 2>/dev/null ) | wc -l)
 
 # RUN UPLOAD ==============================================
 echo "  Running -- run_upload.sh --"
