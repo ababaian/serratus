@@ -94,10 +94,16 @@ resource "aws_cloudwatch_log_group" "worker" {
 }
 
 resource "aws_launch_configuration" "worker" {
+  name_prefix     = "tf-serratus-worker-"
   image_id        = data.aws_ami.amazon_linux_2.id
   instance_type   = var.instance_type
   security_groups = [aws_security_group.worker.id]
   spot_price      = var.spot_price
+
+  # Launch configs can't be destroyed while attached to an ASG.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_autoscaling_group" "worker" {
