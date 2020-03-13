@@ -40,6 +40,17 @@ variable "allow_ssh" {
   default     = true
 }
 
+variable "up" {
+  description = "Spin up instances"
+  type = bool
+  default = true
+}
+
+variable "dev_cidrs" {
+  description = "Remote IP Address, for testing access"
+  type        = set(string)
+}
+
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
   ingress {
@@ -47,7 +58,7 @@ resource "aws_security_group" "scheduler" {
     to_port         = var.scheduler_port
     security_groups = var.input_security_group_ids
     protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"] # TODO Testing only, delete me
+    cidr_blocks     = var.dev_cidrs
   }
   egress {
     from_port   = 0
@@ -62,7 +73,7 @@ resource "aws_security_group" "scheduler" {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr_blocks = var.dev_cidrs
     }
   }
 }
@@ -125,6 +136,8 @@ resource "aws_instance" "scheduler" {
   key_name                             = "jeff@rosario"
   iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
 
+  count = var.up ? 1 : 0
+
   user_data = <<-EOF
               #!/bin/bash
               docker run -d -p "${var.scheduler_port}":8000 \
@@ -140,6 +153,6 @@ resource "aws_instance" "scheduler" {
   }
 }
 
-output "scheduler_public_dns" {
-  value = aws_instance.scheduler.public_dns
-}
+#output "scheduler_public_dns" {
+#  value = aws_instance.scheduler.public_dns
+#}
