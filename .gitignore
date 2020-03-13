@@ -143,3 +143,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .Rproj.user
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
