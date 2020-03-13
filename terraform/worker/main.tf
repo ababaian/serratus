@@ -32,9 +32,9 @@ variable "allow_ssh" {
   default     = true
 }
 
-variable "my_ip" {
-  description = "My IP Address, for SSH, HTTP, etc access"
-  type        = string
+variable "dev_cidrs" {
+  description = "Remote IP Address, for SSH, HTTP, etc access"
+  type        = set(string)
 }
 
 variable "name" {
@@ -76,7 +76,7 @@ resource "aws_security_group" "worker" {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      cidr_blocks = ["${var.my_ip}/32"]
+      cidr_blocks = var.dev_cidrs
     }
   }
 

@@ -46,6 +46,11 @@ variable "up" {
   default = true
 }
 
+variable "dev_cidrs" {
+  description = "Remote IP Address, for testing access"
+  type        = set(string)
+}
+
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
   ingress {
@@ -53,7 +58,7 @@ resource "aws_security_group" "scheduler" {
     to_port         = var.scheduler_port
     security_groups = var.input_security_group_ids
     protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"] # TODO Testing only, delete me
+    cidr_blocks     = var.dev_cidrs
   }
   egress {
     from_port   = 0
@@ -68,7 +73,7 @@ resource "aws_security_group" "scheduler" {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr_blocks = var.dev_cidrs
     }
   }
 }
