@@ -10,10 +10,10 @@ variable "scheduler_port" {
   default     = 8000
 }
 
-#variable "scheduler_ip" {
-#  description = "IP Address of the scheduler"
-#  type        = string
-#}
+variable "scheduler_dns" {
+  description = "IP Address of the scheduler"
+  type        = string
+}
 
 variable "instance_type" {
   description = "Type of node to use for the workers"
@@ -46,6 +46,11 @@ variable "name" {
 variable "asg_size" {
   type    = number
   default = 1
+}
+
+variable "security_group_ids" {
+  type = list(string)
+  default = []
 }
 
 data "aws_ami" "amazon_linux_2" {
@@ -97,13 +102,17 @@ resource "aws_launch_configuration" "worker" {
   name_prefix     = "tf-serratus-worker-"
   image_id        = data.aws_ami.amazon_linux_2.id
   instance_type   = var.instance_type
-  security_groups = [aws_security_group.worker.id]
+  security_groups = concat([aws_security_group.worker.id], var.security_group_ids)
   spot_price      = var.spot_price
 
   # Launch configs can't be destroyed while attached to an ASG.
   lifecycle {
     create_before_destroy = true
   }
+
+  user_data = <<EOF
+    curl -X POST ${var.scheduler_dns}:${var.scheduler_port}/jobs/split/
+    EOF
 }
 
 resource "aws_autoscaling_group" "worker" {
