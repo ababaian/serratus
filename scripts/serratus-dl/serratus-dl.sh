@@ -12,7 +12,7 @@ set -e
 # Container: serratus-dl:0.1
 #
 
-# Test cmd: ./serratus-dl.sh -s SRR11166696 -P "-z"
+# Test cmd: ./serratus-dl.sh -s SRR11166696
 # TODO: Consider switching to an external definition for RUNID
 # such that downstream scripts can easily access the 
 # $RUNID/ folder and it's files.
@@ -39,7 +39,7 @@ function usage {
   echo "    -a    Flag. Imports AWS IAM from this ec2-instance for container"
   echo "          EC2 instance must have been launched with correct IAM"
   echo "          (No alternative yet, hard set to TRUE)"
-  echo "    -k    S3 bucket name to store fq-blocks [s3://serratus-public]"
+  echo "    -k    S3 bucket path for fq-blocks [s3://serratus-public/fq-blocks]"
   echo ""
   echo "    -D    String of arguments to pass to 'run_download.sh <ARG>'"
   echo "    -P    String of arguments to pass to 'run_split.sh <ARG>'"
@@ -65,7 +65,7 @@ SRA=''
 
 # AWS Options -ak
 AWS_CONFIG='TRUE'
-S3_BUCKET=''
+S3_BUCKET='s3://serratus-public/fq-blocks'
 
 # Script Arguments -DPU
 DL_ARGS=''
@@ -133,6 +133,7 @@ echo " ami:       $AMI_VERSION"
 echo " container: $CONTAINER_VERSION"
 echo " run-id:    $RUNID"
 echo " sra:       $SRA"
+echo " S3 url:    $S3_BUCKET"
 echo " args:      ..."
 echo "$@"
 echo ""
@@ -142,7 +143,6 @@ cd $WORKDIR
   BASEDIR=$WORKDIR
   WORKDIR=$BASEDIR/$RUNID
   mkdir -p $WORKDIR; cd $WORKDIR
-
 
 # AUTHENTICATE AWS ========================================
 echo "  Authenticating AWS credentials"
@@ -188,7 +188,7 @@ bash $BASEDIR/scripts/run_download.sh -s $SRA $DL_ARGS
 
 echo ''
 
-# Detect downloaded fastq files
+# Detect downloaded fastq files for split logic
 FQ0=$(ls *_0.fastq 2>/dev/null || true)
 FQ1=$(ls *_1.fastq 2>/dev/null || true)
 FQ2=$(ls *_2.fastq 2>/dev/null || true)
@@ -240,11 +240,27 @@ fi
 
 # Count output blocks
 N_paired=$( (ls *1.fq.* 2>/dev/null ) | wc -l)
+echo "    N paired-end fq-blocks: $N_paired"
 N_unpaired=$((ls *0.fq.* 2>/dev/null ) | wc -l)
+echo "    N unpaired   fq-blocks: $N_unpaired"
+echo ""
 
 # RUN UPLOAD ==============================================
 echo "  Running -- run_upload.sh --"
-echo "  ./scripts/run_download.sh -k $S3_BUCKET $UL_ARGS"
+echo "  ./scripts/run_upload.sh -k $S3_BUCKET -s $SRA $UL_ARGS"
+
+bash $BASEDIR/scripts/run_upload.sh   \
+     -k $S3_BUCKET \
+     -s $SRA
+
+echo "  Uploading complete."
+echo "  Status: DONE"
 
 # CLEAN-UP ================================================
-#cd $WORKDIR; rm key.csv aws-test-token.jpg
+# rm may be unneccesary since container is shutdown
+# cd $BASEDIR; rm -rf $WORKDIR
+
+echo "============================"
+echo "======= RUN COMPLETE ======="
+echo "============================"
+exit 0

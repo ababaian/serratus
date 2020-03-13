@@ -124,15 +124,24 @@ function main_loop {
         #        scripts/serratus-dl/run_split.sh
         #        scripts/serratus-dl/run_upload.sh
 
+        # TODO: Allow the scheduler/main data-table to have arugments
+        # which will be passed on to the downloader scripts
+        
+        # TODO: If we're going to lock the system so the split commands
+        # in each container don't collide on the CPU then we need to mount
+        # a folder from filesystem into the container and `flock` a file
+        # on the shared mount. For now use 1 worker per download EC2? 
+
         echo "  $WORKERID - Run cmd: sudo docker run $CONTAINER -a -s $ACC_ID"
         echo ""
-        sudo docker run $CONTAINER -a -s $ACC_ID & wait
+        sudo docker run $CONTAINER -s $ACC_ID & wait
 
         # Upload chunks
         # TODO: Figure out a way of counting uploaded fq-blocks from inside
         # the container and returnign those values here
         # N_fqblock_unpaired
         # N_fqblock_paired
+
         N=42
         echo "Uploading $N chunks. Yeehaw!"
         sleep 10 & wait

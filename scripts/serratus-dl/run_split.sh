@@ -32,7 +32,7 @@ function usage {
   echo "          approx 2.2Mb per 10k reads (single-end)"
   echo "              or 220Mb per 1M  reads"
   echo "    -p    N parallel threads [1]"
-  echo "    -z    flag to gzip fq-blocks [F]"
+  echo "    -z    flag to NOT use gzip fq-blocks [ Default is .gz ]"
   echo ""
   echo "    Output options"
   echo "    -d    Working directory [$PWD]"
@@ -58,7 +58,7 @@ FQ0=""
 
 # fq-block parameters -nzp
 BLOCKSIZE=1000000
-GZIP_FLAG="FALSE"
+GZIP_FLAG="true"
 THREADS="1"
 
 # Output options -do
@@ -86,7 +86,7 @@ while getopts b:f:1:2:n:p:zd:o:!hz FLAG; do
       BLOCKSIZE=$OPTARG
       ;;
     z)
-      GZIP_FLAG='TRUE'
+      GZIP_FLAG='false'
       ;;
     p)
       THREADS=$OPTARG
@@ -153,13 +153,13 @@ echo ""
     # Split in-fq to $BLOCKSIZE reads per file (4lines/read)
     # will generate n * input.fq.abcdefghi.gz files
     let LINESIZE=4*BLOCKSIZE
-    split -a 10 -l $LINESIZE $1 "$1".
+    split -d -a 10 -l $LINESIZE $1 "$1".
     rm $1
 
     # gzip fq-blocks in parallel
-    if [ $GZIP_FLAG = "TRUE" ]
+    if [ $GZIP_FLAG = "true" ]
     then
-      pigz -n $THREADS "$1"*
+      pigz -p $THREADS "$1"*
     fi
   }
 

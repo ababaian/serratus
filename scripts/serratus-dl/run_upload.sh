@@ -15,19 +15,21 @@ function usage {
   echo ""
   echo "    S3 Bucket parameters"
   echo "    -k    S3 URL to upload data to [s3://serratus-public/fq-block]"
-  echo "    -s    SRA Accession name"
+  echo "    -s    SRA/Accession name"
+  echo "    -r    REGEX string to match files for uploading [\"*.[012].fq*\"]"
   echo ""
   echo "    Arguments from serratus-dl"
-  echo "    <-U>   Arguments as string from running serratus-dl passed to"
+  echo "    <-U>   Arguments as string passed from serratus-dl to"
   echo "           this script (optional)"
   echo ""
   echo "    Output options"
-  echo "    -d    Working directory [/home/serratus]"
-  echo "    -o    <output_prefix>"
+  echo "    -d    Working directory [PWD]"
+  echo "    -o    <output_prefix> [-s option]"
   echo ""
   echo "ex: ./run_upload.sh -k s3://serratus-public/fq-block -s SRA1337"
   echo ""
-  echo "    Uploads to: s3:"
+  echo "    Will upload all files matching *.[012].fq* in <working dir> to"
+  echo "    s3://serratus-public/fq-block/SRA1337/"
   echo ""
   exit 1
 }
@@ -35,22 +37,27 @@ function usage {
 # PARSE INPUT =============================================
 # S3 Bucket for upload
 S3_BUCKET=''
+SRA=''
+UP_REGEX="*.[012].fq*"
 
 # Script Arguments -DPU
 UL_ARGS=''
 
 # Output options -do
-WORKDIR="/home/serratus"
+WORKDIR="$PWD"
 OUTNAME="$SRA"
 
-while getopts k:U:d:oh FLAG; do
+while getopts k:s:U:d:oh FLAG; do
   case $FLAG in
     # Input Options ---------
     k)
-      S3_BUCKET=$(readlink -f $OPTARG)
+      S3_BUCKET=$OPTARG
+      ;;
+    s)
+      SRA=$OPTARG
       ;;
     U)
-      UL_ARGS=$(readlink -f $OPTARG)
+      UL_ARGS=$OPTARG
       ;;
     # output options -------
     d)
@@ -78,15 +85,16 @@ then
   usage
 fi
 
-echo " -- fq-split Alignment Pipeline -- "
-echo " date:      $(date)"
-echo " version:   $PIPE_VERSION"
-echo " ami:       $AMI_VERSION"
-echo " container: $CONTAINER_VERSION"
-echo " sra:       $S3_BUCKET"
-echo " args:      ..."
-echo "$@"
-echo ""
+if [[ ( -z "$SRA" ) ]]
+then
+  echo "-s SRA/Accession id is required."
+  usage
+fi
 
-# Default /home/serratus
-cd $WORKDIR
+# Copy all files matching UP_REGEX
+# in current dir to s3
+aws s3 cp --recursive \
+  --exclude "*" \
+  --include "$UP_REGEX" \
+  ./  "$S3_BUCKET/$SRA"
+
