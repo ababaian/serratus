@@ -9,8 +9,8 @@ def reset_db():
     db.init_db()
     return jsonify('Database cleared')
 
-@bp.route('/add_sra_run_info', methods=['POST'])
-def add_sra_runinfo():
+@bp.route('/add_sra_run_info/<filename>', methods=['POST'])
+def add_sra_runinfo(filename):
     ## Read the CSV into the DB
     import csv, io
     insert_count = 0

@@ -5,17 +5,17 @@ from json import loads
 @pytest.fixture
 def csv_preload(client):
     csv = b'a,b,c\n1,2,3\n4,5,6'
-    response = client.post('/jobs/add_sra_run_info', data=csv)
+    response = client.post('/jobs/add_sra_run_info/test.csv', data=csv)
     assert response.status_code == 200
 
 def test_add_sra_run_info(client):
     csv = b'a,b,c\n1,2,3\n4,5,6'
-    response = client.post('/jobs/add_sra_run_info', data=csv)
+    response = client.post('/jobs/add_sra_run_info/test.csv', data=csv)
     assert response.status_code == 200
     assert loads(response.data)['inserted_rows'] == 2
     assert loads(response.data)['total_rows'] == 2
 
-    response = client.post('/jobs/add_sra_run_info', data=csv)
+    response = client.post('/jobs/add_sra_run_info/test2.csv', data=csv)
     assert response.status_code == 200
     assert loads(response.data)['inserted_rows'] == 2
     assert loads(response.data)['total_rows'] == 4
