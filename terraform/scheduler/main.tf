@@ -40,6 +40,12 @@ variable "allow_ssh" {
   default     = true
 }
 
+variable "up" {
+  description = "Spin up instances"
+  type = bool
+  default = true
+}
+
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
   ingress {
@@ -125,6 +131,8 @@ resource "aws_instance" "scheduler" {
   key_name                             = "jeff@rosario"
   iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
 
+  count = var.up ? 1 : 0
+
   user_data = <<-EOF
               #!/bin/bash
               docker run -d -p "${var.scheduler_port}":8000 \
@@ -140,6 +148,6 @@ resource "aws_instance" "scheduler" {
   }
 }
 
-output "scheduler_public_dns" {
-  value = aws_instance.scheduler.public_dns
-}
+#output "scheduler_public_dns" {
+#  value = aws_instance.scheduler.public_dns
+#}
