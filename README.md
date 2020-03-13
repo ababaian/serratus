@@ -30,6 +30,7 @@ AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 - [SRA in the Cloud -- Use SRA Toolkit](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud/)
 - [SRA Data Registry on S3](https://registry.opendata.aws/ncbi-sra/)
 - [S3 transfer optimization](https://docs.aws.amazon.com/cli/latest/topic/s3-config.html)
+- [Paper on analyzing EC2 costs (2011)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0026624)
 
 #### Architecture
 

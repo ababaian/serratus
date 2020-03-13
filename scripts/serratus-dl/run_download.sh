@@ -17,6 +17,9 @@ function usage {
   echo "    SRA Accession for sratools"
   echo "    -s    SRA Accession for downloading SRA-archive file"
   echo ""
+  echo "    Performance"
+  echo "    -n CPU threads to use where applicable [1]"
+  echo ""
   echo "    Arguments from serratus-dl"
   echo "    <D>   Arguments from running serratus-dl passed to this script (optional)"
   echo ""
@@ -35,6 +38,7 @@ function usage {
 # PARSE INPUT =============================================
 # SRA Accession -S
 SRA=''
+THREADS='1'
 
 # Script Arguments -DPU
 DL_ARGS=''
@@ -43,11 +47,14 @@ DL_ARGS=''
 WORKDIR="$PWD"
 OUTNAME="$SRA"
 
-while getopts s:ak:D:P:U:d:oh FLAG; do
+while getopts s:n:D:d:o:h FLAG; do
   case $FLAG in
     # Input Options ---------
     s)
       SRA=$OPTARG
+      ;;
+    n)
+      THREADS=$OPTARG
       ;;
     D)
       DL_ARGS=$OPTARG
@@ -85,5 +92,9 @@ cd $WORKDIR
 
 echo "      fastq-dump --split-e $SRA"
 fastq-dump --split-e $SRA
+
+# TODO: Update to fasterq-dump
+echo "      fasterq-dump  $SRA -e $THREADS"
+fastq-dump $SRA -e $THREADS
 
 echo "      Download complete."

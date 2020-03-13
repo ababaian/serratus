@@ -31,7 +31,7 @@ function usage {
   echo "    -n    reads per fq-block [1000000]"
   echo "          approx 2.2Mb per 10k reads (single-end)"
   echo "              or 220Mb per 1M  reads"
-  echo "    -p    N parallel threads [1]"
+  echo "    -p    N parallel CPU threads [1]"
   echo "    -z    flag to NOT use gzip fq-blocks [ Default is .gz ]"
   echo ""
   echo "    Output options"

@@ -14,7 +14,7 @@ function usage {
   echo "    -h    Show this help/usage message"
   echo ""
   echo "    S3 Bucket parameters"
-  echo "    -k    S3 URL to upload data to [s3://serratus-public/fq-block]"
+  echo "    -k    S3 URL to upload data to [s3://serratus-public/fq-blocks]"
   echo "    -s    SRA/Accession name"
   echo "    -r    REGEX string to match files for uploading [\"*.[012].fq*\"]"
   echo ""
@@ -26,10 +26,10 @@ function usage {
   echo "    -d    Working directory [PWD]"
   echo "    -o    <output_prefix> [-s option]"
   echo ""
-  echo "ex: ./run_upload.sh -k s3://serratus-public/fq-block -s SRA1337"
+  echo "ex: ./run_upload.sh -k s3://serratus-public/fq-blocks -s SRA1337"
   echo ""
   echo "    Will upload all files matching *.[012].fq* in <working dir> to"
-  echo "    s3://serratus-public/fq-block/SRA1337/"
+  echo "    s3://serratus-public/fq-blocks/SRA1337/"
   echo ""
   exit 1
 }

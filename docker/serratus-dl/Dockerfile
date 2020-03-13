@@ -7,7 +7,7 @@ FROM amazonlinux:2 AS build_base
 # sudo yum -y install docker
 # sudo service docker start
 
-# sudo docker build -t serratus-dl:0 -t serratus-dl:latest .
+# sudo docker build --no-cache -t serratus-dl:0 -t serratus-dl:latest .
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
 
 #==========================================================
@@ -109,35 +109,35 @@ ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 # Set working directory to /home/serratus
 # Create a serratus user fro use of FUSE / fusera
 RUN adduser serratus
-ARG WORKDIR=/home/serratus
-ENV WORKDIR=/home/serratus
+ARG BASEDIR=/home/serratus
+ENV BASEDIR=/home/serratus
 RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
-RUN cd $WORKDIR; mkdir -p scripts
+RUN cd $BASEDIR; mkdir -p scripts
 
 # Serratus Scripts ==============================
 # URL to latest serratus repo (raw)
 ARG GIT_SERRATUS="https://raw.githubusercontent.com/ababaian/serratus/master/"
 
 ## /home/serratus/serratus-dl.sh
-RUN wget -O $WORKDIR/serratus-dl.sh \
+RUN wget -O $BASEDIR/serratus-dl.sh \
   $GIT_SERRATUS/scripts/serratus-dl/serratus-dl.sh
 
 ## /home/serratus/scripts/
   # run_download.sh
-RUN wget -O $WORKDIR/scripts/run_download.sh \
+RUN wget -O $BASEDIR/scripts/run_download.sh \
   $GIT_SERRATUS/scripts/serratus-dl/run_download.sh
 
   # run_split.sh (latest)
-RUN wget -O $WORKDIR/scripts/run_split.sh \
+RUN wget -O $BASEDIR/scripts/run_split.sh \
   $GIT_SERRATUS/scripts/serratus-dl/run_split.sh
 
   # run_upload.sh
-RUN wget -O $WORKDIR/scripts/run_upload.sh \
+RUN wget -O $BASEDIR/scripts/run_upload.sh \
   $GIT_SERRATUS/scripts/serratus-dl/run_upload.sh
 
 # Set script permissions
-RUN chmod 755 $WORKDIR/serratus-dl.sh
-RUN chmod 755 $WORKDIR/scripts/*
+RUN chmod 755 $BASEDIR/serratus-dl.sh
+RUN chmod 755 $BASEDIR/scripts/*
 
 #==========================================================
 # ENTRYPOINT ==============================================
@@ -158,5 +158,3 @@ ENTRYPOINT ["/bin/bash", "/home/serratus/serratus-dl.sh"]
 
 # sudo docker run --rm serratus-dl:0
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
-
-# fastq-dump SRR11183200
