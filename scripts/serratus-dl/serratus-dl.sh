@@ -214,6 +214,7 @@ function main_loop {
 
 # Query for job --------------------------------------------
 # ----------------------------------------------------------
+curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
 
   # TODO: Wrap job query into self-contained function?
   while true; do

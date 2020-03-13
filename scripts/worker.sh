@@ -21,8 +21,7 @@ function usage {
   echo "    -A    optional string of arguments to pass to container"
   echo "          i.e  '-k s3://alternative_storage_bucket/' "
   echo ""
-  echo "    Scheduler Information"
-  echo "    -u    URL/IP to query for Scheduler webserver"
+
   echo ""
   echo "    Worker Options"
   echo "    -w    Number of simultanious jobs to process"

@@ -10,6 +10,13 @@ FROM amazonlinux:2 AS build_base
 # sudo docker build --no-cache -t serratus-dl:0 -t serratus-dl:latest .
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
 
+# cd serratus/scheduler
+# sudo docker build -t scheduler:0 .
+# docker run -d --rm -p8000:8000 --name sch scheduler:0
+# curl -T /path/to/SraRunInfo.csv localhost:8000/add_sra_run_info
+
+# sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
+
 #==========================================================
 # Container Meta-data =====================================
 #==========================================================
