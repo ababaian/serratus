@@ -154,7 +154,7 @@ resource "aws_instance" "scheduler" {
   }
 }
 
-output "scheduler_dns" {
+output "public_dns" {
   value = aws_instance.scheduler.public_dns
 }
 
