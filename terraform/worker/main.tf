@@ -111,7 +111,8 @@ resource "aws_launch_configuration" "worker" {
   }
 
   user_data = <<EOF
-    curl -X POST ${var.scheduler_dns}:${var.scheduler_port}/jobs/split/
+    #!/bin/bash
+    curl -X POST ${var.scheduler_dns}:${var.scheduler_port}/
     EOF
 }
 
