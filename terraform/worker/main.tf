@@ -18,7 +18,6 @@ variable "scheduler_dns" {
 variable "instance_type" {
   description = "Type of node to use for the workers"
   type        = string
-  default     = "t3.nano"
 }
 
 variable "spot_price" {
