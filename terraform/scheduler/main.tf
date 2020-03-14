@@ -28,6 +28,10 @@ variable "scheduler_port" {
   default     = 8000
 }
 
+variable "instance_type" {
+  type = string
+}
+
 variable "allow_ssh" {
   description = "Allow SSH access to the nodes"
   type        = bool
@@ -134,7 +138,7 @@ resource "aws_cloudwatch_log_group" "scheduler" {
 resource "aws_instance" "scheduler" {
   ami                                  = data.aws_ami.amazon_linux_2.id
   instance_initiated_shutdown_behavior = "terminate"
-  instance_type                        = "t3.nano"
+  instance_type                        = var.instance_type
   vpc_security_group_ids               = concat([aws_security_group.scheduler.id], var.security_group_ids)
   key_name                             = "jeff@rosario"
   iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
