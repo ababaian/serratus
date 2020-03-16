@@ -1,18 +1,18 @@
 #!/bin/bash
 # ENTRYPOINT SCRIPT ===================
-# serrtaus-dl
+# serrtaus-align
 # =====================================
 set -e
 #
-# Base: serratus-Downloader (>0.1.1)
+# Base: serratus-aligner (0.1)
 # Amazon Linux 2 with Docker
 # AMI : aami-0fdf24f2ce3c33243
 # login: ec2-user@<ipv4>
 # base: 9 Gb
-# Container: serratus-dl:0.1
+# Container: serratus-align:0.1
 #
 
-# Test cmd: ./serratus-dl.sh -s SRR11166696
+# Test cmd: ./serratus-align.sh 
 # TODO: Consider switching to an external definition for RUNID
 # such that downstream scripts can easily access the 
 # $RUNID/ folder and it's files.
@@ -28,29 +28,31 @@ CONTAINER_VERSION='serratus-dl:0.1'
 # Usage
 function usage {
   echo ""
-  echo "Usage: docker exec serratus-dl -u [localhost:8000] -k <s3://bucket/fq-blocks> [OPTIONS]"
+  echo "Usage: docker exec serratus-align -u [localhost:8000] -k <s3://bucket/bam-blocks> [OPTIONS]"
   echo ""
   echo "    -h    Show this help/usage message"
   echo ""
   echo "    Required Fields"
   echo "    -u    <IP>:<PORT> to query for scheduler webserver [localhost:8000]"
-  echo "    -k    S3 bucket path for fq-blocks [s3://serratus-public/fq-blocks]"
+  echo "    -k    S3 bucket path for bam-blocks [s3://serratus-public/bam-blocks]"
   echo ""
-  echo "    Scheduler Information"
-  echo "    -w    (N/A) Number of parallel download operations to run [1]"
+  echo "    Alignment Parameters"
+  echo "    -a    Alignment software [bowtie2] (no alt. currently)"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
   echo ""
-  echo "    SRA Accession for sratools"
-  echo "    -s    (N/A) SRA Accession for direct-to-pipeline access"
+  echo "    Manual overwrites"
+  echo "    -s    (N/A) SRA Accession for direct-to-pipeline access (from scheduler)"
+  echo "    -q    (N/A) fastq-block(s) (s3 URL) to run aligner on"
+  echo "    -g    (N/A) Genome Reference name (from scheduler)"
+  echo "           genome index at s3://serratus-public/resources/<GENOME>/*"
   echo ""
   echo "    AWS / S3 Bucket parameters"
-  echo "    -a    Flag. Imports AWS IAM from this ec2-instance for container"
+  echo "    -w    Flag. Imports AWS IAM from this ec2-instance for container"
   echo "          EC2 instance must have been launched with correct IAM"
   echo "          (No alternative yet, hard set to TRUE)"
   echo ""
   echo "    Arguments as string to pass to downstream scripts"
-  echo "    -D    String of arguments to pass to 'run_download.sh <ARG>'"
-  echo "    -P    String of arguments to pass to 'run_split.sh <ARG>'"
+  echo "    -A    String of arguments to pass to 'run_bowtie2.sh <ARG>'"
   echo "    -U    String of arguments to pass to 'run_upload.sh <ARG>'"
   echo ""
   echo "    Output options"
@@ -70,33 +72,43 @@ RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Scheduler / Container Parameters
 SCHED='localhost:8000'
-WORKERS='1'
+S3_BUCKET='s3://serratus-public/bam-blocks'
 
-# SRA Accession -S
-SRA=''
+# Aligner
+ALIGNER='bowtie2'
 THREADS='1'
+
+# Inputs (manual overwrite)
+SRA=''
+GENOME=''
+S3_FQ0=''
+S3_FQ1=''
+S3_FQ2=''
 
 # AWS Options -ak
 AWS_CONFIG='TRUE'
-S3_BUCKET='s3://serratus-public/fq-blocks'
 
-# Script Arguments -DPU
-DL_ARGS=''
-SPLIT_ARGS=''
+# Script Arguments -AU
+ALIGN_ARGS=''
 UL_ARGS=''
 
 # Output options -do
 BASEDIR="/home/serratus"
 OUTNAME="$SRA"
 
-while getopts u:w:n:s:ak:D:P:U:d:oh FLAG; do
+while getopts u:k:a:n:s:g:0:1:2:A:U:d:owh FLAG; do
   case $FLAG in
-    # Input Options ---------
+    # Scheduler Options ---------
     u)
       SCHED=$OPTARG
       ;;
-    w)
-      WORKERS=$OPTARG
+    k)
+      S3_BUCKET=$OPTARG
+      ;;
+    # Aligner Options ---------
+    a)
+      #ALIGNER=$OPTARG
+      ALIGNER="bowtie2"
       ;;
     n)
       THREADS=$OPTARG
@@ -104,19 +116,24 @@ while getopts u:w:n:s:ak:D:P:U:d:oh FLAG; do
     s)
       SRA=$OPTARG
       ;;
-    a)
+    g)
+      GENOME=$OPTARG
+      ;;
+    0)
+      S3_FQ0=$OPTARG
+      ;;
+    1)
+      S3_FQ1=$OPTARG
+      ;;
+    2)
+      S3_FQ2=$OPTARG
+      ;;
+    w)
       AWS_CONFIG='TRUE'
       ;;
-
-    k)
-      S3_BUCKET=$OPTARG
-      ;;
     # SCRIPT ARGUMENTS -------
-    D)
-      DL_ARGS=$OPTARG
-      ;;
-    P)
-      SPLIT_ARGS=$OPTARG
+    A)
+      ALIGN_ARGS=$OPTARG
       ;;
     U)
       UL_ARGS='TRUE'
@@ -140,7 +157,7 @@ done
 shift $((OPTIND-1))
 
 # Check inputs --------------
-if [[ ( -z "$OUTNAME" ) ]]; then OUTNAME="$SRA"; fi
+#if [[ ( -z "$OUTNAME" ) ]]; then OUTNAME="$SRA"; fi
 
 # FUNCTIONS ===============================================
 # Worker process.  Run in a loop, grabbing data from the scheduler and
@@ -214,9 +231,23 @@ function main_loop {
 
 # Query for job --------------------------------------------
 # ----------------------------------------------------------
-curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
+# DATA NEEDED FROM SCHEDULER
+# SRA: SRA accession / run-name
+# PAIRED: [true / false] is there paired-end fq data to process, else un-paired
+# FQ0: S3 path to unpaired fq-block
+# FQ1: S3 path to paired fq-block 1/2
+# FQ2: S3 path to paired fq-block 2/2
+# BL_N: Block number
+# GENOME: genome reference name
+# ALIGN_ARG: Arguments to pass to aligner
+# 
+## Read Group meta-data (required for GATK) -LISPF
+# RGLB: Library Name / SRA Accession
+# RGID: Run ID / SRA Accession (?)
+# RGSM: Sample ID / BioSample
+# RGPO: Population / Experiment
+# RGPL: Platform [ILLUMINA]
 
-  # TODO: Wrap job query into self-contained function?
   while true; do
     echo "$WORKERID - Requesting job from Scheduler..."
     JOB_JSON=$(curl -s "$SCHED/start_split_job")
@@ -240,8 +271,23 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
         exit 1
     esac
 
-    # Parse SRA Accession ID
-    SRA=$(jq -r .acc_id <(echo $JOB_JSON))
+    # Parse Job JSON for run parameters
+    SRA=$(jq    -r .acc_id     <(echo $JOB_JSON))
+
+    PAIRED=$(jq -r .is_paired  <(echo $JOB_JSON))
+    BL_N=$(jq   -r .block_n    <(echo $JOB_JSON))
+    S3_FQ0=$(jq -r .s3_fq0     <(echo $JOB_JSON))
+    S3_FQ1=$(jq -r .s3_fq1     <(echo $JOB_JSON))
+    S3_FQ2=$(jq -r .s3_fq2     <(echo $JOB_JSON))
+
+    ALIGN_ARGS=$(jq -r .align_args <(echo $JOB_JSON))
+    GENOME=$(jq     -r .genome     <(echo $JOB_JSON))
+
+    RGLB=$(jq -r .acc_id        <(echo $JOB_JSON))
+    RGID=$(jq -r .acc_id        <(echo $JOB_JSON))
+    RGSM=$(jq -r .biosample_id  <(echo $JOB_JSON))
+    RGPO=$(jq -r .experiment_id <(echo $JOB_JSON))
+    RGPL=$(jq -r .platform      <(echo $JOB_JSON))
 
     # TODO: Allow the scheduler/main data-table to have arugments
     # which will be passed on to the downloader scripts
@@ -257,6 +303,7 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
     RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
     WORKDIR=$BASEDIR/$RUNID
     mkdir -p $WORKDIR; cd $WORKDIR
+    GENDIR=$BASEDIR/$GENOME
 
     echo "============================"
     echo "  serratus-align Pipeline   "
@@ -265,100 +312,112 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
     echo " version:   $PIPE_VERSION"
     echo " ami:       $AMI_VERSION"
     echo " container: $CONTAINER_VERSION"
-    echo " worker-id: $WORKER_ID"
     echo " run-id:    $RUNID"
     echo " sra:       $SRA"
-    echo " S3 url:    $S3_BUCKET"
-    echo ""
+    echo " block:     $BL_N"
+    echo " genome:    $GENOME"
+    echo " align arg: $ALIGN_ARGS"
+    echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RGPL"
 
-# RUN DOWNLOAD ==============================================
-    echo "  Running -- run_download.sh --"
-    echo "  $BASEDIR/scripts/run_download.sh -s $SRA $DL_ARGS"
 
-    bash $BASEDIR/scripts/run_download.sh -s $SRA -p $THREADS $DL_ARGS & wait
-
-    echo ''
-
-    # Detect downloaded fastq files for split logic
-    FQ0=$(ls *_0.fastq 2>/dev/null || true)
-    FQ1=$(ls *_1.fastq 2>/dev/null || true)
-    FQ2=$(ls *_2.fastq 2>/dev/null || true)
-
-    if [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
+# DOWNlOAD GENOME =========================================
+    if [ -d $GENDIR ]
     then
-      paired_exists=true
-      echo "  Paired-end reads detected"
+      echo "  $GENDIR found."
     else
-      paired_exists=false
-      echo "  Paired-end reads not-detected"
+      echo "  $GENDIR not found. Attempting download from"
+      echo "  s3://serratus-public/resources/$GENOME"
+      mkdir -p $GENEDIR; cd $GENEDIR
+
+      aws s3 cp --recursive s3://serratus-public/$GENOME/ $GENEDIR/
+
+      if [[ -e "$GENOME.fa" && -e "$GENOME.1.bt2" ]]
+      then
+        echo " ERROR: $GENOME.fa or $GENOME.1.bt2 index not found"
+        exit 1
+      else
+        echo "  genome download complete"
+      fi
     fi
 
-    if [[ ( -s $FQ0 && -n $FQ0 ) ]]
-    then
-      unpaired_exists=true
-      echo "  Unpaired reads detected"
-    else
-      unpaired_exists=false
-      echo "  unpaired reads not-detected"
-    fi
+    # Link genome files to workdir
+    cd $WORKDIR
+    ln -s $GENEDIR/* ./
 
-    if [[ "$paired_exists" = true && "$unpaired_exists" = true ]]
-    then
-      # Both paired-end and unpaired exist
-      # use only paired-end data
-      echo "   WARNING: Paired and Unpaired data detected"
-      echo "            Using only Paired-End Reads"
-      unpaired_exists=FALSE
-    fi
+# DOWNlOAD FQ Files =======================================
 
-# RUN SPLIT ===============================================
-    # Add FQ0 vs. FQ1+FQ2 logic here
-    echo "  Running -- run_split.sh --"
-
-    if [[ "$paired_exists" = true ]]
+    if [[ "$PAIRED" = true ]]
     then
-      echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-      bash $BASEDIR/scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA -p $THREADS $SPLIT_ARGS & wait
+      echo "  Downloading Paired-end fq-block data..."
+      aws s3 cp $S3_FQ1 ./
+      aws s3 cp $S3_FQ2 ./
 
-    elif [[ "$paired_exists" = true ]]
-    then
-      echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-      bash $BASEDIR/scripts/run_split.sh -f $FQ0 -o $SRA -p $THREADS $SPLIT_ARGS & wait
+      FQ1=$(basename $S3_FQ1)
+      FQ2=$(basename $S3_FQ2)
 
     else
-      echo "   ERROR: Neither paired or unpaired reads detected"
-      # Update scheduler with fail message
-      exit 1
+      echo "  Downloading unpaired fq-block data..."
+      aws s3 cp $S3_FQ0 ./
+
+      FQ0=$(basename $S3_FQ0)
     fi
 
-    # Count output blocks
-    N_paired=$( (ls *1.fq.* 2>/dev/null ) | wc -l)
-    echo "    N paired-end fq-blocks: $N_paired"
+    ## Test data
+    # S3_FQ1='s3://serratus-public/fq-blocks/SRR11166696/SRR11166696.1.fq.0000000000.gz'
+    # S3_FQ2='s3://serratus-public/fq-blocks/SRR11166696/SRR11166696.2.fq.0000000000.gz'
+    # RGLB='tmp'; RGID='tmp2'; RGSM='tmp3'; RGPO='tmp4'
 
-    N_unpaired=$((ls *0.fq.* 2>/dev/null ) | wc -l)
-    echo "    N unpaired   fq-blocks: $N_unpaired"
-    echo ""
+# RUN ALIGN ===============================================
+    echo "  Running -- run_bowtie2.sh --"
+
+    if [[ "$PAIRED" = true ]]
+    then
+      echo "  bash $BASEDIR/scripts/run_bowtie2.sh " &&\
+      echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
+      echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
+      echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
+
+      bash $BASEDIR/scripts/run_bowtie2.sh \
+        -1 $FQ1 -2 $FQ2 -x $GENOME \
+        -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
+        -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
+    else
+      echo "  bash $BASEDIR/scripts/run_bowtie2.sh " &&\
+      echo "    -0 $FQ0 -x $GENOME" &&\
+      echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
+      echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
+
+      bash $BASEDIR/scripts/run_bowtie2.sh \
+        -0 $FQ0 -x $GENOME \
+        -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
+        -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
+    fi
 
 # RUN UPLOAD ==============================================
-    echo "  Running -- run_upload.sh --"
-    echo "  ./scripts/run_upload.sh -k $S3_BUCKET -s $SRA $UL_ARGS"
+    echo "  Uploading bam-block data..."
+    echo "  $SRA.$BL_N.bam"
 
-    bash $BASEDIR/scripts/run_upload.sh \
-         -k $S3_BUCKET \
-         -s $SRA & wait
+    aws s3 cp $SRA.$BL_N.bam $S3_BUCKET/$SRA/
 
-    echo "  Uploading complete."
     echo "  Status: DONE"
 
 # CLEAN-UP ================================================
-    cd $BASEDIR; rm -rf $WORKDIR/*
-
   # Update to scheduler -------------------------------------
   # ---------------------------------------------------------
     # Tell the scheduler we're done
     echo "  $WORKERID - Job $SRA is complete. Update scheduler."
-    RESPONSE=$(curl -s "$SCHED/finish_split_job?job_id=$SRA&status=split_done&N=$N")
-    unset SRA
+    RESPONSE=$(curl -s "$SCHED/finish_split_job?job_id=$SRA&status=align_done&N=$N")
+
+    cd $BASEDIR; rm -rf $WORKDIR/*
+
+  # Free up fq-blocks from s3
+  if [[ "$PAIRED" = true ]]
+    then
+      aws s3 rm $S3_FQ1
+      aws s3 rm $S3_FQ2
+    else
+      aws s3 rm $S3_FQ0
+    fi
   done
 }
 

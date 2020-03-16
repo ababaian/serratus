@@ -207,12 +207,6 @@ echo""
 echo 'Initializing ...'
 echo ""
 
-
-# Create RUNID folder in WORKDIR
-mkdir -p $WORKDIR/$RUNID
-cd $WORKDIR/$RUNID
-ln -s "$GENOME"* ./
-
 if [ $paired_run = "T" ]
 then
   # Paired Read Alignment
@@ -315,5 +309,4 @@ else
     # Clean-up temporary files
     rm *tmp aligned_unsorted.bam
   fi
-
 fi
