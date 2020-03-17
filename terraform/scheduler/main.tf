@@ -126,6 +126,7 @@ resource "aws_instance" "scheduler" {
   vpc_security_group_ids               = concat([aws_security_group.scheduler.id], var.security_group_ids)
   key_name                             = "jeff@rosario"
   iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
+  monitoring                           = true
 
   user_data = <<-EOF
               #!/bin/bash
