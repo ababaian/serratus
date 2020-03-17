@@ -1,16 +1,3 @@
-data "aws_ami" "amazon_linux_2" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["packer-amazon-linux-2-docker"]
-  }
-
-  owners = ["241748083751"] # Jeff Taylor
-}
-
-data "aws_region" "current" {}
-
 variable "scheduler_port" {
   description = "HTTP port to use for the scheduler"
   type        = number
@@ -27,12 +14,6 @@ variable "allow_ssh" {
   default     = true
 }
 
-variable "up" {
-  description = "Spin up instances"
-  type = bool
-  default = true
-}
-
 variable "dev_cidrs" {
   description = "Remote IP Address, for testing access"
   type        = set(string)
@@ -47,6 +28,20 @@ variable "security_group_ids" {
   type = list(string)
   default = []
 }
+
+data "aws_ami" "amazon_linux_2" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["packer-amazon-linux-2-docker"]
+  }
+
+  owners = ["241748083751"] # Jeff Taylor
+}
+
+data "aws_region" "current" {}
+
 
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
