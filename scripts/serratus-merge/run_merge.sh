@@ -1,109 +1,121 @@
 #!/bin/bash
-# run_split
+# run_merge
 #
-# Base: serratus-Merge (>0.1.1)
-# AMI : aami-0fdf24f2ce3c33243
+# Base: serratus-Aligner (>0.1)
+# AMI : ami-059b454759561d9f4
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-# TODO: Consider switching to an external definition for RUNID
-# such that downstream scripts can easily access the 
-# $RUNID/ folder and it's files.
-# TODO: Script assumes a single fastq file (-f) is single-end reads
-# and not interleaved or mixed paire-end reads. Adapt script
-# to deal with these edge cases
-#
 PIPE_VERSION="0.1"
-AMI_VERSION='ami-0fdf24f2ce3c33243'
+AMI_VERSION='ami-059b454759561d9f4'
 
-#Usage function
 function usage {
   echo ""
-  echo "Usage: run_split.sh -b <input.bam> -o <output_prefix> [OPTIONS]"
-  echo "   or: run_split.sh -f <unpaired.fq>  -o <output_prefix> [OPTIONS]"
-  echo "   or: run_split.sh -1 <input.1.fq> -2 <input.2.fq>  -o <output_prefix> [OPTIONS]"
+  echo "Usage: run_merge.sh -b <bam-block prefix regex> -M '<samtools merge args>' [OPTIONS]"
   echo ""
-  echo "    BAM input req"
-  echo "    -b    path to input bam file. Auto-detect single/paired-end"
+  echo "    -h    Show this help/usage message"
   echo ""
-  echo "    Fastq input req: (-1 <1.fq> -2 <2.fq> ) || -f <in.fq>"
-  echo "    -f    path to single-end reads"
-  echo "    -1    path to fastq paired-end reads 1"
-  echo "    -2    path to fastq paired-end reads 2"
+  echo "    Required Parameters"
+  echo "    -b    A regex string which matches the prefix the bam-block files in"
+  echo"           working in base directory"
+  echo "          i.e."
+  echo "          if merging SRR1337.001.bam, SRR1337.002.bam, ... , SRR1337.666.bam"
+  echo "          then  [-b 'SRR1337'] or  [-b 'SRR*'] will both work"
+  echo "    -s    SRA Accession"
   echo ""
-  echo "    fq-block parameters"
-  echo "    -n    reads per fq-block [1000000]"
-  echo "          approx 2.2Mb per 10k reads (single-end)"
-  echo "              or 220Mb per 1M  reads"
-  echo "    -p    N parallel threads [1]"
-  echo "    -z    flag to gzip fq-blocks [F]"
+  echo "    Merge Parameters"
+  echo "    -n    parallel CPU threads to use where applicable  [1]"
+  echo "    -i    Flag. Do not generate bam.bai index file"
+  echo "    -f    Flag. Do not generate flagstat summary file"
+  echo "    -r    Flag. Do not chromosome sort output"
+  echo ""
+  echo "    Arguments as string to pass to `samtools merge` command"
+  echo "    -M    String of arguments"
   echo ""
   echo "    Output options"
-  echo "    -d    Working directory [$PWD]"
-  echo "    -o    <output_filename_prefix>"
-  echo "    (N/A)-!    Debug mode, will not rm intermediate files"
+  echo "    -d    Work directory in container with bam-block [pwd]"
+  echo "    -o    <output_filename_prefix> [Defaults to SRA_ACCESSION]"
   echo ""
-  echo "    Outputs: <output_prefix>.bam"
-  echo "             <output_prefix>.bam.bai"
-  echo "             <output_prefix>.flagstat"
+  echo "    Outputs a sorted Uploaded to s3: "
+  echo "          <output_prefix>.bam, <output_prefix>.bam.bai, <output_prefix>.flagstat"
   echo ""
-  echo "ex: ./run_split.sh -b tester.bam -o testFromBam"
-  echo "ex: ./run_split.sh -f SRA1337.fq -n 10000 -p 8 -z -o SRA1337"
+  echo "ex: bash run_merge.sh -b 'SRR*' -M '-l 9'"
   exit 1
 }
 
 # PARSE INPUT =============================================
-# Initialize input options -b012
-BAM=""
-# Input Fastq files - paired 1+2 | unknown 0
-FQ1=""
-FQ2=""
-FQ0=""
+# Generate random alpha-numeric for run-id
+RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
-# fq-block parameters -nzp
-BLOCKSIZE=1000000
-GZIP_FLAG="FALSE"
-THREADS="1"
+# Scheduler / Container Parameters
+SCHED='localhost:8000'
+S3_BUCKET='s3://serratus-public/out'
+
+# Merge Options
+THREADS='1'
+INDEX='true'
+FLAGSTAT='true'
+
+# Inputs (manual overwrite)
+SRA=''
+S3_BAMS=''
+GENOME=''
+
+# AWS Options -ak
+AWS_CONFIG='TRUE'
+
+# Script Arguments -AU
+MERGE_ARGS=''
 
 # Output options -do
-WORKDIR="$PWD"
-OUTNAME=''
-DEBUG='F'
+BASEDIR="/home/serratus"
+OUTNAME="$SRA"
 
-while getopts b:f:1:2:n:p:zd:o:!hz FLAG; do
+while getopts u:k:n:s:b:g:M:d:o:whif FLAG; do
   case $FLAG in
-    # Input Options ---------
-    b)
-      BAM=$(readlink -f $OPTARG)
+    # Scheduler Options -----
+    u)
+      SCHED=$OPTARG
+      ;;
+    k)
+      S3_BUCKET=$OPTARG
+      ;;
+    # Merge Options ---------
+    n)
+      THREADS=$OPTARG
+      ;;
+    i)
+      INDEX="false"
       ;;
     f)
-      FQ0=$(readlink -f $OPTARG)
+      FLAGSTAT="false"
       ;;
-    1)
-      FQ1=$(readlink -f $OPTARG)
+    # Manual Overwrite ------
+    s)
+      SRA=$OPTARG
       ;;
-    2)
-      FQ2=$(readlink -f $OPTARG)
+    g)
+      GENOME=$OPTARG
       ;;
-    # fq-block options -------
-    n)
-      BLOCKSIZE=$OPTARG
+    b)
+      S3_BAMS=$OPTARG
       ;;
-    z)
-      GZIP_FLAG='TRUE'
+    w)
+      AWS_CONFIG='TRUE'
       ;;
-    p)
-      THREADS=$OPTARG
+    # SCRIPT ARGUMENTS -------
+    A)
+      ALIGN_ARGS=$OPTARG
+      ;;
+    U)
+      UL_ARGS='TRUE'
       ;;
     # output options -------
     d)
-      WORKDIR=$OPTARG
+      BASEDIR=$OPTARG
       ;;
     o)
       OUTNAME=$OPTARG
-      ;;
-    !)
-      DEBUG="T"
       ;;
     h)  #show help ----------
       usage
@@ -118,181 +130,173 @@ shift $((OPTIND-1))
 
 # Check inputs --------------
 
-if [[ ( -z "$BAM" ) && ( -z "$FQ0" ) && ( -z "$FQ1" || -z "$FQ2" ) ]]
+# Fastq required inputs: FQ1 and FQ2 or FQ0
+paired_run=''
+if [ -z "$FQ1" ] & [ -z "$FQ2" ]
 then
-  echo "(-b) .bam         OR"
-  echo "(-f) .fq unpaired OR"
-  echo "(-1 -2) 1.fq and 2.fq paired-end fastq input required"
+  if [ -z "$FQ0" ]
+  then
+    echo "Fastq input required. Either -1 & -2, or -0"
+    usage
+  else
+    paired_run="F"
+  fi
+else
+  paired_run="T"
+fi
+
+# Required parameters
+if [ -z "$GENOME" ]; then
+  echo "-x <genome> required."
   usage
 fi
 
-if [ -z $OUTNAME ]
+if [[ -z "$RGID" || -z "$RGSM" || -z "$RGPO" ]]
 then
-  echo "(-o) output prefix is required."
+  echo "-I -S -P read-groups required"
   usage
 fi
 
-# SPLIT ===================================================
+if [ -z "$OUTNAME" ]
+then
+  echo "-o <output_name> required"
+  usage
+fi
+
+# If RGLB is not defined; use <output_name>
+if [ -z "$RGLB" ]
+then
+  RGLB=$OUTNAME
+fi
+
+# ALIGN ===================================================
 # Generate random alpha-numeric for run-id
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Logging to STDOUT
-echo " -- fq-split Alignment Pipeline -- "
-echo " date:      $(date)"
-echo " version:   $PIPE_VERSION"
-echo " ami:       $AMI_VERSION"
-echo " run-id:    $RUNID"
-echo " workdir:   $WORKDIR"
-echo " input(s):  $BAM $FQ0 $FQ1 $FQ2"
-echo " output:    $OUTNAME"
-echo " blockSize: $BLOCKSIZE"
+echo " -- bowtie2 Alignment Pipeline -- "
+echo " date:    $(date)"
+echo " version: $PIPE_VERSION "
+echo " ami:     $AMI_VERSION  "
+echo " output:  $OUTNAME"
+echo " run-id:  $RUNID"
+
+if [ $paired_run = "T" ]
+then
+  echo " type:    paired"
+  echo " fq1:     $FQ1"
+  echo " fq2:     $FQ2"
+  echo " output:  $OUTNAME.bam"
+else
+  echo " type:    single-end"
+  echo " fq0:     $FQ0"
+  echo " output:  $OUTNAME.se.bam"
+fi
 
 echo""
 echo 'Initializing ...'
 echo ""
 
-# Create RUNID folder in WORKDIR
-mkdir -p $WORKDIR/$RUNID
-cd $WORKDIR/$RUNID
-
-# fq-block generation function ----------------------------
-  fq-block-generate () {
-    # Input a fastq file; output fq-blocks
-    echo "  Spliting $1 into fq-blocks of $BLOCKSIZE reads."
-
-    # Split in-fq to $BLOCKSIZE reads per file (4lines/read)
-    # will generate n * input.fq.abcdefghi.gz files
-    let LINESIZE=4*BLOCKSIZE
-    split -a 10 -l $LINESIZE $1 "$1".
-    rm $1
-
-    # gzip fq-blocks in parallel
-    if [ $GZIP_FLAG = "TRUE" ]
-    then
-      pigz -n $THREADS "$1"*
-    fi
-  }
-
-# BAM-based input -----------------------------------------
-if [[ -s $BAM && -n $BAM ]]
+if [ $paired_run = "T" ]
 then
-  echo "  Processing bam-input"
-  # Set created FQ filename variables
-  FQ0=$OUTNAME.0.fq
-  FQ1=$OUTNAME.1.fq
-  FQ2=$OUTNAME.2.fq
+  # Paired Read Alignment
+  echo "bowtie2 $BT2_ARG -p $THREADS \\"
+  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
+  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
+  echo "  -x hgr1 -1 $FQ1 -2 $FQ2 | \\"
+  echo "samtools view -bS - > aligned_unsorted.bam"
 
-  # Sort input bam by read-name (for paired-end)
-  samtools sort -n -l 0 $BAM |
-  samtools fastq \
-    -0 $FQ0 \
-    -1 $FQ1 -2 $FQ2 \
-    -@ $THREADS -
+  bowtie2 $BT2_ARG -p $THREADS \
+    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
+    --rg PL:$RGPL --rg PU:$RGPU \
+    -x hgr1 -1 $FQ1 -2 $FQ2 | \
+    samtools view -bS - > aligned_unsorted.bam
 
-  # Count how many lines in each file
-  lc0=$(wc -l $FQ0 | cut -f1 -d' ' -)
-  lc1=$(wc -l $FQ1 | cut -f1 -d' ' -)
-  lc2=$(wc -l $FQ2 | cut -f1 -d' ' -)
+  echo ""
+  echo "Alignment complete."
 
-  # For Paired-End Reads; ensure equal read-pairs
-  # to continue
-  if [ $lc1 != $lc2 ]
+  if [ $DEBUG = "F" ]
   then
-    echo "Early Error: number of lines in 1.fq != 2.fq"
-    echo "There are unqueal paired-end reads or mixed paired/single"
-    echo "Force input as unpaired or convert to ubam and retry"
-    exit 2
-  else
-    echo "all good!"
+    echo "clearing fq-files"
+    # Clean-up FQ files to save space
+    rm $FQ1 $FQ2
   fi
 
-  if [ $lc0 != "0" ]
+  echo "Extracting mapped reads + unmapped pairs"
+
+  # Extract aligned reads header
+    samtools view -H aligned_unsorted.bam > align.header.tmp
+
+  # Extract Mapped Reads and their unmapped pairs
+    samtools view -b -F 4 aligned_unsorted.bam > align.F4.bam  # mapped
+    samtools view -b -f 4 -F 8 aligned_unsorted.bam > align.f4F8.bam # unmapped-pair
+
+  # Re-compile bam output
+    samtools cat -h align.header.tmp -o align.tmp.bam align.F4.bam align.f4F8.bam
+    samtools sort -@ $THREADS -O BAM align.tmp.bam > "$OUTNAME".bam
+
+  echo "Flagstat and index of output"
+
+  # Flagstat and index
+    samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
+    samtools index "$OUTNAME".bam
+
+  # OUTPUT: $OUTNAME.bam
+  # OUTPUT: $OUTNAME.bam.bai
+  # OUTPUT: $OUTNAME.flagstat
+
+  if [ $DEBUG = "F" ]
   then
-    fq-block-generate $FQ0
-  else
-    echo "$FQ0 is empty... skipping"
+    # Clean-up temporary files
+    rm *tmp aligned_unsorted.bam align.F4.bam align.f4F8.bam
   fi
 
-  if [ $lc1 != "0" ]
-  then
-    fq-block-generate $FQ1
-  else
-    echo "$FQ1 is empty... skipping"
-  fi
-
-  if [ $lc2 != "0" ]
-  then
-    fq-block-generate $FQ2
-  else
-    echo "$FQ2 is empty... skipping"
-  fi
-
-# Paired-End FQ input -------------------------------------
-elif [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
-then
-  echo "  Processing paired-end fq-input"
-  # Link fq to RUNID folder
-  ln -s $FQ1 $OUTNAME.1.fq
-  ln -s $FQ2 $OUTNAME.2.fq
-  FQ1=$OUTNAME.1.fq
-  FQ2=$OUTNAME.2.fq
-
-  # Count how many lines in each file
-  lc1=$(wc -l $FQ1 | cut -f1 -d' ' -)
-  lc2=$(wc -l $FQ2 | cut -f1 -d' ' -)
-
-  # For Paired-End Reads; ensure equal read-pairs
-  # to continue
-  if [ $lc1 != $lc2 ]
-  then
-    echo "Early Error: number of lines in 1.fq != 2.fq"
-    echo "There is a loss of paired-end reads."
-    echo "Force-unpaired or recompile"
-    exit 2
-  else
-    echo "all good!"
-  fi
-
-  if [ $lc1 != "0" ]
-  then
-    fq-block-generate $FQ1
-  else
-    echo "$FQ1 is empty... skipping"
-  fi
-
-  if [ $lc2 != "0" ]
-  then
-    fq-block-generate $FQ2
-  else
-    echo "$FQ2 is empty... skipping"
-  fi
-
-# Single-End FQ input -------------------------------------
-elif [[ -s $FQ0 && -n $FQ0 ]]
-then
-  # Link fq to RUNID folder
-  ln -s $FQ0 $OUTNAME.0.fq
-  FQ0=$OUTNAME.0.fq
-
-  echo "  Processing single-end fq-input"
-  # Count how many lines in each file
-  lc0=$(wc -l $FQ0 | cut -f1 -d' ' -)
-
-  # Assume a single fastq file is single-end reads
-  if [ $lc0 != "0" ]
-  then
-    fq-block-generate $FQ0
-  else
-    echo "$FQ0 is empty... skipping"
-  fi
 else
-  echo "Error: input(s) do not exist or are non-readable"
-  # Something is wrong, one of BAM, FQ0, FQ1 and FQ2 should exist.
-  exit 3
+  # Unpaired Read Alignment
+  echo "bowtie2 $BT2_ARG -p $THREADS \\"
+  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
+  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
+  echo "  -x hgr1 -0 $FQ0 | \\"
+  echo "samtools view -bS - > aligned_unsorted.bam"
+
+  bowtie2 $BT2_ARG -p $THREADS \
+    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
+    --rg PL:$RGPL --rg PU:$RGPU \
+    -x hgr1 -0 $FQ0 | \
+    samtools view -bS - > aligned_unsorted.bam
+
+  echo ""
+  echo "Alignment complete."
+
+  if [ $DEBUG = "F" ]
+  then
+    echo "clearing fq-files"
+    # Clean-up FQ
+    rm $FQ0
+  fi
+  
+  echo "Extracting mapped reads + unmapped pairs"
+
+  ## NOTE: Possibly skip sort / index steps if
+  ## using fq/bam-blocks and not complete bam files
+  # samtools flagstat > "$OUTNAME".flagstat
+  # samtools view -bh -F 4 aligned_unsorted > "$OUTNAME".se.bam
+  
+  # Extract Mapped Reads and sort (flag 0x4)
+  samtools view -bh -F 4 aligned_unsorted.bam | \
+  samtools sort -@ $THREADS -O BAM - > "$OUTNAME".se.bam
+
+  # Flagstat and index
+  samtools flagstat aligned_unsorted.bam > "$OUTNAME".se.flagstat
+  samtools index "$OUTNAME".se.bam
+
+  # OUTPUT: $OUTNAME.se.bam
+  # OUTPUT: $OUTNAME.se.bam.bai
+  # OUTPUT: $OUTNAME.se.flagstat
+
+  if [ $DEBUG = "F" ]
+  then
+    # Clean-up temporary files
+    rm *tmp aligned_unsorted.bam
+  fi
 fi
-
-# :)
-
-# Read paired-end FASTQ files into a BAM-stream, n-sort for splitting
-
-#gatk FastqToSam -F1 NA12878.1.fq.gz -F2 NA12878.2.fq.gz -O test.bam -SM test_sample
