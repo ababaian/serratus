@@ -92,7 +92,7 @@ resource "aws_cloudwatch_log_group" "worker" {
 }
 
 resource "aws_launch_configuration" "worker" {
-  name_prefix     = "tf-serratus-worker-"
+  name_prefix     = "tf-serratus-${var.name}-"
   image_id        = data.aws_ami.amazon_linux_2.id
   instance_type   = var.instance_type
   security_groups = concat([aws_security_group.worker.id], var.security_group_ids)
@@ -111,6 +111,9 @@ resource "aws_launch_configuration" "worker" {
 }
 
 resource "aws_autoscaling_group" "worker" {
+  # Forces a change in launch configuration to create a new ASG.
+  name                 = "tf-asg-${aws_launch_configuration.worker.name}"
+
   launch_configuration = aws_launch_configuration.worker.id
   availability_zones   = data.aws_availability_zones.all.names
 
