@@ -48,7 +48,7 @@ variable "asg_size" {
 }
 
 variable "security_group_ids" {
-  type = list(string)
+  type    = list(string)
   default = []
 }
 
@@ -97,6 +97,7 @@ resource "aws_launch_configuration" "worker" {
   instance_type   = var.instance_type
   security_groups = concat([aws_security_group.worker.id], var.security_group_ids)
   spot_price      = var.spot_price
+  key_name        = "jeff@rosario"
 
   # Launch configs can't be destroyed while attached to an ASG.
   lifecycle {
