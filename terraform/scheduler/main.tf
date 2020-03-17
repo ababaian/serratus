@@ -4,17 +4,11 @@ provider "aws" {
 }
 
 data "aws_ami" "amazon_linux_2" {
-  # A simple AMI, built from Amazon Linux 2, plus the following script:
-  # yum update -yq
-  # yum install docker -yq
-  # systemctl enable docker
-  #
-  # TODO: Put this in packer, so we can switch Regions / Clouds more easily
   most_recent = true
 
   filter {
     name   = "name"
-    values = ["amazon_linux_2_docker"]
+    values = ["packer-amazon-linux-2-docker"]
   }
 
   owners = ["241748083751"] # Jeff Taylor
