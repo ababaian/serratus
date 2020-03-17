@@ -119,6 +119,11 @@ resource "aws_cloudwatch_log_group" "scheduler" {
   name = "scheduler"
 }
 
+resource "aws_eip" "sch" {
+  instance = aws_instance.scheduler.id
+  vpc = true
+}
+
 resource "aws_instance" "scheduler" {
   ami                                  = data.aws_ami.amazon_linux_2.id
   instance_initiated_shutdown_behavior = "terminate"
@@ -144,6 +149,6 @@ resource "aws_instance" "scheduler" {
 }
 
 output "public_dns" {
-  value = aws_instance.scheduler.public_dns
+  value = aws_eip.sch.public_dns
 }
 
