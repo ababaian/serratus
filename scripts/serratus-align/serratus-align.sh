@@ -23,7 +23,7 @@ set -e
 #
 PIPE_VERSION="0.1"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
-CONTAINER_VERSION='serratus-dl:0.1'
+CONTAINER_VERSION='serratus-align:0.1'
 
 # Usage
 function usage {
@@ -96,7 +96,7 @@ UL_ARGS=''
 BASEDIR="/home/serratus"
 OUTNAME="$SRA"
 
-while getopts u:k:a:n:s:g:0:1:2:A:U:d:owh FLAG; do
+while getopts u:k:a:n:s:g:0:1:2:A:U:d:o:wh FLAG; do
   case $FLAG in
     # Scheduler Options ---------
     u)
@@ -249,7 +249,7 @@ function main_loop {
 # RGPL: Platform [ILLUMINA]
 
   while true; do
-    echo "$WORKERID - Requesting job from Scheduler..."
+    echo "$WORKERID - Requesting align job from Scheduler..."
     JOB_JSON=$(curl -s "$SCHED/start_split_job")
     ACTION=$(jq -r .action <(echo $JOB_JSON))
 
@@ -290,12 +290,7 @@ function main_loop {
     RGPL=$(jq -r .platform      <(echo $JOB_JSON))
 
     # TODO: Allow the scheduler/main data-table to have arugments
-    # which will be passed on to the downloader scripts
-    
-    # TODO: If we're going to lock the system so the split commands
-    # in each container don't collide on the CPU then we need to mount
-    # a folder from filesystem into the container and `flock` a file
-    # on the shared mount. For now use 1 worker per download EC2?
+    # which will be passed on to the aligner scripts
 
 # Run job --------------------------------------------------
 # ----------------------------------------------------------
