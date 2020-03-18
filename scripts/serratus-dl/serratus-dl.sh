@@ -147,19 +147,6 @@ if [[ ( -z "$OUTNAME" ) ]]; then OUTNAME="$SRA"; fi
 # processing it.
 
 function boot_procedure {
-  # AUTHENTICATE AWS ========================================
-  echo "  Authenticating AWS credentials"
-
-  # Create aws key (read from ec2 IAM) (run at start-up of container)
-  export AWS_ACCESSKEYID=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance/ | jq -r '.AccessKeyId' )
-  export AWS_SECRETKEY=$(curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance/ | jq -r '.SecretAccessKey' )
-  
-  # Create a key file
-  export AWS_KEY="$WORKDIR/key.csv"
-  echo User name,Password,Access key ID,Secret access key,Console login link > $AWS_KEY
-  echo default,,$AWS_ACCESSKEYID,$AWS_SECRETKEY, >> $AWS_KEY
-  chmod 400 $AWS_KEY
-
   # Pass credentials to sra-toolkit via vdb-config
   # Current version requires a manual
   # vdb-config -i initialization
@@ -167,10 +154,7 @@ function boot_procedure {
   # TODO: Move vdb-config -i hack to Dockerfile/installation
   mkdir -p /root/.ncbi
   aws s3 cp s3://serratus-public/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
-  chmod 500 /root/.ncbi/user-settings.mkfg
-  vdb-config --accept-aws-charges yes \
-    --report-cloud-identity yes \
-    --set-aws-credentials $AWS_KEY
+  vdb-config --report-cloud-identity yes
 
   # Download AWS S3 test token
   aws s3 cp s3://serratus-public/aws-test-token.jpg $WORKDIR/aws-test-token.jpg
