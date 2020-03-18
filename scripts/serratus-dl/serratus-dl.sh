@@ -196,10 +196,6 @@ function main_loop {
     # what if we & wait on the whole main_loop function instead? Test this.
     WORKER_ID=$1
 
-    # Query for job --------------------------------------------
-    # ----------------------------------------------------------
-    curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
-
     # TODO: Wrap job query into self-contained function?
     while true; do
         echo "$WORKERID - Requesting job from Scheduler..."
