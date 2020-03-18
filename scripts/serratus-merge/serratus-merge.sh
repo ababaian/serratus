@@ -81,7 +81,7 @@ FLAGSTAT='true'
 
 # Inputs (manual overwrite)
 SRA=''
-S3_BAMS=''
+S3_OUT=''
 GENOME=''
 
 # AWS Options -ak
@@ -121,7 +121,7 @@ while getopts u:k:n:s:b:g:M:d:o:whif FLAG; do
       GENOME=$OPTARG
       ;;
     b)
-      S3_BAMS=$OPTARG
+      S3_OUT=$OPTARG
       ;;
     w)
       AWS_CONFIG='TRUE'
@@ -152,7 +152,11 @@ done
 shift $((OPTIND-1))
 
 # Check inputs --------------
-#if [[ ( -z "$OUTNAME" ) ]]; then OUTNAME="$SRA"; fi
+if [ -z $S3_BAM ]
+then
+  echo "(-o) output prefix is required."
+  usage
+fi
 
 # FUNCTIONS ===============================================
 # Worker process.  Run in a loop, grabbing data from the scheduler and
@@ -289,85 +293,54 @@ function main_loop {
     echo " make flagstat: $FLAGSTAT"
     echo " merge arg: $MERGE_ARGS"
 
-# DOWNlOAD GENOME =========================================
-    if [ -d $GENDIR ]
-    then
-      echo "  $GENDIR found."
-    else
-      echo "  $GENDIR not found. Attempting download from"
-      echo "  s3://serratus-public/resources/$GENOME"
-      mkdir -p $GENEDIR; cd $GENEDIR
+# COUNT + DL BLOCKS =======================================
+    # Query S3_OUT and count number of matching files
+    # which should match BL_N parameter from scheduler
 
-      aws s3 cp --recursive s3://serratus-public/$GENOME/ $GENEDIR/
+    # If there is a terminal slash on S3_BAM remove it
+    S3_BAM=$(echo $S3_BAM | sed -i 's/\/$//g' -)
+    BL_COUNT=$(aws s3 ls $S3_BAM/ | wc -l | cut -f1 -d' ' -)
 
-      if [[ -e "$GENOME.fa" && -e "$GENOME.1.bt2" ]]
-      then
-        echo " ERROR: $GENOME.fa or $GENOME.1.bt2 index not found"
-        exit 1
-      else
-        echo "  genome download complete"
-      fi
-    fi
+    if [[ "$BL_N" != "BL_COUNT" ]]
+     then
+       echo "  ERROR: Number of bam-blocks in $S3_OUT"
+       echo "         is not equal to the expected $BL_N"
+       echo ""
+       echo "  aws s3 ls $S3_BAM/"
+       echo ""
+       aws s3 ls $S3_BAM/
+       exit 1
+     fi
 
-    # Link genome files to workdir
-    cd $WORKDIR
-    ln -s $GENEDIR/* ./
+     # Download bam-blocks
+     aws s3 cp $S3_BAM ./
 
-# DOWNlOAD FQ Files =======================================
+# RUN MERGE ===============================================
+    echo "  Running -- run_merge.sh --"
+    echo ""
+    bash $BASEDIR/scripts/run_merge.sh -s $SRA -b "*bam" 
 
-    if [[ "$PAIRED" = true ]]
-    then
-      echo "  Downloading Paired-end fq-block data..."
-      aws s3 cp $S3_FQ1 ./
-      aws s3 cp $S3_FQ2 ./
-
-      FQ1=$(basename $S3_FQ1)
-      FQ2=$(basename $S3_FQ2)
-
-    else
-      echo "  Downloading unpaired fq-block data..."
-      aws s3 cp $S3_FQ0 ./
-
-      FQ0=$(basename $S3_FQ0)
-    fi
-
-    ## Test data
-    # S3_FQ1='s3://serratus-public/fq-blocks/SRR11166696/SRR11166696.1.fq.0000000000.gz'
-    # S3_FQ2='s3://serratus-public/fq-blocks/SRR11166696/SRR11166696.2.fq.0000000000.gz'
-    # RGLB='tmp'; RGID='tmp2'; RGSM='tmp3'; RGPO='tmp4'
-
-# RUN ALIGN ===============================================
-    echo "  Running -- run_bowtie2.sh --"
-
-    if [[ "$PAIRED" = true ]]
-    then
-      echo "  bash $BASEDIR/scripts/run_bowtie2.sh " &&\
-      echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
-      echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
-      echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
-
-      bash $BASEDIR/scripts/run_bowtie2.sh \
-        -1 $FQ1 -2 $FQ2 -x $GENOME \
-        -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
-        -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
-    else
-      echo "  bash $BASEDIR/scripts/run_bowtie2.sh " &&\
-      echo "    -0 $FQ0 -x $GENOME" &&\
-      echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
-      echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
-
-      bash $BASEDIR/scripts/run_bowtie2.sh \
-        -0 $FQ0 -x $GENOME \
-        -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
-        -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
-    fi
 
 # RUN UPLOAD ==============================================
-    echo "  Uploading bam-block data..."
-    echo "  $SRA.$BL_N.bam"
+    echo "  Uploading final bam data..."
 
-    aws s3 cp $SRA.$BL_N.bam $S3_BUCKET/$SRA/
+    if [[ -s "$SRA.bam" ]]
+    then
+      echo "  ...$SRA.bam detected. Uploading."
+      aws s3 cp $SRA.bam $S3_OUT/bam/
+    fi
+    
+    if [[ -s "$SRA.bam.bai" ]]
+    then
+      echo "  ...$SRA.bam.bai detected. Uploading."
+      aws s3 cp $SRA.bam.bai $S3_OUT/bam/
+    fi
 
+    if [[ -s "$SRA.flagstat" ]]
+    then
+      echo "  ...$SRA.flagstat detected. Uploading."
+      aws s3 cp $SRA.flagstat $S3_OUT/flagstat/
+    fi    
     echo "  Status: DONE"
 
 # CLEAN-UP ================================================
@@ -379,14 +352,8 @@ function main_loop {
 
     cd $BASEDIR; rm -rf $WORKDIR/*
 
-  # Free up fq-blocks from s3
-  if [[ "$PAIRED" = true ]]
-    then
-      aws s3 rm $S3_FQ1
-      aws s3 rm $S3_FQ2
-    else
-      aws s3 rm $S3_FQ0
-    fi
+    # Free up bam-blocks from s3
+    aws s3 rm --recursive $S3_BAM
   done
 }
 
