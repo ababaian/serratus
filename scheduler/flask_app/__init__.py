@@ -2,7 +2,7 @@
 them information about work that needs doing."""
 import os
 
-from flask import Flask
+from flask import Flask, jsonify
 from . import db, jobs
 
 
@@ -29,6 +29,10 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
+
+    @app.route('/status')
+    def status():
+        return jsonify({'status': 'up'})
 
     app.register_blueprint(jobs.bp)
 

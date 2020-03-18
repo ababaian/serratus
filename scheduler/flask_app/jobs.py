@@ -43,7 +43,7 @@ def start_split_job():
 
     if acc is None:
         # TODO: Think about this behaviour
-        return jsonify({'action': 'shutdown'})
+        return jsonify({'action': 'wait'})
 
     acc.state = 'splitting'
     session.add(acc)
@@ -135,7 +135,7 @@ def start_align_job():
         # TODO: If we got no results, then could be:
         #    * Waiting for split nodes: hang tight
         #    * No more work: shutdown
-        return jsonify({'action': 'shutdown'})
+        return jsonify({'action': 'wait'})
 
     block, acc = query
 
@@ -206,7 +206,7 @@ def start_merge_job():
 
     if acc is None:
         # TODO: Think about this behaviour
-        return jsonify({'action': 'shutdown'})
+        return jsonify({'action': 'wait'})
 
     acc.state = 'merging'
     session.add(acc)
