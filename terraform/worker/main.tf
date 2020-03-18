@@ -91,6 +91,12 @@ resource "aws_cloudwatch_log_group" "worker" {
   name = "worker"
 }
 
+module "iam_role" {
+  source = "../iam_role"
+  name = var.name
+  policy_arns = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+}
+
 resource "aws_launch_configuration" "worker" {
   name_prefix     = "tf-serratus-${var.name}-"
   image_id        = data.aws_ami.amazon_linux_2.id
@@ -98,6 +104,7 @@ resource "aws_launch_configuration" "worker" {
   security_groups = concat([aws_security_group.worker.id], var.security_group_ids)
   spot_price      = var.spot_price
   key_name        = "jeff@rosario"
+  iam_instance_profile = module.iam_role.instance_profile.name
 
   # Launch configs can't be destroyed while attached to an ASG.
   lifecycle {

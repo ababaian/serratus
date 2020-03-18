@@ -42,7 +42,6 @@ data "aws_ami" "amazon_linux_2" {
 
 data "aws_region" "current" {}
 
-
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
   ingress {
@@ -69,50 +68,9 @@ resource "aws_security_group" "scheduler" {
   }
 }
 
-resource "aws_iam_role" "scheduler" {
+module "iam_role" {
+  source = "../iam_role"
   name = "scheduler"
-
-  assume_role_policy = <<EOF
-{
-		"Version": "2012-10-17",
-		"Statement": [
-				{
-						"Action": "sts:AssumeRole",
-						"Principal": {
-							"Service": "ec2.amazonaws.com"
-						},
-						"Effect": "Allow",
-						"Sid": ""
-				}
-		]
-}
-EOF
-}
-
-resource "aws_iam_instance_profile" "scheduler" {
-  name = "scheduler"
-  role = aws_iam_role.scheduler.name
-}
-
-resource "aws_iam_role_policy" "scheduler" {
-  name = "scheduler"
-  role = aws_iam_role.scheduler.id
-
-  policy = <<EOF
-{
-	"Version": "2012-10-17",
-	"Statement": [
-		{
-			"Action": [
-				"logs:CreateLogStream",
-				"logs:PutLogEvents"
-			],
-			"Effect": "Allow",
-			"Resource": "*"
-		}
-	]
-}
-EOF
 }
 
 resource "aws_cloudwatch_log_group" "scheduler" {
@@ -130,7 +88,7 @@ resource "aws_instance" "scheduler" {
   instance_type                        = var.instance_type
   vpc_security_group_ids               = concat([aws_security_group.scheduler.id], var.security_group_ids)
   key_name                             = "jeff@rosario"
-  iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
+  iam_instance_profile                 = module.iam_role.instance_profile.name
   monitoring                           = true
 
   user_data = <<-EOF
