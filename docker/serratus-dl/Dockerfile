@@ -124,39 +124,16 @@ RUN adduser serratus
 ARG BASEDIR=/home/serratus
 ENV BASEDIR=/home/serratus
 RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
-RUN cd $BASEDIR; mkdir -p scripts
 
-# Serratus Scripts ==============================
-# URL to latest serratus repo (raw)
-ARG GIT_SERRATUS="https://raw.githubusercontent.com/ababaian/serratus/master/"
-
-## /home/serratus/serratus-dl.sh
-RUN wget -O $BASEDIR/serratus-dl.sh \
-  $GIT_SERRATUS/scripts/serratus-dl/serratus-dl.sh
-
-## /home/serratus/scripts/
-  # run_download.sh
-RUN wget -O $BASEDIR/scripts/run_download.sh \
-  $GIT_SERRATUS/scripts/serratus-dl/run_download.sh
-
-  # run_split.sh (latest)
-RUN wget -O $BASEDIR/scripts/run_split.sh \
-  $GIT_SERRATUS/scripts/serratus-dl/run_split.sh
-
-  # run_upload.sh
-RUN wget -O $BASEDIR/scripts/run_upload.sh \
-  $GIT_SERRATUS/scripts/serratus-dl/run_upload.sh
-
-# Set script permissions
-RUN chmod 755 $BASEDIR/serratus-dl.sh
-RUN chmod 755 $BASEDIR/scripts/*
+WORKDIR /home/serratus
+COPY scripts/serratus-dl/* ./
 
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
 #Usage: docker exec serratus-dl -s <SRA Accession> [OPTIONS]
 
-ENTRYPOINT ["/bin/bash", "/home/serratus/serratus-dl.sh"]
+#ENTRYPOINT ["./serratus-dl.sh"]
 
 #==========================================================
 # DEV  ====================================================
