@@ -57,7 +57,7 @@ data "aws_ami" "amazon_linux_2" {
 
   filter {
     name   = "name"
-    values = ["packer-amazon-linux-2-docker"]
+    values = ["packer-amazon-linux-2-docker-*"]
   }
 
   owners = ["241748083751"] # Jeff Taylor
@@ -111,10 +111,10 @@ resource "aws_launch_configuration" "worker" {
     create_before_destroy = true
   }
 
-  user_data = <<EOF
-    #!/bin/bash
-    curl -X POST ${var.scheduler_dns}:${var.scheduler_port}/
-    EOF
+  user_data = <<-EOF
+              #!/bin/bash
+              docker pull jefftaylor42/"${var.image_name}"
+              EOF
 }
 
 resource "aws_autoscaling_group" "worker" {

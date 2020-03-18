@@ -34,7 +34,7 @@ data "aws_ami" "amazon_linux_2" {
 
   filter {
     name   = "name"
-    values = ["packer-amazon-linux-2-docker"]
+    values = ["packer-amazon-linux-2-docker-*"]
   }
 
   owners = ["241748083751"] # Jeff Taylor
