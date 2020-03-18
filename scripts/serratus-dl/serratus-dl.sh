@@ -2,7 +2,7 @@
 # ENTRYPOINT SCRIPT ===================
 # serrtaus-dl
 # =====================================
-set -e
+set -ex
 #
 # Base: serratus-Downloader (>0.1.1)
 # Amazon Linux 2 with Docker
@@ -156,35 +156,38 @@ function boot_procedure {
   aws s3 cp s3://serratus-public/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
   vdb-config --report-cloud-identity yes
 
-  # Download AWS S3 test token
-  aws s3 cp s3://serratus-public/aws-test-token.jpg $WORKDIR/aws-test-token.jpg
+  ## Download AWS S3 test token
+  #aws s3 cp s3://serratus-public/aws-test-token.jpg $WORKDIR/aws-test-token.jpg
 
-  if [ ! -s "$AWS_KEY" ]
-  then
-    echo "    ERROR: AWS Test did not download"
-    echo "    Ensure the EC2 instance has correct IAM permissions"
-    echo "      - requires S3 Read/Write"
-    usage
-  fi
+  #if [ ! -f "$WORKDIR/aws-test-token.jpg" ]
+  #then
+  #  echo "    ERROR: AWS Test did not download"
+  #  echo "    Ensure the EC2 instance has correct IAM permissions"
+  #  echo "      - requires S3 Read/Write"
+  #  usage
+  #fi
 
-  echo '  ...authentication token was download successfully'
-  echo ""
+  #echo '  ...authentication token was download successfully'
+  #echo ""
 
 }
 
 function wait_for_scheduler {
     while true; do
-        curl -s "$SCHED/status" && break
-        sleep 5
+        if [ "$(curl -s "$SCHED/status" | jq -r .status)" == "up" ]; then
+            break
+        else
+            sleep 5
+        fi
     done
 }
 
 function terminate_handler {
-    echo "    $SRA was terminated without completing. Reset status."
+    echo "    $ACC_ID was terminated without completing. Reset status."
     echo "    In trap $(date -In)"
     # Tell server to reset this job to a "new" state, since we couldn't
     # finish processing it.
-    curl -s "$SCHED/finish_split_job?job_id=$SRA&status=new"
+    curl -s "$SCHED/jobs/split/$ACC_ID&status=new"
 }
 
 function main_loop {
@@ -200,7 +203,7 @@ function main_loop {
     while true; do
         echo "$WORKERID - Requesting job from Scheduler..."
         JOB_JSON=$(curl -s -X POST "$SCHED/jobs/split/")
-        ACTION=$(jq -r .action <(echo $JOB_JSON))
+        ACTION=$(echo $JOB_JSON | jq -r .action)
 
         case "$ACTION" in
           process)
@@ -221,7 +224,8 @@ function main_loop {
         esac
 
         # Parse SRA Accession ID
-        SRA_RUN=$(jq -r .sra_run_id.Run <(echo $JOB_JSON))
+        ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
+        SRA_RUN=$(echo $JOB_JSON | jq -r .sra_run_id.Run)
 
         # TODO: Allow the scheduler/main data-table to have arugments
         # which will be passed on to the downloader scripts
@@ -336,7 +340,7 @@ function main_loop {
 
         # Update to scheduler -------------------------------------
         # ---------------------------------------------------------
-        ACC_ID=$(jq -r .acc_id <(echo $JOB_JSON))
+        ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
         echo "  $WORKERID - Job $ACC_ID is complete. Update scheduler."
         RESPONSE=$(curl -s "$SCHED/jobs/$ACC_ID?status=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired")
     done
@@ -369,31 +373,23 @@ exit 0
 # Monitor AWS Cloudwatch for spot-termination signal
 # if Spot termination signal detected, proceed with
 # shutdown via SIGURS1 signal
-SPOT_OK=true
 
-# For a minor optimization; query the time of the
+# TODO: For a minor optimization; query the time of the
 # spot-termination signal and shutdown in the last 10
 # seconds to maximize chance the job finishes.
 
-while $SPOT_OK; do
-    sleep 5
-
-    # Query for term-sig
-    SPOT_TERM=$(jq -r .action <(echo $(curl http://169.254.169.254/latest/meta-data/spot/instance-action))
-
-    if [ "$SPOT_TERM" -eq "stop" ]
-    then
+METADATA=http://169.254.169.254/latest/meta-data
+while true; do
+    INSTANCE_ACTION=$(curl $METADATA/spot/instance-action | jq -r .action)
+    if [ "$INSTANCE_ACTION" == "terminate" ] then
         echo "SPOT TERMINATION SIGNAL RECEIEVED."
         echo "Initiating shutdown procedures for all workers"
 
         for i in $(seq 1 "$WORKERS"); do
             kill -USR1 ${worker[i]} 2>/dev/null || true
         done
+        break
     fi
+
+    sleep 5
 done
-
-
-# End
-echo "Kill jobs" $(date -In)
-wait
-echo "Wait done" $(date -In)
