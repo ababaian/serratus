@@ -188,162 +188,162 @@ function terminate_handler {
 }
 
 function main_loop {
-  trap terminate_handler SIGUSR1
-  # Note: The "& wait"s are important.  Without them, bash will wait for
-  # the command to finish before executing its traps.  When we use "& wait",
-  # the command will recieve the same trap (killing it), and then run our
-  # trap handler, which tells the server our job failed.
-  # what if we & wait on the whole main_loop function instead? Test this.
-  WORKER_ID=$1
+    trap terminate_handler SIGUSR1
+    # Note: The "& wait"s are important.  Without them, bash will wait for
+    # the command to finish before executing its traps.  When we use "& wait",
+    # the command will recieve the same trap (killing it), and then run our
+    # trap handler, which tells the server our job failed.
+    # what if we & wait on the whole main_loop function instead? Test this.
+    WORKER_ID=$1
 
-# Query for job --------------------------------------------
-# ----------------------------------------------------------
-curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
+    # Query for job --------------------------------------------
+    # ----------------------------------------------------------
+    curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
 
-  # TODO: Wrap job query into self-contained function?
-  while true; do
-    echo "$WORKERID - Requesting job from Scheduler..."
-    JOB_JSON=$(curl -s -X POST "$SCHED/jobs/split/")
-    ACTION=$(jq -r .action <(echo $JOB_JSON))
+    # TODO: Wrap job query into self-contained function?
+    while true; do
+        echo "$WORKERID - Requesting job from Scheduler..."
+        JOB_JSON=$(curl -s -X POST "$SCHED/jobs/split/")
+        ACTION=$(jq -r .action <(echo $JOB_JSON))
 
-    case "$ACTION" in
-      process)
-        echo "  $WORKERID - Process State received."
-        ;;
-      wait)
-        echo "  $WORKERID - Wait State received."
-        sleep 10
-        ;;
-      shutdown)
-        echo "  $WORKERID - Shutdown State received."
-        exit 0
-        ;;
-      *)        echo "  $WORKERID - ERROR: Unknown State received."
-        exit 1
-        echo "  $WORKERID - ERROR: Unknown State received."
-        exit 1
-    esac
+        case "$ACTION" in
+          process)
+            echo "  $WORKERID - Process State received."
+            ;;
+          wait)
+            echo "  $WORKERID - Wait State received."
+            sleep 10
+            ;;
+          shutdown)
+            echo "  $WORKERID - Shutdown State received."
+            exit 0
+            ;;
+          *)        echo "  $WORKERID - ERROR: Unknown State received."
+            exit 1
+            echo "  $WORKERID - ERROR: Unknown State received."
+            exit 1
+        esac
 
-    # Parse SRA Accession ID
-    SRA_RUN=$(jq -r .sra_run_id.Run <(echo $JOB_JSON))
+        # Parse SRA Accession ID
+        SRA_RUN=$(jq -r .sra_run_id.Run <(echo $JOB_JSON))
 
-    # TODO: Allow the scheduler/main data-table to have arugments
-    # which will be passed on to the downloader scripts
-    
-    # TODO: If we're going to lock the system so the split commands
-    # in each container don't collide on the CPU then we need to mount
-    # a folder from filesystem into the container and `flock` a file
-    # on the shared mount. For now use 1 worker per download EC2?
+        # TODO: Allow the scheduler/main data-table to have arugments
+        # which will be passed on to the downloader scripts
+        
+        # TODO: If we're going to lock the system so the split commands
+        # in each container don't collide on the CPU then we need to mount
+        # a folder from filesystem into the container and `flock` a file
+        # on the shared mount. For now use 1 worker per download EC2?
 
-# Run job --------------------------------------------------
-# ----------------------------------------------------------
-    # Generate random alpha-numeric for run-id
-    RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-    WORKDIR=$BASEDIR/$RUNID
-    mkdir -p $WORKDIR; cd $WORKDIR
+        # Run job --------------------------------------------------
+        # ----------------------------------------------------------
+        # Generate random alpha-numeric for run-id
+        RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
+        WORKDIR=$BASEDIR/$RUNID
+        mkdir -p $WORKDIR; cd $WORKDIR
 
-    echo "============================"
-    echo "    serratus-dl Pipeline    "
-    echo "============================"
-    echo " date:      $(date)"
-    echo " version:   $PIPE_VERSION"
-    echo " ami:       $AMI_VERSION"
-    echo " container: $CONTAINER_VERSION"
-    echo " worker-id: $WORKER_ID"
-    echo " run-id:    $RUNID"
-    echo " sra:       $SRA_RUN"
-    echo " S3 url:    $S3_BUCKET"
-    echo ""
+        echo "============================"
+        echo "    serratus-dl Pipeline    "
+        echo "============================"
+        echo " date:      $(date)"
+        echo " version:   $PIPE_VERSION"
+        echo " ami:       $AMI_VERSION"
+        echo " container: $CONTAINER_VERSION"
+        echo " worker-id: $WORKER_ID"
+        echo " run-id:    $RUNID"
+        echo " sra:       $SRA_RUN"
+        echo " S3 url:    $S3_BUCKET"
+        echo ""
 
-# RUN DOWNLOAD ==============================================
-    echo "  Running -- run_download.sh --"
-    echo "  $BASEDIR/scripts/run_download.sh -s $SRA_RUN $DL_ARGS"
+        # RUN DOWNLOAD ==============================================
+        echo "  Running -- run_download.sh --"
+        echo "  $BASEDIR/scripts/run_download.sh -s $SRA_RUN $DL_ARGS"
 
-    ./run_download.sh -s $SRA_RUN -p $THREADS $DL_ARGS & wait
+        ./run_download.sh -s $SRA_RUN -p $THREADS $DL_ARGS & wait
 
-    echo ''
+        echo ''
 
-    # Detect downloaded fastq files for split logic
-    FQ0=$(ls *_0.fastq 2>/dev/null || true)
-    FQ1=$(ls *_1.fastq 2>/dev/null || true)
-    FQ2=$(ls *_2.fastq 2>/dev/null || true)
+        # Detect downloaded fastq files for split logic
+        FQ0=$(ls *_0.fastq 2>/dev/null || true)
+        FQ1=$(ls *_1.fastq 2>/dev/null || true)
+        FQ2=$(ls *_2.fastq 2>/dev/null || true)
 
-    if [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
-    then
-      paired_exists=true
-      echo "  Paired-end reads detected"
-    else
-      paired_exists=false
-      echo "  Paired-end reads not-detected"
-    fi
+        if [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
+        then
+          paired_exists=true
+          echo "  Paired-end reads detected"
+        else
+          paired_exists=false
+          echo "  Paired-end reads not-detected"
+        fi
 
-    if [[ ( -s $FQ0 && -n $FQ0 ) ]]
-    then
-      unpaired_exists=true
-      echo "  Unpaired reads detected"
-    else
-      unpaired_exists=false
-      echo "  unpaired reads not-detected"
-    fi
+        if [[ ( -s $FQ0 && -n $FQ0 ) ]]
+        then
+          unpaired_exists=true
+          echo "  Unpaired reads detected"
+        else
+          unpaired_exists=false
+          echo "  unpaired reads not-detected"
+        fi
 
-    if [[ "$paired_exists" = true && "$unpaired_exists" = true ]]
-    then
-      # Both paired-end and unpaired exist
-      # use only paired-end data
-      echo "   WARNING: Paired and Unpaired data detected"
-      echo "            Using only Paired-End Reads"
-      unpaired_exists=FALSE
-    fi
+        if [[ "$paired_exists" = true && "$unpaired_exists" = true ]]
+        then
+          # Both paired-end and unpaired exist
+          # use only paired-end data
+          echo "   WARNING: Paired and Unpaired data detected"
+          echo "            Using only Paired-End Reads"
+          unpaired_exists=FALSE
+        fi
 
-# RUN SPLIT ===============================================
-    # Add FQ0 vs. FQ1+FQ2 logic here
-    echo "  Running -- run_split.sh --"
+        # RUN SPLIT ===============================================
+        # Add FQ0 vs. FQ1+FQ2 logic here
+        echo "  Running -- run_split.sh --"
 
-    if [[ "$paired_exists" = true ]]
-    then
-      echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-      bash $BASEDIR/scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
+        if [[ "$paired_exists" = true ]]
+        then
+          echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
+          bash $BASEDIR/scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
 
-    elif [[ "$paired_exists" = true ]]
-    then
-      echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-      bash $BASEDIR/scripts/run_split.sh -f $FQ0 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
+        elif [[ "$paired_exists" = true ]]
+        then
+          echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
+          bash $BASEDIR/scripts/run_split.sh -f $FQ0 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
 
-    else
-      echo "   ERROR: Neither paired or unpaired reads detected"
-      # Update scheduler with fail message
-      exit 1
-    fi
+        else
+          echo "   ERROR: Neither paired or unpaired reads detected"
+          # Update scheduler with fail message
+          exit 1
+        fi
 
-    # Count output blocks
-    N_paired=$( (ls *1.fq.* 2>/dev/null ) | wc -l)
-    echo "    N paired-end fq-blocks: $N_paired"
+        # Count output blocks
+        N_paired=$( (ls *1.fq.* 2>/dev/null ) | wc -l)
+        echo "    N paired-end fq-blocks: $N_paired"
 
-    N_unpaired=$((ls *0.fq.* 2>/dev/null ) | wc -l)
-    echo "    N unpaired   fq-blocks: $N_unpaired"
-    echo ""
+        N_unpaired=$((ls *0.fq.* 2>/dev/null ) | wc -l)
+        echo "    N unpaired   fq-blocks: $N_unpaired"
+        echo ""
 
-# RUN UPLOAD ==============================================
-    echo "  Running -- run_upload.sh --"
-    echo "  ./scripts/run_upload.sh -k $S3_BUCKET -s $SRA_RUN $UL_ARGS"
+        # RUN UPLOAD ==============================================
+        echo "  Running -- run_upload.sh --"
+        echo "  ./scripts/run_upload.sh -k $S3_BUCKET -s $SRA_RUN $UL_ARGS"
 
-    bash $BASEDIR/scripts/run_upload.sh \
-         -k $S3_BUCKET \
-         -s $SRA_RUN & wait
+        bash $BASEDIR/scripts/run_upload.sh \
+             -k $S3_BUCKET \
+             -s $SRA_RUN & wait
 
-    echo "  Uploading complete."
-    echo "  Status: DONE"
+        echo "  Uploading complete."
+        echo "  Status: DONE"
 
-# CLEAN-UP ================================================
-    # rm may be unneccesary since container is shutdown
-    cd $BASEDIR; rm -rf $WORKDIR/*
+        # CLEAN-UP ================================================
+        # rm may be unneccesary since container is shutdown
+        cd $BASEDIR; rm -rf $WORKDIR/*
 
-  # Update to scheduler -------------------------------------
-  # ---------------------------------------------------------
-    ACC_ID=$(jq -r .acc_id <(echo $JOB_JSON))
-    echo "  $WORKERID - Job $ACC_ID is complete. Update scheduler."
-    RESPONSE=$(curl -s "$SCHED/jobs/$ACC_ID?status=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired")
-  done
+        # Update to scheduler -------------------------------------
+        # ---------------------------------------------------------
+        ACC_ID=$(jq -r .acc_id <(echo $JOB_JSON))
+        echo "  $WORKERID - Job $ACC_ID is complete. Update scheduler."
+        RESPONSE=$(curl -s "$SCHED/jobs/$ACC_ID?status=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired")
+    done
 }
 
 
