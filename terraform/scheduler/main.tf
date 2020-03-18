@@ -1,27 +1,3 @@
-provider "aws" {
-  profile = "default"
-  region  = "us-west-2"
-}
-
-data "aws_ami" "amazon_linux_2" {
-  # A simple AMI, built from Amazon Linux 2, plus the following script:
-  # yum update -yq
-  # yum install docker -yq
-  # systemctl enable docker
-  #
-  # TODO: Put this in packer, so we can switch Regions / Clouds more easily
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["amazon_linux_2_docker"]
-  }
-
-  owners = ["241748083751"] # Jeff Taylor
-}
-
-data "aws_region" "current" {}
-
 variable "scheduler_port" {
   description = "HTTP port to use for the scheduler"
   type        = number
@@ -38,12 +14,6 @@ variable "allow_ssh" {
   default     = true
 }
 
-variable "up" {
-  description = "Spin up instances"
-  type = bool
-  default = true
-}
-
 variable "dev_cidrs" {
   description = "Remote IP Address, for testing access"
   type        = set(string)
@@ -58,6 +28,20 @@ variable "security_group_ids" {
   type = list(string)
   default = []
 }
+
+data "aws_ami" "amazon_linux_2" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["packer-amazon-linux-2-docker"]
+  }
+
+  owners = ["241748083751"] # Jeff Taylor
+}
+
+data "aws_region" "current" {}
+
 
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
@@ -135,6 +119,11 @@ resource "aws_cloudwatch_log_group" "scheduler" {
   name = "scheduler"
 }
 
+resource "aws_eip" "sch" {
+  instance = aws_instance.scheduler.id
+  vpc = true
+}
+
 resource "aws_instance" "scheduler" {
   ami                                  = data.aws_ami.amazon_linux_2.id
   instance_initiated_shutdown_behavior = "terminate"
@@ -142,6 +131,7 @@ resource "aws_instance" "scheduler" {
   vpc_security_group_ids               = concat([aws_security_group.scheduler.id], var.security_group_ids)
   key_name                             = "jeff@rosario"
   iam_instance_profile                 = aws_iam_instance_profile.scheduler.name
+  monitoring                           = true
 
   user_data = <<-EOF
               #!/bin/bash
@@ -159,6 +149,6 @@ resource "aws_instance" "scheduler" {
 }
 
 output "public_dns" {
-  value = aws_instance.scheduler.public_dns
+  value = aws_eip.sch.public_dns
 }
 

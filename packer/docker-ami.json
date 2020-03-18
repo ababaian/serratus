@@ -1,0 +1,39 @@
+{
+  "variables": {
+    "image_version": "001"
+  },
+
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "region": "us-west-2",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "amzn2-ami-hvm*",
+          "root-device-type": "ebs"
+        },
+        "owners": ["137112412989"],
+        "most_recent" : true
+      },
+      "instance_type": "t3.nano",
+      "ssh_username": "ec2-user",
+      "ami_name": "packer-amazon-linux-2-docker",
+      "ami_regions": ["us-east-1"]
+    }
+  ],
+
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sleep 30",
+        "sudo yum update -yq",
+        "sudo yum install docker -yq",
+        "sudo systemctl enable docker",
+        "sudo systemctl start docker"
+      ]
+    }
+  ]
+
+}
