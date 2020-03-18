@@ -203,7 +203,7 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
   # TODO: Wrap job query into self-contained function?
   while true; do
     echo "$WORKERID - Requesting job from Scheduler..."
-    JOB_JSON=$(curl -s "$SCHED/start_split_job")
+    JOB_JSON=$(curl -s -X POST "$SCHED/jobs/split/")
     ACTION=$(jq -r .action <(echo $JOB_JSON))
 
     case "$ACTION" in
@@ -225,7 +225,7 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
     esac
 
     # Parse SRA Accession ID
-    SRA=$(jq -r .acc_id <(echo $JOB_JSON))
+    SRA_RUN=$(jq -r .sra_run_id.Run <(echo $JOB_JSON))
 
     # TODO: Allow the scheduler/main data-table to have arugments
     # which will be passed on to the downloader scripts
@@ -251,15 +251,15 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
     echo " container: $CONTAINER_VERSION"
     echo " worker-id: $WORKER_ID"
     echo " run-id:    $RUNID"
-    echo " sra:       $SRA"
+    echo " sra:       $SRA_RUN"
     echo " S3 url:    $S3_BUCKET"
     echo ""
 
 # RUN DOWNLOAD ==============================================
     echo "  Running -- run_download.sh --"
-    echo "  $BASEDIR/scripts/run_download.sh -s $SRA $DL_ARGS"
+    echo "  $BASEDIR/scripts/run_download.sh -s $SRA_RUN $DL_ARGS"
 
-    bash $BASEDIR/scripts/run_download.sh -s $SRA -p $THREADS $DL_ARGS & wait
+    ./run_download.sh -s $SRA_RUN -p $THREADS $DL_ARGS & wait
 
     echo ''
 
@@ -302,12 +302,12 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
     if [[ "$paired_exists" = true ]]
     then
       echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-      bash $BASEDIR/scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA -p $THREADS $SPLIT_ARGS & wait
+      bash $BASEDIR/scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
 
     elif [[ "$paired_exists" = true ]]
     then
       echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-      bash $BASEDIR/scripts/run_split.sh -f $FQ0 -o $SRA -p $THREADS $SPLIT_ARGS & wait
+      bash $BASEDIR/scripts/run_split.sh -f $FQ0 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
 
     else
       echo "   ERROR: Neither paired or unpaired reads detected"
@@ -325,11 +325,11 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
 
 # RUN UPLOAD ==============================================
     echo "  Running -- run_upload.sh --"
-    echo "  ./scripts/run_upload.sh -k $S3_BUCKET -s $SRA $UL_ARGS"
+    echo "  ./scripts/run_upload.sh -k $S3_BUCKET -s $SRA_RUN $UL_ARGS"
 
     bash $BASEDIR/scripts/run_upload.sh \
          -k $S3_BUCKET \
-         -s $SRA & wait
+         -s $SRA_RUN & wait
 
     echo "  Uploading complete."
     echo "  Status: DONE"
@@ -340,12 +340,9 @@ curl -v -X POST -T ./SraRunInfo_test.csv localhost:8000/jobs/add_sra_run_info/
 
   # Update to scheduler -------------------------------------
   # ---------------------------------------------------------
-    N=$N_paired
-
-    # Tell the scheduler we're done
-    echo "  $WORKERID - Job $SRA is complete. Update scheduler."
-    RESPONSE=$(curl -s "$SCHED/finish_split_job?job_id=$SRA&status=split_done&N=$N")
-    unset SRA
+    ACC_ID=$(jq -r .acc_id <(echo $JOB_JSON))
+    echo "  $WORKERID - Job $ACC_ID is complete. Update scheduler."
+    RESPONSE=$(curl -s "$SCHED/jobs/$ACC_ID?status=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired")
   done
 }
 
