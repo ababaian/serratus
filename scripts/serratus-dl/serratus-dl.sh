@@ -225,7 +225,7 @@ function main_loop {
 
         # Parse SRA Accession ID
         ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
-        SRA_RUN=$(echo $JOB_JSON | jq -r .sra_run_id.Run)
+        SRA_RUN=$(echo $JOB_JSON | jq -r .sra_run_info.Run)
 
         # TODO: Allow the scheduler/main data-table to have arugments
         # which will be passed on to the downloader scripts
