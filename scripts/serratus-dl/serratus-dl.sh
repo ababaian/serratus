@@ -210,7 +210,8 @@ function main_loop {
             ;;
           wait)
             echo "  $WORKERID - Wait State received."
-            sleep 10
+            sleep 3
+            continue
             ;;
           shutdown)
             echo "  $WORKERID - Shutdown State received."
