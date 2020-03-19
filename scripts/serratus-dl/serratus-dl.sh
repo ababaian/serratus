@@ -257,9 +257,9 @@ function main_loop {
 
         # RUN DOWNLOAD ==============================================
         echo "  Running -- run_download.sh --"
-        echo "  $BASEDIR/scripts/run_download.sh -s $SRA_RUN $DL_ARGS"
+        echo "  $BASEDIR/run_download.sh -s $SRA_RUN $DL_ARGS"
 
-        ./run_download.sh -s $SRA_RUN -p $THREADS $DL_ARGS & wait
+        $BASEDIR/run_download.sh -s $SRA_RUN -n $THREADS $DL_ARGS & wait
 
         echo ''
 
@@ -301,13 +301,13 @@ function main_loop {
 
         if [[ "$paired_exists" = true ]]
         then
-          echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-          bash $BASEDIR/scripts/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
+          echo "  .$BASEDIR/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
+          bash $BASEDIR/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
 
         elif [[ "$paired_exists" = true ]]
         then
-          echo "  .$BASEDIR/scripts/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-          bash $BASEDIR/scripts/run_split.sh -f $FQ0 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
+          echo "  .$BASEDIR/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
+          bash $BASEDIR/run_split.sh -f $FQ0 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
 
         else
           echo "   ERROR: Neither paired or unpaired reads detected"
@@ -325,9 +325,9 @@ function main_loop {
 
         # RUN UPLOAD ==============================================
         echo "  Running -- run_upload.sh --"
-        echo "  ./scripts/run_upload.sh -k $S3_BUCKET -s $SRA_RUN $UL_ARGS"
+        echo "  $BASEDIR/run_upload.sh -k $S3_BUCKET -s $SRA_RUN $UL_ARGS"
 
-        bash $BASEDIR/scripts/run_upload.sh \
+        bash $BASEDIR/run_upload.sh \
              -k $S3_BUCKET \
              -s $SRA_RUN & wait
 
