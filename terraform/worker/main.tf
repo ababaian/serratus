@@ -42,6 +42,12 @@ variable "name" {
   default     = "worker"
 }
 
+variable "image_name" {
+   description = "Docker image to run once the container is started"
+   type        = string
+   default     = "serratus-dl"
+}
+
 variable "asg_size" {
   type    = number
   default = 1
@@ -113,7 +119,7 @@ resource "aws_launch_configuration" "worker" {
 
   user_data = <<-EOF
               #!/bin/bash
-              docker pull jefftaylor42/"${var.image_name}"
+              docker pull jefftaylor42/${var.image_name}
               EOF
 }
 
