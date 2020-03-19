@@ -127,7 +127,7 @@ RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
 
 WORKDIR /home/serratus
 COPY scripts/serratus-dl/* ./
-COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/
+COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 
 #==========================================================
 # ENTRYPOINT ==============================================
