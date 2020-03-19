@@ -92,6 +92,9 @@ cd $WORKDIR
 
 echo "      fastq-dump --split-e $SRA"
 fastq-dump --split-e $SRA
+if [ -f "$SRA.fastq" ]; then
+    mv "$SRA.fastq" "$SRA"_0.fastq
+fi
 
 # TODO: Update to fasterq-dump
 #echo "      fasterq-dump  $SRA -e $THREADS"
