@@ -358,7 +358,7 @@ while true; do
         break
     fi
 
-    sleep 5
+    sleep 60 # TODO Change this back to 5.
 done
 
 echo "============================"
