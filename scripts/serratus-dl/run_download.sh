@@ -94,7 +94,7 @@ echo "      fastq-dump --split-e $SRA"
 fastq-dump --split-e $SRA
 
 # TODO: Update to fasterq-dump
-echo "      fasterq-dump  $SRA -e $THREADS"
-fastq-dump $SRA -e $THREADS
+#echo "      fasterq-dump  $SRA -e $THREADS"
+#fasterq-dump $SRA -e $THREADS
 
 echo "      Download complete."
