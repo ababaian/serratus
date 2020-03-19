@@ -60,6 +60,10 @@ resource "aws_iam_role_policy_attachment" "attachment" {
   policy_arn = each.value
 }
 
+output "role" {
+  value = aws_iam_role.role
+}
+
 output "instance_profile" {
   value = aws_iam_instance_profile.profile
 }
