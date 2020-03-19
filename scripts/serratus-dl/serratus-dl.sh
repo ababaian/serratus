@@ -161,7 +161,7 @@ function terminate_handler {
     echo "    In trap $(date -In)"
     # Tell server to reset this job to a "new" state, since we couldn't
     # finish processing it.
-    curl -s "$SCHED/jobs/split/$ACC_ID&status=new"
+    curl -s -X POST "$SCHED/jobs/split/$ACC_ID&status=new"
 }
 
 function main_loop {
@@ -317,7 +317,7 @@ function main_loop {
         # ---------------------------------------------------------
         ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
         echo "  $WORKERID - Job $ACC_ID is complete. Update scheduler."
-        RESPONSE=$(curl -s "$SCHED/jobs/$ACC_ID?status=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired")
+        RESPONSE=$(curl -s -X POST "$SCHED/jobs/split/$ACC_ID?status=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired")
     done
 }
 
