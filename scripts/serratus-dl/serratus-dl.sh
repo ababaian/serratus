@@ -153,7 +153,6 @@ function boot_procedure {
   # ugly hack is to copy a blank config file and bypass this
   # TODO: Move vdb-config -i hack to Dockerfile/installation
   mkdir -p /root/.ncbi
-  aws s3 cp s3://serratus-public/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
   vdb-config --report-cloud-identity yes
 
   ## Download AWS S3 test token
