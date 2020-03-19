@@ -112,6 +112,10 @@ resource "aws_launch_configuration" "worker" {
   key_name        = "jeff@rosario"
   iam_instance_profile = module.iam_role.instance_profile.name
 
+  root_block_device {
+    volume_size = 50
+  }
+
   # Launch configs can't be destroyed while attached to an ASG.
   lifecycle {
     create_before_destroy = true
