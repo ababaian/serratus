@@ -347,7 +347,7 @@ done
 
 METADATA=http://169.254.169.254/latest/meta-data
 while true; do
-    INSTANCE_ACTION=$(curl -s $METADATA/spot/instance-action | jq -r .action)
+    INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
     if [ "$INSTANCE_ACTION" == "terminate" ]; then
         echo "SPOT TERMINATION SIGNAL RECEIEVED."
         echo "Initiating shutdown procedures for all workers"
