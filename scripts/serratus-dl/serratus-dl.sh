@@ -362,12 +362,6 @@ for i in $(seq 1 "$WORKERS"); do
     main_loop "$i" & worker[i]=$!
 done
 
-echo "============================"
-echo "======= RUN COMPLETE ======="
-echo "============================"
-exit 0
-
-
 # Spot Operations ===============================
 # Monitor AWS Cloudwatch for spot-termination signal
 # if Spot termination signal detected, proceed with
@@ -379,8 +373,8 @@ exit 0
 
 METADATA=http://169.254.169.254/latest/meta-data
 while true; do
-    INSTANCE_ACTION=$(curl $METADATA/spot/instance-action | jq -r .action)
-    if [ "$INSTANCE_ACTION" == "terminate" ] then
+    INSTANCE_ACTION=$(curl -s $METADATA/spot/instance-action | jq -r .action)
+    if [ "$INSTANCE_ACTION" == "terminate" ]; then
         echo "SPOT TERMINATION SIGNAL RECEIEVED."
         echo "Initiating shutdown procedures for all workers"
 
@@ -392,3 +386,8 @@ while true; do
 
     sleep 5
 done
+
+echo "============================"
+echo "======= RUN COMPLETE ======="
+echo "============================"
+exit 0
