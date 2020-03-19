@@ -128,13 +128,14 @@ RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
 WORKDIR /home/serratus
 COPY scripts/serratus-dl/* ./
 COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
+RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
 
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
-#Usage: docker exec serratus-dl -s <SRA Accession> [OPTIONS]
+#Usage: docker run serratus-dl -u $SCHEDULER:$PORT [OPTIONS]
 
-#ENTRYPOINT ["./serratus-dl.sh"]
+ENTRYPOINT ["./serratus-dl.sh"]
 
 #==========================================================
 # DEV  ====================================================

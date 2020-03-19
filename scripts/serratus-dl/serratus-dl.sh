@@ -146,31 +146,6 @@ if [[ ( -z "$OUTNAME" ) ]]; then OUTNAME="$SRA"; fi
 # Worker process.  Run in a loop, grabbing data from the scheduler and
 # processing it.
 
-function boot_procedure {
-  # Pass credentials to sra-toolkit via vdb-config
-  # Current version requires a manual
-  # vdb-config -i initialization
-  # ugly hack is to copy a blank config file and bypass this
-  # TODO: Move vdb-config -i hack to Dockerfile/installation
-  mkdir -p /root/.ncbi
-  vdb-config --report-cloud-identity yes
-
-  ## Download AWS S3 test token
-  #aws s3 cp s3://serratus-public/aws-test-token.jpg $WORKDIR/aws-test-token.jpg
-
-  #if [ ! -f "$WORKDIR/aws-test-token.jpg" ]
-  #then
-  #  echo "    ERROR: AWS Test did not download"
-  #  echo "    Ensure the EC2 instance has correct IAM permissions"
-  #  echo "      - requires S3 Read/Write"
-  #  usage
-  #fi
-
-  #echo '  ...authentication token was download successfully'
-  #echo ""
-
-}
-
 function wait_for_scheduler {
     while true; do
         if [ "$(curl -s "$SCHED/status" | jq -r .status)" == "up" ]; then
@@ -354,8 +329,6 @@ echo "=========================================="
 
 # Default base directory is /home/serratus
 cd $BASEDIR
-
-boot_procedure
 wait_for_scheduler
 
 # Fire up main loop (SRA downloader)
