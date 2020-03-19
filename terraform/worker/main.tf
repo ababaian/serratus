@@ -25,6 +25,10 @@ variable "spot_price" {
   default = 0.0016
 }
 
+variable "volume_size" {
+  type    = number
+}
+
 variable "allow_ssh" {
   description = "Allow SSH access to the nodes"
   type        = bool
@@ -139,7 +143,7 @@ resource "aws_launch_configuration" "worker" {
   iam_instance_profile = module.iam_role.instance_profile.name
 
   root_block_device {
-    volume_size = 50
+    volume_size = var.volume_size
   }
 
   # Launch configs can't be destroyed while attached to an ASG.
