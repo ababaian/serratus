@@ -279,7 +279,7 @@ function main_loop {
           echo "  .$BASEDIR/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
           bash $BASEDIR/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
 
-        elif [[ "$paired_exists" = true ]]
+        elif [[ "$unpaired_exists" = true ]]
         then
           echo "  .$BASEDIR/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
           bash $BASEDIR/run_split.sh -f $FQ0 -o $SRA_RUN -p $THREADS $SPLIT_ARGS & wait
