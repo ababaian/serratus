@@ -6,7 +6,7 @@
   "builders": [
     {
       "type": "amazon-ebs",
-      "region": "us-west-2",
+      "region": "us-east-1",
       "source_ami_filter": {
         "filters": {
           "virtualization-type": "hvm",
@@ -18,8 +18,7 @@
       },
       "instance_type": "t3.nano",
       "ssh_username": "ec2-user",
-      "ami_name": "packer-amazon-linux-2-docker-{{user `image_version`}}",
-      "ami_regions": ["us-east-1"]
+      "ami_name": "packer-amazon-linux-2-docker-{{user `image_version`}}"
     }
   ],
 
