@@ -68,13 +68,13 @@ variable "security_group_ids" {
 
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
+  owners = ["self"]
 
   filter {
     name   = "name"
     values = ["packer-amazon-linux-2-docker-*"]
   }
 
-  owners = ["241748083751"] # Jeff Taylor
 }
 
 data "aws_availability_zones" "all" {}
