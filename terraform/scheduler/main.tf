@@ -37,7 +37,7 @@ data "aws_ami" "amazon_linux_2" {
     values = ["packer-amazon-linux-2-docker-*"]
   }
 
-  owners = ["241748083751"] # Jeff Taylor
+  owners = ["817430737202"] # jefft.second
 }
 
 data "aws_region" "current" {}
