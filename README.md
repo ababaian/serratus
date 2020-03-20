@@ -53,34 +53,7 @@ takes about 2 minutes, which should cost well under a penny.
 
 ## Getting started with Terraform
 
-Terraform currently uses state from a shared bucket.  This bucket location is
-currently hardcoded due to a limitation with Terraform, and getting it going is
-a bit challenging due to chicken-and-egg.
-
-### The easy way (local state)
-
-Go into stage/main.tf and comment out the "terraform" block (containing backend
-information).  Terraform will store its state locally on your laptop hard drive.
-
-## The hard way (shared state on S3)
-
-You'll have to create the remote state with terraform before you can use it.  We'll
-need to use local state to create the bucket and table, then move the state to the
-newly created bucket.
-
- * Comment out the "terraform" block in tf-state/main.tf.
- * `cd serratus/tf-state` you have to be in a module directory to run terraform on it.
- * Run `tf init`.  Without a backend, terraform will create local state by default.
- * Run `tf apply`.  This will create the shared bucket and table.
- * Uncomment the "terraform" block from step 1.
- * Run `tf init` again.  Terraform if you want to copy state from "local" to "s3".  Answer "yes".
- * Run `tf apply` again.  This shouldn't do anything, but it should finish without errors if everything is setup correctly.
-
-Note: since bucket names are hard-coded and universal, you will have to change the `serratus-tf-state` bucket name to something unique for your project, and repeat this elsewhere.
-
-## Create infrastructure
-
- * `cd serratus/stage` to go to the staging area for the current release.
- * `tf init` you only need to run this once.
- * `tf apply` to create infrastructure.
+The top-level module is in serratus/terraform/cluster.  If you're OK with the
+defaults, you shouldn't need to change anything.  Just cd there, run `tf init`,
+and then `tf apply` to create some infrastructure.
 
