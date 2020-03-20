@@ -7,13 +7,6 @@ resource "aws_s3_bucket" "terraform_state" {
     enabled = true
   }
 
-  grant {
-    # jefft.second
-    type = "CanonicalUser"
-    id = "dcd86c2c4a99bfb6458a936948b17280a6120ebfa47491c638ae772477fefea0"
-    permissions = ["FULL_CONTROL"]
-  }
-
   server_side_encryption_configuration {
     rule {
       apply_server_side_encryption_by_default {
