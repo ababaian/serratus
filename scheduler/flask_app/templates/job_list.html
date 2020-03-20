@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<style>
+table {
+  width: 100%;
+}
+td.top {
+  vertical-align: top;
+  text-align: center;
+  border: 1px solid black;
+  border-collapse: true;
+}
+</style>
+</head>
+<body>
+  <table class="top">
+    <td class="top">
+      <h1>Accessions</h1>
+      <table>
+        <tr>
+            <th>Acc ID</th>
+            <th>Run</th>
+            <th>State</th>
+        </tr>
+        {% for row in accs %}
+          <tr>
+            <td>{{ row.acc_id }}</td>
+            <td>{{ row.sra_run_info["Run"] }} </td>
+            <td>{{ row.state }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    </td>
+    <td class="top">
+      <h1>Blocks</h1>
+      <table>
+        <tr>
+            <th>Acc ID</th>
+            <th>Run</th>
+            <th>Number</th>
+            <th>State</th>
+        </tr>
+        {% for block, acc in blocks %}
+          <tr>
+            <td>{{ acc.acc_id }} </td>
+            <td>{{ acc.sra_run_info["Run"] }} </td>
+            <td>{{ block.block_id }}</td>
+            <td>{{ block.state }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    </td>
+  </table>
+</body></html>

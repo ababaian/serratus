@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, render_template
 from sqlalchemy import func
 from . import db
 
@@ -53,6 +53,16 @@ def start_split_job():
 
     # Send the response as JSON
     return jsonify(response)
+
+@bp.route('/', methods=['GET'])
+def show_jobs():
+    session = db.get_session()
+    accs = session.query(db.Accession).all()
+    blocks = session.query(db.Block, db.Accession)\
+        .filter(db.Block.acc_id == db.Accession.acc_id)\
+        .all()
+    return render_template('job_list.html', accs=accs, blocks=blocks)
+
 
 @bp.route('/split/<acc_id>', methods=['POST'])
 def finish_split_job(acc_id):
