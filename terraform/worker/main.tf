@@ -21,12 +21,11 @@ variable "instance_type" {
 }
 
 variable "spot_price" {
-  type    = number
-  default = 0.0016
+  type = number
 }
 
 variable "volume_size" {
-  type    = number
+  type = number
 }
 
 variable "allow_ssh" {
@@ -40,20 +39,29 @@ variable "dev_cidrs" {
   type        = set(string)
 }
 
+variable "key_name" {
+  description = "Name of the AWS key pair to assign instances"
+  type        = string
+}
+
+variable "dockerhub_account" {
+  description = "Docker Hub account to pull from"
+  type        = string
+}
+
 variable "image_name" {
-   description = "Docker image to run once the container is started"
-   type        = string
-   default     = "serratus-dl"
+  description = "Docker image to run once the container is started"
+  type        = string
 }
 
 variable "s3_bucket" {
-   type        = string
-   description = "Name of the S3 bucket to store temporary data"
+  type        = string
+  description = "Name of the S3 bucket to store temporary data"
 }
 
 variable "s3_prefix" {
-   type        = string
-   description = "Prefix of S3 keys"
+  type        = string
+  description = "Prefix of S3 keys"
 }
 
 variable "asg_size" {
@@ -68,7 +76,7 @@ variable "security_group_ids" {
 
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
-  owners = ["self"]
+  owners      = ["self"]
 
   filter {
     name   = "name"
@@ -108,8 +116,8 @@ resource "aws_cloudwatch_log_group" "g" {
 }
 
 module "iam_role" {
-  source = "../iam_role"
-  name = var.image_name
+  source      = "../iam_role"
+  name        = var.image_name
   policy_arns = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
 }
 
@@ -134,12 +142,12 @@ EOF
 }
 
 resource "aws_launch_configuration" "worker" {
-  name_prefix     = "tf-${var.image_name}-"
-  image_id        = data.aws_ami.amazon_linux_2.id
-  instance_type   = var.instance_type
-  security_groups = concat([aws_security_group.worker.id], var.security_group_ids)
-  spot_price      = var.spot_price
-  key_name        = "jeff@rosario"
+  name_prefix          = "tf-${var.image_name}-"
+  image_id             = data.aws_ami.amazon_linux_2.id
+  instance_type        = var.instance_type
+  security_groups      = concat([aws_security_group.worker.id], var.security_group_ids)
+  spot_price           = var.spot_price
+  key_name             = var.key_name
   iam_instance_profile = module.iam_role.instance_profile.name
 
   root_block_device {
@@ -158,7 +166,7 @@ resource "aws_launch_configuration" "worker" {
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
                 --log-opt awslogs-group="${aws_cloudwatch_log_group.g.name}" \
                 --name ${var.image_name} \
-                jefftaylor42/${var.image_name} \
+                ${var.dockerhub_account}/${var.image_name} \
                 -u ${var.scheduler_dns}:${var.scheduler_port} \
                 -k s3://${var.s3_bucket}/${var.s3_prefix}
               EOF
@@ -166,7 +174,7 @@ resource "aws_launch_configuration" "worker" {
 
 resource "aws_autoscaling_group" "worker" {
   # Forces a change in launch configuration to create a new ASG.
-  name                 = "tf-asg-${aws_launch_configuration.worker.name}"
+  name = "tf-asg-${aws_launch_configuration.worker.name}"
 
   launch_configuration = aws_launch_configuration.worker.id
   availability_zones   = data.aws_availability_zones.all.names

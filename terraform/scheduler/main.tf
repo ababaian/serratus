@@ -19,19 +19,29 @@ variable "dev_cidrs" {
   type        = set(string)
 }
 
+variable "key_name" {
+  description = "Name of the AWS key pair to assign instances"
+  type        = string
+}
+
 variable "security_groups" {
-  type = list(string)
+  type    = list(string)
   default = []
 }
 
+variable "dockerhub_account" {
+  description = "Docker Hub account to pull from"
+  type        = string
+}
+
 variable "security_group_ids" {
-  type = list(string)
+  type    = list(string)
   default = []
 }
 
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
-  owners = ["self"]
+  owners      = ["self"]
 
   filter {
     name   = "name"
@@ -45,10 +55,10 @@ data "aws_region" "current" {}
 resource "aws_security_group" "scheduler" {
   name = "serratus-scheduler"
   ingress {
-    from_port       = var.scheduler_port
-    to_port         = var.scheduler_port
-    protocol        = "tcp"
-    cidr_blocks     = var.dev_cidrs
+    from_port   = var.scheduler_port
+    to_port     = var.scheduler_port
+    protocol    = "tcp"
+    cidr_blocks = var.dev_cidrs
   }
   egress {
     from_port   = 0
@@ -70,7 +80,7 @@ resource "aws_security_group" "scheduler" {
 
 module "iam_role" {
   source = "../iam_role"
-  name = "scheduler"
+  name   = "scheduler"
 }
 
 resource "aws_cloudwatch_log_group" "scheduler" {
@@ -79,7 +89,7 @@ resource "aws_cloudwatch_log_group" "scheduler" {
 
 resource "aws_eip" "sch" {
   instance = aws_instance.scheduler.id
-  vpc = true
+  vpc      = true
 }
 
 resource "aws_instance" "scheduler" {
@@ -87,7 +97,7 @@ resource "aws_instance" "scheduler" {
   instance_initiated_shutdown_behavior = "terminate"
   instance_type                        = var.instance_type
   vpc_security_group_ids               = concat([aws_security_group.scheduler.id], var.security_group_ids)
-  key_name                             = "jeff@rosario"
+  key_name                             = var.key_name
   iam_instance_profile                 = module.iam_role.instance_profile.name
   monitoring                           = true
 
@@ -98,7 +108,7 @@ resource "aws_instance" "scheduler" {
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
                 --log-opt awslogs-group="${aws_cloudwatch_log_group.scheduler.name}" \
                 --name sch \
-                jefftaylor42/serratus-scheduler
+                ${var.dockerhub_account}/serratus-scheduler
               EOF
 
   credit_specification {

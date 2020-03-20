@@ -1,5 +1,6 @@
-provider "aws" {
-  region = "us-east-1"
+variable "aws_region" {
+  type    = string
+  default = "us-east-1"
 }
 
 variable "up" {
@@ -8,8 +9,20 @@ variable "up" {
 }
 
 variable "dev_cidrs" {
-  type    = set(string)
-  default = ["173.181.15.58/32"] # Jeff's house
+  type = set(string)
+}
+
+variable "key_name" {
+  description = "Name of the previously created EC2 key pair, for SSH access"
+  type        = string
+}
+
+variable "dockerhub_account" {
+  type = string
+}
+
+provider "aws" {
+  region = var.aws_region
 }
 
 resource "aws_security_group" "internal" {
@@ -33,6 +46,8 @@ module "scheduler" {
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "t3.nano"
+  dockerhub_account  = var.dockerhub_account
+  key_name           = var.key_name
 }
 
 module "splitter" {
@@ -47,6 +62,9 @@ module "splitter" {
   volume_size        = 50
   s3_bucket          = aws_s3_bucket.work.bucket
   s3_prefix          = "fq-blocks"
+  dockerhub_account  = var.dockerhub_account
+  image_name         = "serratus-dl"
+  key_name           = var.key_name
 }
 
 output "scheduler_dns" {
