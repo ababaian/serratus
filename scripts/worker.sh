@@ -1,5 +1,12 @@
 #!/usr/bin/bash
 set -eux
+if [ ! -x "$2" ]; then
+    echo "usage: worker.sh <split|align|merge> <script.sh> [args]"
+    exit 1
+fi
+
+TYPE="$1"; shift
+
 # Default base directory is /home/serratus
 function wait_for_scheduler {
     while true; do
@@ -16,7 +23,7 @@ function terminate_handler {
     echo "    In trap $(date -In)"
     # Tell server to reset this job to a "new" state, since we couldn't
     # finish processing it.
-    curl -s -X POST "$SCHED/jobs/split/$ACC_ID&status=new"
+    curl -s -X POST "$SCHED/jobs/$TYPE/$ACC_ID&state=terminated"
 }
 
 function main_loop {
@@ -31,7 +38,7 @@ function main_loop {
     # TODO: Wrap job query into self-contained function?
     while true; do
         echo "$WORKERID - Requesting job from Scheduler..."
-        JOB_JSON=$(curl -s -X POST "$SCHED/jobs/split/")
+        JOB_JSON=$(curl -s -X POST "$SCHED/jobs/$TYPE/")
         ACTION=$(echo $JOB_JSON | jq -r .action)
 
         case "$ACTION" in
