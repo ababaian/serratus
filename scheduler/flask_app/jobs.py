@@ -91,6 +91,9 @@ def finish_split_job(acc_id):
     except TypeError:
         abort(400)
 
+    if state == "terminated":
+        state = "new"
+
     # Update the accessions table
     if state not in ('new', 'split_err', 'split_done'):
         abort(400)
@@ -165,6 +168,9 @@ def finish_align_job(block_id):
     state is one of (new, done, fail)"""
     state = request.args.get('state')
 
+    if state == "terminated":
+        state = "new"
+
     if state not in db.BLOCK_STATES:
         abort(400)
 
@@ -230,6 +236,10 @@ def start_merge_job():
 @bp.route('/merge/<acc_id>', methods=['POST'])
 def finish_merge_job(acc_id):
     state = request.args.get('state')
+
+    if state == "terminated":
+        state = "merge_wait"
+
     if state not in ('merge_wait', 'merge_err', 'merge_done'):
         abort(400)
 
