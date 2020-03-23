@@ -2,7 +2,7 @@
 # ENTRYPOINT SCRIPT ===================
 # serrtaus-align
 # =====================================
-set -eu
+set -eux
 #
 # Base: serratus-aligner (0.1)
 # Amazon Linux 2 with Docker
@@ -71,7 +71,7 @@ function usage {
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Scheduler / Container Parameters
-S3_BUCKET=${S3_BUCKET:-'s3://serratus-public'}
+S3_BUCKET=${S3_BUCKET:-'serratus-public'}
 
 # Aligner
 ALIGNER='bowtie2'
@@ -250,9 +250,9 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
     else
         echo "  $GENDIR not found. Attempting download from"
         echo "  s3://serratus-public/resources/$GENOME"
-        mkdir -p $GENEDIR; cd $GENEDIR
+        mkdir -p $GENDIR; cd $GENDIR
 
-        aws s3 cp --recursive s3://serratus-public/$GENOME/ $GENEDIR/
+        aws s3 cp --recursive s3://serratus-public/$GENOME/ $GENDIR/
 
         if [[ -e "$GENOME.fa" && -e "$GENOME.1.bt2" ]]
         then
@@ -265,7 +265,7 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
 
     # Link genome files to workdir
     cd $WORKDIR
-    ln -s $GENEDIR/* ./
+    ln -s $GENDIR/* ./
 ) 200> .genome-lock
 
 # DOWNlOAD FQ Files =======================================
@@ -321,7 +321,7 @@ fi
 echo "  Uploading bam-block data..."
 echo "  $SRA.$BL_N.bam"
 
-aws s3 cp $SRA.$BL_N.bam $S3_BUCKET/bam-blocks/$SRA/
+aws s3 cp $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
 
 echo "  Status: DONE"
 
@@ -330,7 +330,7 @@ echo "  Status: DONE"
 # ---------------------------------------------------------
 # Tell the scheduler we're done
 echo "  $WORKER_ID - Job $SRA is complete. Update scheduler."
-RESPONSE=$(curl -s "$SCHEDULER/jobs/align/$BLOCK_ID&status=done&N=$N")
+curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID&state=done&N=$BL_N"
 
 cd $BASEDIR; rm -rf $WORKDIR/*
 

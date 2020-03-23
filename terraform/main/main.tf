@@ -103,7 +103,7 @@ module "align" {
   image_name         = "serratus-align"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k s3://${aws_s3_bucket.work.bucket}"
+  options            = "-k ${aws_s3_bucket.work.bucket}"
 }
 
 output "scheduler_dns" {

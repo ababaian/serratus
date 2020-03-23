@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-set -eux
+set -eu
 
 # Wrapper script to serratus-{dl,align-merge}.  This script provides looping,
 # multi-threading and also checks for spot termination.  If nodes are
@@ -61,7 +61,7 @@ function main_loop {
             ;;
           wait)
             echo "  $WORKER_ID - Wait State received."
-            sleep 3
+            sleep 10
             continue
             ;;
           shutdown)
@@ -69,9 +69,7 @@ function main_loop {
             exit 0
             ;;
           *)        echo "  $WORKER_ID - ERROR: Unknown State received."
-            exit 1
             echo "  $WORKER_ID - ERROR: Unknown State received."
-            exit 1
         esac
     done
 }

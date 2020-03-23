@@ -139,16 +139,17 @@ fi
 
 # Parse SRA Accession ID
 ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
-SRA=$(echo $JOB_JSON | jq -r .sra_run_info.Run)
 
 # Set up a error trap.  If something goes wrong unexpectedly, this will send
 # a message to the scheduler before exiting.
 function error {
+    echo Error encountered.  Notifying the scheduler.
     curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_err"
     exit 0 # Already told the calling script.
 }
 trap error ERR
 
+SRA=$(echo $JOB_JSON | jq -r .sra_run_info.Run)
 # Check inputs --------------
 if [[ ( -z "$OUTNAME" ) ]];
     then OUTNAME="$SRA"

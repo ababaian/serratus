@@ -51,6 +51,8 @@ def start_split_job():
     session.commit()
     response['action'] = 'process'
 
+    response['split_args'] = ""
+
     # Send the response as JSON
     return jsonify(response)
 
@@ -162,6 +164,7 @@ def start_align_job():
     # TODO Move these into the database
     response['align_args'] = "--very-sensitive-local"
     response['genome'] = "hgr1"
+    response['action'] = "process"
 
     # Send the response as JSON
     return jsonify(response)
@@ -233,6 +236,8 @@ def start_merge_job():
     response = acc.to_dict()
     session.commit()
     response['action'] = 'process'
+
+    response['merge_args'] = ""
 
     # Send the response as JSON
     return jsonify(response)

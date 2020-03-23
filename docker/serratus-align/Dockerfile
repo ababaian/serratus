@@ -99,8 +99,7 @@ ARG BASEDIR=/home/serratus
 ENV BASEDIR=/home/serratus
 RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
 
-COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
-RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
+RUN yum install -y util-linux # flock
 
 WORKDIR /home/serratus
 COPY scripts/worker.sh ./
