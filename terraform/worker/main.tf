@@ -15,6 +15,8 @@ variable "spot_price" {
 
 variable "volume_size" {
   type = number
+  description = "Size of the root EBS volume in GB"
+  default = 8
 }
 
 variable "allow_ssh" {
