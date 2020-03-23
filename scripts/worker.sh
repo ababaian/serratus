@@ -1,16 +1,26 @@
 #!/usr/bin/bash
 set -eux
+
+# Wrapper script to serratus-{dl,align-merge}.  This script provides looping,
+# multi-threading and also checks for spot termination.  If nodes are
+# terminated by Spot, then it shuts everything down and tells the scheduler.
+
 if [ ! -x "$2" ]; then
     echo "usage: worker.sh <split|align|merge> <script.sh> [args]"
     exit 1
 fi
-
 TYPE="$1"; shift
+
+if [ -z "$SCHEDULER" ]; then
+    echo Please set SCHEDULER environment variable.
+    exit 1
+fi
+WORKERS=${WORKERS:-'1'}
 
 # Default base directory is /home/serratus
 function wait_for_scheduler {
     while true; do
-        if [ "$(curl -s "$SCHED/status" | jq -r .status)" == "up" ]; then
+        if [ "$(curl -s "$SCHEDULER/status" | jq -r .status)" == "up" ]; then
             break
         else
             sleep 5
@@ -23,7 +33,7 @@ function terminate_handler {
     echo "    In trap $(date -In)"
     # Tell server to reset this job to a "new" state, since we couldn't
     # finish processing it.
-    curl -s -X POST "$SCHED/jobs/$TYPE/$ACC_ID&state=terminated"
+    curl -s -X POST "$SCHEDULER/jobs/$TYPE/$ACC_ID&state=terminated"
 }
 
 function main_loop {
@@ -32,33 +42,35 @@ function main_loop {
     # the command to finish before executing its traps.  When we use "& wait",
     # the command will recieve the same trap (killing it), and then run our
     # trap handler, which tells the server our job failed.
-    # what if we & wait on the whole main_loop function instead? Test this.
-    WORKERID=$1
+    WORKER_ID="$INSTANCE_ID-$1"
+    shift
 
     # TODO: Wrap job query into self-contained function?
     while true; do
-        echo "$WORKERID - Requesting job from Scheduler..."
-        JOB_JSON=$(curl -s -X POST "$SCHED/jobs/$TYPE/")
+        echo "$WORKER_ID - Requesting job from Scheduler..."
+        JOB_JSON=$(curl -s -X POST "$SCHEDULER/jobs/$TYPE/")
         ACTION=$(echo $JOB_JSON | jq -r .action)
 
         case "$ACTION" in
           process)
-            echo "  $WORKERID - Process State received.  Running $@"
-            export JOB_JSON
+            echo "  $WORKER_ID - Process State received.  Running $@"
+            export JOB_JSON WORKER_ID
+
+            # Run the target script.
             "$@" & wait
             ;;
           wait)
-            echo "  $WORKERID - Wait State received."
+            echo "  $WORKER_ID - Wait State received."
             sleep 3
             continue
             ;;
           shutdown)
-            echo "  $WORKERID - Shutdown State received."
+            echo "  $WORKER_ID - Shutdown State received."
             exit 0
             ;;
-          *)        echo "  $WORKERID - ERROR: Unknown State received."
+          *)        echo "  $WORKER_ID - ERROR: Unknown State received."
             exit 1
-            echo "  $WORKERID - ERROR: Unknown State received."
+            echo "  $WORKER_ID - ERROR: Unknown State received."
             exit 1
         esac
     done
@@ -70,9 +82,11 @@ echo "=========================================="
 cd $BASEDIR
 wait_for_scheduler
 
+
+INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 # Fire up main loop (SRA downloader)
 for i in $(seq 1 "$WORKERS"); do
-    main_loop "$i" & worker[i]=$!
+    main_loop "$i" "$@" & worker[i]=$!
 done
 
 # Spot Operations ===============================

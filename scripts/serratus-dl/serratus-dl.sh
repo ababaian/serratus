@@ -60,12 +60,14 @@ function usage {
   echo "    Outputs Uploaded to s3: "
   echo "          <output_prefix>.fq.xxxx ... <output_prefix>.fq.yyyy"
   echo ""
+  echo "    Environment variables:"
+  echo "      SCHEDULER: A url pointing to the scheduler.  This is overridden by -u"
+  echo "      JOB_JSON: A JSON string containing the description of work to do"
   echo "ex: docker exec serratus-dl -u localhost:8000"
   exit 1
 }
 # Scheduler / Container Parameters
-SCHED='localhost:8000'
-WORKERS='1'
+SCHEDULER=${SCHEDULER:-'localhost:8000'}
 
 # SRA Accession -S
 SRA=''
@@ -88,10 +90,7 @@ while getopts u:w:n:s:ak:D:P:U:d:oh FLAG; do
   case $FLAG in
     # Input Options ---------
     u)
-      SCHED=$OPTARG
-      ;;
-    w)
-      WORKERS=$OPTARG
+      SCHEDULER=$OPTARG
       ;;
     n)
       THREADS=$OPTARG
@@ -141,7 +140,7 @@ SRA=$(echo $JOB_JSON | jq -r .sra_run_info.Run)
 # Set up a error trap.  If something goes wrong unexpectedly, this will send
 # a message to the scheduler before exiting.
 function error {
-    curl -s -X POST "$SCHED/jobs/split/$ACC_ID?status=split_err"
+    curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_err"
     exit 0 # Already told the calling script.
 }
 trap error ERR
@@ -265,8 +264,8 @@ cd $BASEDIR; rm -rf $WORKDIR/*
 # Update to scheduler -------------------------------------
 # ---------------------------------------------------------
 ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
-echo "  $WORKERID - Job $ACC_ID is complete. Update scheduler."
-curl -s -X POST "$SCHED/jobs/split/$ACC_ID?status=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired"
+echo "  $WORKER_ID - Job $ACC_ID is complete. Update scheduler."
+curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired"
 
 echo "============================"
 echo "======= RUN COMPLETE ======="

@@ -4,17 +4,6 @@ variable "up" {
   default     = true
 }
 
-variable "scheduler_port" {
-  description = "The port the worker will use to contact the scheduler"
-  type        = number
-  default     = 8000
-}
-
-variable "scheduler_dns" {
-  description = "IP Address of the scheduler"
-  type        = string
-}
-
 variable "instance_type" {
   description = "Type of node to use for the workers"
   type        = string
@@ -32,6 +21,10 @@ variable "allow_ssh" {
   description = "Allow SSH access to the nodes"
   type        = bool
   default     = true
+}
+
+variable "scheduler" {
+  type = string
 }
 
 variable "dev_cidrs" {
@@ -74,6 +67,11 @@ variable "security_group_ids" {
   default = []
 }
 
+variable "options" {
+  type = string
+  description = "Options to pass to the container"
+}
+
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["self"]
@@ -82,7 +80,6 @@ data "aws_ami" "amazon_linux_2" {
     name   = "name"
     values = ["packer-amazon-linux-2-docker-*"]
   }
-
 }
 
 data "aws_availability_zones" "all" {}
@@ -166,9 +163,9 @@ resource "aws_launch_configuration" "worker" {
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
                 --log-opt awslogs-group="${aws_cloudwatch_log_group.g.name}" \
                 --name ${var.image_name} \
+                -e SCHEDULER=${var.scheduler} \
                 ${var.dockerhub_account}/${var.image_name} \
-                -u ${var.scheduler_dns}:${var.scheduler_port} \
-                -k s3://${var.s3_bucket}/${var.s3_prefix}
+                ${var.options}
               EOF
 }
 

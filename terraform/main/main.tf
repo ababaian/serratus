@@ -21,6 +21,11 @@ variable "dockerhub_account" {
   type = string
 }
 
+variable "scheduler_port" {
+  type  = number
+  default = 8000
+}
+
 provider "aws" {
   region = var.aws_region
 }
@@ -48,6 +53,7 @@ module "scheduler" {
   instance_type      = "t3.nano"
   dockerhub_account  = var.dockerhub_account
   key_name           = var.key_name
+  scheduler_port     = var.scheduler_port
 }
 
 module "splitter" {
@@ -55,7 +61,6 @@ module "splitter" {
 
   up                 = var.up
   dev_cidrs          = var.dev_cidrs
-  scheduler_dns      = module.scheduler.public_dns
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "t3.small"
   spot_price         = 0.007
@@ -65,6 +70,8 @@ module "splitter" {
   dockerhub_account  = var.dockerhub_account
   image_name         = "serratus-dl"
   key_name           = var.key_name
+  scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
+  options            = "-k s3://${aws_s3_bucket.work.bucket}/fq-blocks"
 }
 
 output "scheduler_dns" {

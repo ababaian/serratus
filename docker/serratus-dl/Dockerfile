@@ -125,17 +125,19 @@ ARG BASEDIR=/home/serratus
 ENV BASEDIR=/home/serratus
 RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
 
-WORKDIR /home/serratus
-COPY scripts/serratus-dl/* ./
 COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
+
+WORKDIR /home/serratus
+COPY scripts/worker.sh ./
+COPY scripts/serratus-dl/* ./
 
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
 #Usage: docker run serratus-dl -u $SCHEDULER:$PORT [OPTIONS]
 
-ENTRYPOINT ["./serratus-dl.sh"]
+ENTRYPOINT ["./worker.sh", "split", "./serratus-dl.sh"]
 
 #==========================================================
 # DEV  ====================================================
