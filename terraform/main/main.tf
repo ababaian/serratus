@@ -31,12 +31,27 @@ provider "aws" {
 }
 
 resource "aws_security_group" "internal" {
-  name = "allow_internal"
+  name = "serratus-internal"
   ingress {
+    # Allow all internal traffic between workers
     from_port = 0
     to_port   = 0
     protocol  = "-1"
     self      = true
+  }
+  ingress {
+    # Allow dev SSH access from a minimal IP range
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = var.dev_cidrs
+  }
+  egress {
+    # Required to download docker images and yum-update.
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 

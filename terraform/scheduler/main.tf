@@ -8,12 +8,6 @@ variable "instance_type" {
   type = string
 }
 
-variable "allow_ssh" {
-  description = "Allow SSH access to the nodes"
-  type        = bool
-  default     = true
-}
-
 variable "dev_cidrs" {
   description = "Remote IP Address, for testing access"
   type        = set(string)
@@ -52,32 +46,6 @@ data "aws_ami" "amazon_linux_2" {
 
 data "aws_region" "current" {}
 
-resource "aws_security_group" "scheduler" {
-  name = "serratus-scheduler"
-  ingress {
-    from_port   = var.scheduler_port
-    to_port     = var.scheduler_port
-    protocol    = "tcp"
-    cidr_blocks = var.dev_cidrs
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  dynamic "ingress" {
-    for_each = var.allow_ssh ? [0] : []
-
-    content {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = var.dev_cidrs
-    }
-  }
-}
-
 module "iam_role" {
   source = "../iam_role"
   name   = "scheduler"
@@ -96,7 +64,7 @@ resource "aws_instance" "scheduler" {
   ami                                  = data.aws_ami.amazon_linux_2.id
   instance_initiated_shutdown_behavior = "terminate"
   instance_type                        = var.instance_type
-  vpc_security_group_ids               = concat([aws_security_group.scheduler.id], var.security_group_ids)
+  vpc_security_group_ids               = var.security_group_ids
   key_name                             = var.key_name
   iam_instance_profile                 = module.iam_role.instance_profile.name
   monitoring                           = true

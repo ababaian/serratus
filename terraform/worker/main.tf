@@ -86,28 +86,6 @@ data "aws_availability_zones" "all" {}
 
 data "aws_region" "current" {}
 
-resource "aws_security_group" "worker" {
-  name = "worker"
-  dynamic "ingress" {
-    for_each = var.allow_ssh ? [0] : []
-
-    content {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = var.dev_cidrs
-    }
-  }
-
-  # This rule is required for downloading docker images.
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
 resource "aws_cloudwatch_log_group" "g" {
   name = var.image_name
 }
@@ -142,7 +120,7 @@ resource "aws_launch_configuration" "worker" {
   name_prefix          = "tf-${var.image_name}-"
   image_id             = data.aws_ami.amazon_linux_2.id
   instance_type        = var.instance_type
-  security_groups      = concat([aws_security_group.worker.id], var.security_group_ids)
+  security_groups      = var.security_group_ids
   spot_price           = var.spot_price
   key_name             = var.key_name
   iam_instance_profile = module.iam_role.instance_profile.name
