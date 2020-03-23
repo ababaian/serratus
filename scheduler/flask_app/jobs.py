@@ -159,6 +159,10 @@ def start_align_job():
     response.update(acc.to_dict())
     session.commit()
 
+    # TODO Move these into the database
+    response['align_args'] = "--very-sensitive-local"
+    response['genome'] = "hgr1"
+
     # Send the response as JSON
     return jsonify(response)
 
