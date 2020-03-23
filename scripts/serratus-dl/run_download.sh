@@ -90,14 +90,18 @@ fi
 # Script --------------------
 cd $WORKDIR
 
-echo "      fastq-dump --split-e $SRA"
-fastq-dump --split-e $SRA
+if [ "$THREADS" = '1' ]
+then
+  echo "      fastq-dump --split-e $SRA"
+  time fastq-dump --split-e $SRA
+  echo "      Download complete."
+else
+  echo "      fasterq-dump -e $THREADS -3 $SRA"
+  time fasterq-dump -e $THREADS -3 $SRA
+  echo "      Download complete."
+fi
+
 if [ -f "$SRA.fastq" ]; then
     mv "$SRA.fastq" "$SRA"_3.fastq
 fi
 
-# TODO: Update to fasterq-dump
-#echo "      fasterq-dump  $SRA -e $THREADS"
-#fasterq-dump $SRA -e $THREADS
-
-echo "      Download complete."
