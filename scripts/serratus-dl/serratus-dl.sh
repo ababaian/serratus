@@ -187,7 +187,7 @@ $BASEDIR/run_download.sh -s $SRA -n $THREADS $DL_ARGS
 echo ''
 
 # Detect downloaded fastq files for split logic
-FQ0=$(ls *_0.fastq 2>/dev/null || true)
+FQ0=$(ls *_3.fastq 2>/dev/null || true)
 FQ1=$(ls *_1.fastq 2>/dev/null || true)
 FQ2=$(ls *_2.fastq 2>/dev/null || true)
 

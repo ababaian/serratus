@@ -7,7 +7,8 @@ FROM amazonlinux:2 AS build_base
 # sudo yum -y install docker
 # sudo service docker start
 
-# sudo docker build --no-cache -t serratus-dl:0 -t serratus-dl:latest .
+# sudo docker build --no-cache -t serratus-dl:0 -t serratus-dl:latest -f docker/serratus-dl/Dockerfile .
+
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
 
 # cd serratus/scheduler
