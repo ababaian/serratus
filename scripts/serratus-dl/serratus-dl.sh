@@ -67,7 +67,6 @@ function usage {
   exit 1
 }
 # Scheduler / Container Parameters
-SCHEDULER=${SCHEDULER:-'localhost:8000'}
 
 # SRA Accession -S
 SRA=''
@@ -132,6 +131,11 @@ while getopts u:w:n:s:ak:D:P:U:d:oh FLAG; do
   esac
 done
 shift $((OPTIND-1))
+
+if [ -z "$SCHEDULER" ]; then
+    echo Please set SCHEDULER environment variable or use -k flag.
+    exit 1
+fi
 
 # Parse SRA Accession ID
 ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)

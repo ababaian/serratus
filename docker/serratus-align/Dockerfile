@@ -98,34 +98,20 @@ RUN adduser serratus
 ARG BASEDIR=/home/serratus
 ENV BASEDIR=/home/serratus
 RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
-RUN cd $BASEDIR; mkdir -p scripts
 
-# Serratus Scripts ==============================
-# URL to latest serratus repo (raw)
-ARG GIT_SERRATUS="https://raw.githubusercontent.com/ababaian/serratus/master/"
+COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
+RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
 
-## /home/serratus/serratus-dl.sh
-RUN wget -O $BASEDIR/serratus-align.sh \
-  $GIT_SERRATUS/scripts/serratus-align/serratus-align.sh
-
-## /home/serratus/scripts/
-  # run_bowtie.sh
-RUN wget -O $BASEDIR/scripts/run_bowtie2.sh \
-  $GIT_SERRATUS/scripts/serratus-align/run_bowtie2.sh
-
-# Set script permissions
-RUN chmod 755 $BASEDIR/serratus-align.sh
-RUN chmod 755 $BASEDIR/scripts/*
-
-# Pre-install genomes ===========================
-
+WORKDIR /home/serratus
+COPY scripts/worker.sh ./
+COPY scripts/serratus-align/* ./
 
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
 #Usage: docker exec serratus-align -u SCHED [OPTIONS]
 
-ENTRYPOINT ["/bin/bash", "/home/serratus/serratus-align.sh"]
+ENTRYPOINT ["./worker.sh", "align", "./serratus-align.sh"]
 
 #==========================================================
 # DEV  ====================================================

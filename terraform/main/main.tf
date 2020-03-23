@@ -79,7 +79,7 @@ module "splitter" {
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "t3.small"
   spot_price         = 0.007
-  volume_size        = 50
+  volume_size        = 50 # TODO 1TB and test st1/sc
   s3_bucket          = aws_s3_bucket.work.bucket
   s3_prefix          = "fq-blocks"
   dockerhub_account  = var.dockerhub_account
@@ -87,6 +87,23 @@ module "splitter" {
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
   options            = "-k s3://${aws_s3_bucket.work.bucket}/fq-blocks"
+}
+
+module "align" {
+  source = "../worker"
+
+  up                 = var.up
+  dev_cidrs          = var.dev_cidrs
+  security_group_ids = [aws_security_group.internal.id]
+  instance_type      = "t3.small"
+  spot_price         = 0.007
+  s3_bucket          = aws_s3_bucket.work.bucket
+  s3_prefix          = "bam-blocks"
+  dockerhub_account  = var.dockerhub_account
+  image_name         = "serratus-align"
+  key_name           = var.key_name
+  scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
+  options            = "-k s3://${aws_s3_bucket.work.bucket}"
 }
 
 output "scheduler_dns" {
