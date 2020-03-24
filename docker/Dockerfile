@@ -19,6 +19,22 @@ FROM amazonlinux:2 AS serratus-base
 # sudo docker build -t serratus-align:0 -t serratus-align:latest -f docker/serratus-align/Dockerfile .
 # sudo docker build -t serratus-merge:0 -t serratus-merge:latest -f docker/serratus-merge/Dockerfile .
 
+## Uploading serratus container images to AWS ECR
+## Paste resulting command in terminal to authenticate
+# aws ecr get-login --region us-east-1 --no-include-email
+
+## Tag images with ECR information
+# sudo docker tag serratus-base:latest 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-base
+# sudo docker tag serratus-dl:latest 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-dl
+# sudo docker tag serratus-align:latest 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-align
+# sudo docker tag serratus-merge:latest 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-merge
+
+## Push images to ECR (rather host on dockerhub)
+## Make sure to initialize each repository on your AWS ECR account
+# sudo docker push 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-base
+# sudo docker push 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-dl
+# sudo docker push 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-align
+# sudo docker push 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-merge
 
 ## Run interactive serratus-dl
 # sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
