@@ -1,5 +1,4 @@
-# Docker Base: amazon linux2
-FROM amazonlinux:2 AS build_base
+FROM serratus-base:latest AS build_base
 
 #==========================================================
 # Container Meta-data =====================================
