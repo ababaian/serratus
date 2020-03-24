@@ -332,7 +332,7 @@ echo "  Status: DONE"
 # ---------------------------------------------------------
 # Tell the scheduler we're done
 echo "  $WORKER_ID - Job $SRA is complete. Update scheduler."
-curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID&state=done&N=$BL_N"
+curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID?state=done"
 
 cd $BASEDIR; rm -rf $WORKDIR/*
 
