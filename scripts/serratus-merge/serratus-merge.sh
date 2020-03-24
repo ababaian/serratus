@@ -224,9 +224,9 @@ echo " merge arg: $MERGE_ARGS"
 
 BL_COUNT=$(aws s3 ls $S3_BAM/ | wc -l | cut -f1 -d' ' -)
 
-if [[ "$BLOCKS" != "BL_COUNT" ]]
+if [[ "$BLOCKS" != "$BL_COUNT" ]]
  then
-   echo "  ERROR: Number of bam-blocks in $S3_OUT"
+   echo "  ERROR: Number of bam-blocks in $S3_OUT: $BL_COUNT"
    echo "         is not equal to the expected $BLOCKS"
    echo ""
    echo "  aws s3 ls $S3_BAM/"
