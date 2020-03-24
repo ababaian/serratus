@@ -307,6 +307,6 @@ else
   if [ $DEBUG = "F" ]
   then
     # Clean-up temporary files
-    rm *tmp aligned_unsorted.bam
+    rm aligned_unsorted.bam
   fi
 fi
