@@ -165,7 +165,7 @@ resource "aws_launch_configuration" "worker" {
 
   user_data = <<-EOF
               #!/bin/bash
-              instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+              instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               docker run -d \
                 --log-driver=awslogs \
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
