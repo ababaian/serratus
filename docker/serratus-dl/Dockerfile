@@ -30,7 +30,7 @@ RUN yum -y install pigz
 # Install Software ========================================
 #==========================================================
 # SRATOOLKIT ====================================
-RUN wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}/sratoolkit.${SRATOOLKITVERSION}-centos_linux64.tar.gz &&\
+RUN wget --quiet https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}/sratoolkit.${SRATOOLKITVERSION}-centos_linux64.tar.gz &&\
     tar xzf sratoolkit.${SRATOOLKITVERSION}-centos_linux64.tar.gz &&\
     rm -f sratoolkit.${SRATOOLKITVERSION}-centos_linux64.tar.gz &&\
     mv ./sratoolkit.${SRATOOLKITVERSION}-centos_linux64 /opt &&\
@@ -42,7 +42,7 @@ RUN wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}/sratool
 ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 
 # GDC-CLIENT ===================================
- RUN wget https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
+ RUN wget --quiet https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
     unzip gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
     rm    gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
     mv gdc-client /usr/local/bin/

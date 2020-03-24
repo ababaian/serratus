@@ -33,7 +33,7 @@ LABEL tags="aws-cli, samtools, bowtie2, gatk"
 # /usr/local/bin/bowtie2-*
 
 # Pre-compiled binary
-RUN wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/"$BOWTIEVERSION"/bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip &&\
+RUN wget --quiet https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/"$BOWTIEVERSION"/bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip &&\
   unzip bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip &&\
   rm    bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip
 
