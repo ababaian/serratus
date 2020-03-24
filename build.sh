@@ -7,7 +7,8 @@ podman build -f docker/Dockerfile -t serratus-base .
 for img in $images; do
     (
         podman build -f "docker/serratus-$img/Dockerfile" -t $user/serratus-$img .
-        podman push $user/serratus-$img
+        podman push -q $user/serratus-$img
+        echo "Done pushing serratus-$img"
     ) &
 done
 wait
