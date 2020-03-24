@@ -118,19 +118,22 @@ def finish_split_job(acc_id):
     acc.contains_unpaired = n_unpaired > 0
 
     # AB: if there is paired-read data then ignore unpaired data
-    number_split = n_paired or n_unpaired
+    blocks = n_paired or n_unpaired
 
     # Insert N align jobs into the alignment table.
-    for i in range(int(number_split)):
+    for i in range(int(blocks)):
         block = db.Block(state='new', acc_id=acc.acc_id, n=i)
         session.add(block)
+
+    acc.blocks = blocks
+    session.add(acc)
 
     row_count = session.query(db.Block).count()
     session.commit()
 
     return jsonify({
         'result': 'success',
-        'inserted_rows': number_split,
+        'inserted_rows': blocks,
         'total_rows': row_count,
     })
 

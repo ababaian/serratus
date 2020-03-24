@@ -30,6 +30,7 @@ class Accession(Base, Dicter):
 
     contains_paired = Column(Boolean)
     contains_unpaired = Column(Boolean)
+    blocks = Column(Integer)
     sra_run_info = Column(JSON)
 
 BLOCK_STATES = ('new', 'aligning', 'done', 'fail')
