@@ -48,8 +48,13 @@ function main_loop {
     # TODO: Wrap job query into self-contained function?
     while true; do
         echo "$WORKER_ID - Requesting job from Scheduler..."
-        JOB_JSON=$(curl -s -X POST "$SCHEDULER/jobs/$TYPE/")
-        ACTION=$(echo $JOB_JSON | jq -r .action)
+        JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/" || true)
+
+        if [ -n "$JOB_JSON" ]; then
+            ACTION=$(echo $JOB_JSON | jq -r .action)
+        else
+            ACTION=retry
+        fi
 
         case "$ACTION" in
           process)
@@ -64,12 +69,18 @@ function main_loop {
             sleep 10
             continue
             ;;
+          retry)
+            echo "  $WORKER_ID - Scheduler not reached.  Waiting"
+            sleep 10
+            continue
+            ;;
           shutdown)
             echo "  $WORKER_ID - Shutdown State received."
             exit 0
             ;;
           *)        echo "  $WORKER_ID - ERROR: Unknown State received."
             echo "  $WORKER_ID - ERROR: Unknown State received."
+            exit 1
         esac
     done
 }
