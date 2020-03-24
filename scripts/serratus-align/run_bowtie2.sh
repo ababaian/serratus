@@ -13,14 +13,14 @@ AMI_VERSION='ami-059b454759561d9f4'
 function usage {
   echo ""
   echo "Usage: run_bowtie2.sh -1 READ1.fq(.gz) -2 READ2.fq -x GENOME [-LISPF] -o <output_prefix>"
-  echo "   or: run_bowtie2.sh -0 READ0.fq(.gz) -x GENOME [-LISPF] -o <output_prefix>"
+  echo "   or: run_bowtie2.sh -U READ0.fq(.gz) -x GENOME [-LISPF] -o <output_prefix>"
   echo ""
   echo "    Default behaviour is to retain mapped-reads and their unmapped-pairs only"
   echo ""
-  echo "    Fastq input req: (-1 <1.fq> -2 <2.fq> ) || -0 <0.fq>"
+  echo "    Fastq input req: (-1 <1.fq> -2 <2.fq> ) || -U <0.fq>"
   echo "    -1    path to fastq paired-end reads 1"
   echo "    -2    path to fastq paired-end reads 2"
-  echo "    -0    path to fastq unpaired reads"
+  echo "    -U    path to fastq unpaired reads"
   echo ""
   echo "    bowtie2 Alignment Parameters"
   echo "    -x    path to _name_ of bt2-indexed genome (exclude .fa extension)"
@@ -43,7 +43,7 @@ function usage {
   echo "             <output_prefix>.bam.bai"
   echo "             <output_prefix>.flagstat"
   echo ""
-  echo "ex: ./run_bowtie2.sh -0 ~/unpaired.fq -x ~/hg38 -o testLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bowtie2.sh -U ~/unpaired.fq -x ~/hg38 -o testLib -I SRAX -S example -P silico"
   echo "ex: ./run_bowtie2.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x /tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
   exit 1
 }
@@ -138,7 +138,7 @@ if [ -z "$FQ1" ] & [ -z "$FQ2" ]
 then
   if [ -z "$FQ0" ]
   then
-    echo "Fastq input required. Either -1 & -2, or -0"
+    echo "Fastq input required. Either -1 & -2, or -U"
     usage
   else
     paired_run="F"
@@ -266,13 +266,13 @@ else
   echo "bowtie2 $BT2_ARG -p $THREADS \\"
   echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
   echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -0 $FQ0 | \\"
+  echo "  -x hgr1 -U $FQ0 | \\"
   echo "samtools view -bS - > aligned_unsorted.bam"
 
   bowtie2 $BT2_ARG -p $THREADS \
     --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
     --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -0 $FQ0 | \
+    -x hgr1 -U $FQ0 | \
     samtools view -bS - > aligned_unsorted.bam
 
   echo ""
