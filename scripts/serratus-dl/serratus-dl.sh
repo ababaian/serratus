@@ -192,9 +192,9 @@ $BASEDIR/run_download.sh -s $SRA -n $THREADS $DL_ARGS
 echo ''
 
 # Detect downloaded fastq files for split logic
-FQ0=$(ls *_3.fastq 2>/dev/null || true)
 FQ1=$(ls *_1.fastq 2>/dev/null || true)
 FQ2=$(ls *_2.fastq 2>/dev/null || true)
+FQ3=$(ls *_3.fastq 2>/dev/null || true)
 
 if [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
 then
@@ -205,7 +205,7 @@ else
   echo "  Paired-end reads not-detected"
 fi
 
-if [[ ( -s $FQ0 && -n $FQ0 ) ]]
+if [[ ( -s $FQ3 && -n $FQ3 ) ]]
 then
   unpaired_exists=true
   echo "  Unpaired reads detected"
@@ -224,7 +224,7 @@ then
 fi
 
 # RUN SPLIT ===============================================
-# Add FQ0 vs. FQ1+FQ2 logic here
+# Add FQ3 vs. FQ1+FQ2 logic here
 echo "  Running -- run_split.sh --"
 
 if [[ "$paired_exists" = true ]]
@@ -235,7 +235,7 @@ then
 elif [[ "$unpaired_exists" = true ]]
 then
   echo "  .$BASEDIR/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-  bash $BASEDIR/run_split.sh -f $FQ0 -o $SRA -p $THREADS $SPLIT_ARGS
+  bash $BASEDIR/run_split.sh -f $FQ3 -o $SRA -p $THREADS $SPLIT_ARGS
 
 else
   echo "   ERROR: Neither paired or unpaired reads detected"
@@ -247,7 +247,7 @@ fi
 N_paired=$( (ls *1.fq.* 2>/dev/null ) | wc -l)
 echo "    N paired-end fq-blocks: $N_paired"
 
-N_unpaired=$((ls *0.fq.* 2>/dev/null ) | wc -l)
+N_unpaired=$((ls *3.fq.* 2>/dev/null ) | wc -l)
 echo "    N unpaired   fq-blocks: $N_unpaired"
 echo ""
 

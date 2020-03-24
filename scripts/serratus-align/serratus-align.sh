@@ -80,9 +80,9 @@ THREADS='1'
 # Inputs (manual overwrite)
 SRA=''
 GENOME=''
-S3_FQ0=''
 S3_FQ1=''
 S3_FQ2=''
+S3_FQ3=''
 
 # AWS Options -ak
 AWS_CONFIG='TRUE'
@@ -118,14 +118,14 @@ while getopts u:k:a:n:s:g:0:1:2:A:U:d:o:wh FLAG; do
     g)
       GENOME=$OPTARG
       ;;
-    0)
-      S3_FQ0=$OPTARG
-      ;;
     1)
       S3_FQ1=$OPTARG
       ;;
     2)
       S3_FQ2=$OPTARG
+      ;;
+    3)
+      S3_FQ3=$OPTARG
       ;;
     w)
       AWS_CONFIG='TRUE'
@@ -170,9 +170,9 @@ cd $BASEDIR
 # DATA NEEDED FROM SCHEDULER
 # SRA: SRA accession / run-name
 # PAIRED: [true / false] is there paired-end fq data to process, else un-paired
-# FQ0: S3 path to unpaired fq-block
 # FQ1: S3 path to paired fq-block 1/2
 # FQ2: S3 path to paired fq-block 2/2
+# FQ3: S3 path to unpaired fq-block
 # BL_N: Block number
 # GENOME: genome reference name
 # ALIGN_ARG: Arguments to pass to aligner
@@ -210,9 +210,9 @@ RGSM=$(echo $JOB_JSON | jq -r .sra_run_info.BioSample)
 RGPO=$(echo $JOB_JSON | jq -r .sra_run_info.Experiment)
 RGPL=$(echo $JOB_JSON | jq -r .sra_run_info.Platform)
 
-S3_FQ0=$(printf 's3://%s/fq-blocks/%s/%s.0.fq.%010d.gz' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
 S3_FQ1=$(printf 's3://%s/fq-blocks/%s/%s.1.fq.%010d.gz' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
 S3_FQ2=$(printf 's3://%s/fq-blocks/%s/%s.2.fq.%010d.gz' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
+S3_FQ3=$(printf 's3://%s/fq-blocks/%s/%s.3.fq.%010d.gz' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
 
 # TODO: Allow the scheduler/main data-table to have arugments
 # which will be passed on to the aligner scripts
@@ -281,9 +281,9 @@ then
 
 else
   echo "  Downloading unpaired fq-block data..."
-  aws s3 cp $S3_FQ0 ./
+  aws s3 cp $S3_FQ3 ./
 
-  FQ0=$(basename $S3_FQ0)
+  FQ3=$(basename $S3_FQ3)
 fi
 
 ## Test data
@@ -296,23 +296,23 @@ echo "  Running -- run_bowtie2.sh --"
 
 if [[ "$PAIRED" = true ]]
 then
-  echo "  bash $BASEDIR/scripts/run_bowtie2.sh " &&\
+  echo "  bash $BASEDIR/run_bowtie2.sh " &&\
   echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
   echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
   echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
-  bash $BASEDIR/scripts/run_bowtie2.sh \
+  bash $BASEDIR/run_bowtie2.sh \
     -1 $FQ1 -2 $FQ2 -x $GENOME \
     -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
     -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
 else
-  echo "  bash $BASEDIR/scripts/run_bowtie2.sh " &&\
-  echo "    -0 $FQ0 -x $GENOME" &&\
+  echo "  bash $BASEDIR/run_bowtie2.sh " &&\
+  echo "    -0 $FQ3 -x $GENOME" &&\
   echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
   echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
-  bash $BASEDIR/scripts/run_bowtie2.sh \
-    -0 $FQ0 -x $GENOME \
+  bash $BASEDIR/run_bowtie2.sh \
+    -0 $FQ3 -x $GENOME \
     -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
     -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
 fi
@@ -339,7 +339,7 @@ if [[ "$PAIRED" = true ]]; then
     aws s3 rm $S3_FQ1
     aws s3 rm $S3_FQ2
 else
-    aws s3 rm $S3_FQ0
+    aws s3 rm $S3_FQ3
 fi
 
 echo "============================"

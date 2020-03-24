@@ -49,12 +49,12 @@ function usage {
 }
 
 # PARSE INPUT =============================================
-# Initialize input options -b012
+# Initialize input options -b123
 BAM=""
 # Input Fastq files - paired 1+2 | unknown 0
 FQ1=""
 FQ2=""
-FQ0=""
+FQ3=""
 
 # fq-block parameters -nzp
 BLOCKSIZE=1000000
@@ -73,7 +73,7 @@ while getopts b:f:1:2:n:p:zd:o:!hz FLAG; do
       BAM=$(readlink -f $OPTARG)
       ;;
     f)
-      FQ0=$(readlink -f $OPTARG)
+      FQ3=$(readlink -f $OPTARG)
       ;;
     1)
       FQ1=$(readlink -f $OPTARG)
@@ -114,7 +114,7 @@ shift $((OPTIND-1))
 
 # Check inputs --------------
 
-if [[ ( -z "$BAM" ) && ( -z "$FQ0" ) && ( -z "$FQ1" || -z "$FQ2" ) ]]
+if [[ ( -z "$BAM" ) && ( -z "$FQ3" ) && ( -z "$FQ1" || -z "$FQ2" ) ]]
 then
   echo "(-b) .bam         OR"
   echo "(-f) .fq unpaired OR"
@@ -137,7 +137,7 @@ echo " version:   $PIPE_VERSION"
 echo " ami:       $AMI_VERSION"
 echo " run-id:    $RUNID"
 echo " workdir:   $WORKDIR"
-echo " input(s):  $BAM $FQ0 $FQ1 $FQ2"
+echo " input(s):  $BAM $FQ3 $FQ1 $FQ2"
 echo " output:    $OUTNAME"
 echo " blockSize: $BLOCKSIZE"
 
@@ -168,21 +168,21 @@ if [[ -s $BAM && -n $BAM ]]
 then
   echo "  Processing bam-input"
   # Set created FQ filename variables
-  FQ0=$OUTNAME.0.fq
   FQ1=$OUTNAME.1.fq
   FQ2=$OUTNAME.2.fq
+  FQ3=$OUTNAME.3.fq
 
   # Sort input bam by read-name (for paired-end)
   samtools sort -n -l 0 $BAM |
   samtools fastq \
-    -0 $FQ0 \
+    -0 $FQ3 \
     -1 $FQ1 -2 $FQ2 \
     -@ $THREADS -
 
   # Count how many lines in each file
-  lc0=$(wc -l $FQ0 | cut -f1 -d' ' -)
   lc1=$(wc -l $FQ1 | cut -f1 -d' ' -)
   lc2=$(wc -l $FQ2 | cut -f1 -d' ' -)
+  lc3=$(wc -l $FQ3 | cut -f1 -d' ' -)
 
   # For Paired-End Reads; ensure equal read-pairs
   # to continue
@@ -196,11 +196,11 @@ then
     echo "all good!"
   fi
 
-  if [ $lc0 != "0" ]
+  if [ $lc3 != "0" ]
   then
-    fq-block-generate $FQ0
+    fq-block-generate $FQ3
   else
-    echo "$FQ0 is empty... skipping"
+    echo "$FQ3 is empty... skipping"
   fi
 
   if [ $lc1 != "0" ]
@@ -258,26 +258,26 @@ then
   fi
 
 # Single-End FQ input -------------------------------------
-elif [[ -s $FQ0 && -n $FQ0 ]]
+elif [[ -s $FQ3 && -n $FQ3 ]]
 then
   # Link fq to RUNID folder
-  ln -s $FQ0 $OUTNAME.0.fq
-  FQ0=$OUTNAME.0.fq
+  ln -s $FQ3 $OUTNAME.3.fq
+  FQ3=$OUTNAME.3.fq
 
   echo "  Processing single-end fq-input"
   # Count how many lines in each file
-  lc0=$(wc -l $FQ0 | cut -f1 -d' ' -)
+  lc3=$(wc -l $FQ3 | cut -f1 -d' ' -)
 
   # Assume a single fastq file is single-end reads
-  if [ $lc0 != "0" ]
+  if [ $lc3 != "0" ]
   then
-    fq-block-generate $FQ0
+    fq-block-generate $FQ3
   else
-    echo "$FQ0 is empty... skipping"
+    echo "$FQ3 is empty... skipping"
   fi
 else
   echo "Error: input(s) do not exist or are non-readable"
-  # Something is wrong, one of BAM, FQ0, FQ1 and FQ2 should exist.
+  # Something is wrong, one of BAM, FQ3, FQ1 and FQ2 should exist.
   exit 3
 fi
 

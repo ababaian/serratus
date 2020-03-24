@@ -27,7 +27,7 @@ function usage {
   echo "    -d    Working directory [$PWD]"
   echo "    -o    <output_prefix> [SRA_ACCESSION]"
   echo ""
-  echo "    Outputs: <output_prefix>.fq.0"
+  echo "    Outputs: <output_prefix>.fq.3"
   echo "             <output_prefix>.fq.1"
   echo "             <output_prefix>.fq.2"
   echo ""

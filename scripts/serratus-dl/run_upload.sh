@@ -16,7 +16,7 @@ function usage {
   echo "    S3 Bucket parameters"
   echo "    -k    S3 URL to upload data to [s3://serratus-public/fq-blocks]"
   echo "    -s    SRA/Accession name"
-  echo "    -r    REGEX string to match files for uploading [\"*.[012].fq*\"]"
+  echo "    -r    REGEX string to match files for uploading [\"*.[123].fq*\"]"
   echo ""
   echo "    Arguments from serratus-dl"
   echo "    <-U>   Arguments as string passed from serratus-dl to"
@@ -28,7 +28,7 @@ function usage {
   echo ""
   echo "ex: ./run_upload.sh -k s3://serratus-public/fq-blocks -s SRA1337"
   echo ""
-  echo "    Will upload all files matching *.[012].fq* in <working dir> to"
+  echo "    Will upload all files matching *.[123].fq* in <working dir> to"
   echo "    s3://serratus-public/fq-blocks/SRA1337/"
   echo ""
   exit 1
@@ -38,7 +38,7 @@ function usage {
 # S3 Bucket for upload
 S3_BUCKET=''
 SRA=''
-UP_REGEX="*.[012].fq*"
+UP_REGEX="*.[123].fq*"
 
 # Script Arguments -DPU
 UL_ARGS=''
