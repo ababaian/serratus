@@ -35,4 +35,4 @@ COPY scripts/serratus-merge/* ./
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
-ENTRYPOINT ["/bin/bash", "/home/serratus/serratus-merge.sh"]
+ENTRYPOINT ["./worker.sh", "merge", "/home/serratus/serratus-merge.sh"]
