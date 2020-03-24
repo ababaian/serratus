@@ -254,12 +254,12 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
 
         aws s3 cp --recursive s3://serratus-public/resources/$GENOME/ $GENDIR/
 
-        if [[ -e "$GENOME.fa" && -e "$GENOME.1.bt2" ]]
+        if [[ -e "$GENDIR/$GENOME.fa" && -e "$GENDIR/$GENOME.1.bt2" ]]
         then
+            echo "  genome download complete"
+        else
             echo " ERROR: $GENOME.fa or $GENOME.1.bt2 index not found"
             exit 1
-        else
-            echo "  genome download complete"
         fi
     fi
 
