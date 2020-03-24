@@ -95,8 +95,8 @@ module "align" {
   up                 = var.up
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "t3.small"
-  spot_price         = 0.007
+  instance_type      = "c5.large" # c5.large
+  spot_price         = 0.04
   s3_bucket          = aws_s3_bucket.work.bucket
   s3_prefix          = "bam-blocks"
   dockerhub_account  = var.dockerhub_account
