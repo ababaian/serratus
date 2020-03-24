@@ -236,7 +236,7 @@ if [[ "$BLOCKS" != "$BL_COUNT" ]]
  fi
 
 # Download bam-blocks
-aws s3 cp $S3_BAM ./
+aws s3 cp --recursive $S3_BAM ./
 
 # RUN MERGE ===============================================
 echo "  Running -- run_merge.sh --"
