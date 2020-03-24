@@ -59,6 +59,12 @@ variable "s3_prefix" {
   description = "Prefix of S3 keys"
 }
 
+variable "s3_delete_prefix" {
+  type        = string
+  description = "Prefix where instance should be able to delete objects"
+  default     = ""
+}
+
 variable "asg_size" {
   type    = number
   default = 1
@@ -111,6 +117,27 @@ resource "aws_iam_role_policy" "s3_write" {
             "Action": "s3:*",
             "Resource": [
                 "arn:aws:s3:::${var.s3_bucket}/${var.s3_prefix}/*"
+            ]
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "s3_delete" {
+  name = "S3DeleteData-${var.image_name}"
+  role = module.iam_role.role.id
+  count = var.s3_delete_prefix != "" ? 1 : 0
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:DeleteObject",
+            "Resource": [
+                "arn:aws:s3:::${var.s3_bucket}/${var.s3_delete_prefix}/*"
             ]
         }
     ]

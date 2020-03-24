@@ -99,6 +99,7 @@ module "align" {
   spot_price         = 0.04
   asg_size           = 1
   s3_bucket          = aws_s3_bucket.work.bucket
+  s3_delete_prefix   = "fq-blocks"
   s3_prefix          = "bam-blocks"
   dockerhub_account  = var.dockerhub_account
   image_name         = "serratus-align"
@@ -116,6 +117,7 @@ module "merge" {
   instance_type      = "t3.small"
   spot_price         = 0.007
   s3_bucket          = aws_s3_bucket.work.bucket
+  s3_delete_prefix   = "bam-blocks"
   s3_prefix          = "out"
   dockerhub_account  = var.dockerhub_account
   image_name         = "serratus-merge"
