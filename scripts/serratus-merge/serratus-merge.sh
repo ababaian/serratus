@@ -71,8 +71,7 @@ function usage {
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Scheduler / Container Parameters
-SCHEDULER='localhost:8000'
-S3_BUCKET='s3://serratus-public/out'
+S3_BUCKET=${S3_BUCKET:-'serratus-public'}
 
 # Merge Options
 THREADS='1'
@@ -151,13 +150,10 @@ while getopts u:k:n:s:b:g:M:d:o:whif FLAG; do
 done
 shift $((OPTIND-1))
 
-# Check inputs --------------
-if [ -z $S3_BAM ]
-then
-  echo "(-o) output prefix is required."
-  usage
+if [ -z "$SCHEDULER" ]; then
+    echo Please set SCHEDULER environment variable or use -k flag.
+    exit 1
 fi
-
 
 # SCRIPT CORE ===================================
 echo "=========================================="
@@ -172,7 +168,7 @@ cd $BASEDIR
 # DATA NEEDED FROM SCHEDULER
 # SRA:    SRA accession / run-name / output name
 # S3_BAM: S3 download directory to bam-blocks
-# BL_N:   Number of bam-blocks expected
+# BLOCKS:   Number of bam-blocks expected
 
 ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
 
@@ -186,11 +182,11 @@ function error {
 trap error ERR
 
 # Parse Job JSON for run parameters
-SRA=$(echo $JOB_JSON | jq -r .sra_run_info.Run)
-S3_BAM=$(jq -r .s3_bam     <(echo $JOB_JSON))
-BL_N=$(jq   -r .block_n    <(echo $JOB_JSON))
+SRA=$(echo $JOB_JSON    | jq -r .sra_run_info.Run)
+PAIRED=$(echo $JOB_JSON | jq -r .contains_paired)
+BLOCKS=$(echo $JOB_JSON | jq -r .blocks)
 
-MERGE_ARGS=$(jq -r .merge_args <(echo $JOB_JSON))
+MERGE_ARGS=$(echo $JOB_JSON | jq -r .merge_args)
 
 # TODO: Allow the scheduler/main data-table to have arugments
 # which will be passed on to the downloader scripts
@@ -204,7 +200,8 @@ MERGE_ARGS=$(jq -r .merge_args <(echo $JOB_JSON))
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 WORKDIR=$BASEDIR/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
-GENDIR=$BASEDIR/$GENOME
+
+S3_BAM=s3://$S3_BUCKET/bam-blocks/$SRA
 
 echo "============================"
 echo "  serratus-merge Pipeline   "
@@ -216,23 +213,21 @@ echo " container: $CONTAINER_VERSION"
 echo " run-id:    $RUNID"
 echo " sra:       $SRA"
 echo " bam path:  $S3_BAM"
-echo " blocks:    $BL_N"
+echo " blocks:    $BLOCKS"
 echo " make bai:  $INDEX"
 echo " make flagstat: $FLAGSTAT"
 echo " merge arg: $MERGE_ARGS"
 
 # COUNT + DL BLOCKS =======================================
 # Query S3_OUT and count number of matching files
-# which should match BL_N parameter from scheduler
+# which should match BLOCKS parameter from scheduler
 
-# If there is a terminal slash on S3_BAM remove it
-S3_BAM=$(echo $S3_BAM | sed -i 's/\/$//g' -)
 BL_COUNT=$(aws s3 ls $S3_BAM/ | wc -l | cut -f1 -d' ' -)
 
-if [[ "$BL_N" != "BL_COUNT" ]]
+if [[ "$BLOCKS" != "BL_COUNT" ]]
  then
    echo "  ERROR: Number of bam-blocks in $S3_OUT"
-   echo "         is not equal to the expected $BL_N"
+   echo "         is not equal to the expected $BLOCKS"
    echo ""
    echo "  aws s3 ls $S3_BAM/"
    echo ""
@@ -240,8 +235,8 @@ if [[ "$BL_N" != "BL_COUNT" ]]
    exit 1
  fi
 
- # Download bam-blocks
- aws s3 cp $S3_BAM ./
+# Download bam-blocks
+aws s3 cp $S3_BAM ./
 
 # RUN MERGE ===============================================
 echo "  Running -- run_merge.sh --"
@@ -276,7 +271,7 @@ echo "  Status: DONE"
 # ---------------------------------------------------------
 # Tell the scheduler we're done
 echo "  $WORKER_ID - Job $SRA is complete. Update scheduler."
-curl -X POST -s "$SCHEDULER/jobs/merge/$ACC_ID&state=merge_done"
+curl -X POST -s "$SCHEDULER/jobs/merge/$ACC_ID?state=merge_done"
 
 cd $BASEDIR; rm -rf $WORKDIR/*
 
