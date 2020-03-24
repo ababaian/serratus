@@ -1,4 +1,5 @@
 # serratus
+![serratus](img/serratus_logo.png)
 
 AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 
@@ -34,6 +35,8 @@ AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 - [Pushing the limits of Amazon S3 Upload Performance](https://improve.dk/pushing-the-limits-of-amazon-s3-upload-performance/)
 - [Clever SRA alignment pipeline](https://github.com/FredHutch/sra-pipeline
 )
+- [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
+
 #### Architecture
 
 ![serratus-overview](img/serratus_overview.png)
