@@ -298,23 +298,23 @@ if [[ "$PAIRED" = true ]]
 then
   echo "  bash $BASEDIR/run_bowtie2.sh " &&\
   echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
-  echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
+  echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
   echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
   bash $BASEDIR/run_bowtie2.sh \
     -1 $FQ1 -2 $FQ2 -x $GENOME \
-    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
-    -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
+    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
+    -L $RGLB -I $RGID -S $RGSM -P $RGPO
 else
   echo "  bash $BASEDIR/run_bowtie2.sh " &&\
   echo "    -0 $FQ3 -x $GENOME" &&\
-  echo "    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS" &&\
+  echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
   echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
   bash $BASEDIR/run_bowtie2.sh \
     -0 $FQ3 -x $GENOME \
-    -o $SRA.$BL_N -p $THREADS $ALIGN_ARGS \
-    -L $RGLB -I $RGID -S $RGSM -P $RGPO & wait
+    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
+    -L $RGLB -I $RGID -S $RGSM -P $RGPO
 fi
 
 # RUN UPLOAD ==============================================
