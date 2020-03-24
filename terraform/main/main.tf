@@ -77,9 +77,10 @@ module "splitter" {
   up                 = var.up
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "t3.small"
-  spot_price         = 0.007
+  instance_type      = "c5.large"
+  spot_price         = 0.04
   volume_size        = 50 # TODO 1TB and test st1/sc
+  volume_type        = "gp2"
   s3_bucket          = aws_s3_bucket.work.bucket
   s3_prefix          = "fq-blocks"
   dockerhub_account  = var.dockerhub_account

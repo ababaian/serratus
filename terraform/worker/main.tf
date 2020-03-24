@@ -19,6 +19,12 @@ variable "volume_size" {
   default = 8
 }
 
+variable "volume_type" {
+  type        = string
+  description = "Type of the root EBS volume: io1, gp2, st1, sc"
+  default     = "gp2"
+}
+
 variable "allow_ssh" {
   description = "Allow SSH access to the nodes"
   type        = bool
@@ -156,6 +162,7 @@ resource "aws_launch_configuration" "worker" {
 
   root_block_device {
     volume_size = var.volume_size
+    volume_type = var.volume_type
   }
 
   # Launch configs can't be destroyed while attached to an ASG.
