@@ -106,6 +106,23 @@ module "align" {
   options            = "-k ${aws_s3_bucket.work.bucket}"
 }
 
+module "merge" {
+  source = "../worker"
+
+  up                 = var.up
+  dev_cidrs          = var.dev_cidrs
+  security_group_ids = [aws_security_group.internal.id]
+  instance_type      = "t3.small"
+  spot_price         = 0.007
+  s3_bucket          = aws_s3_bucket.work.bucket
+  s3_prefix          = "bam-blocks"
+  dockerhub_account  = var.dockerhub_account
+  image_name         = "serratus-merge"
+  key_name           = var.key_name
+  scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
+  options            = "-k ${aws_s3_bucket.work.bucket} -b s3://${aws_s3_bucket.work.bucket}/out"
+}
+
 output "scheduler_dns" {
   value = module.scheduler.public_dns
 }
