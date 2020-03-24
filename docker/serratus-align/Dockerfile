@@ -22,8 +22,6 @@ LABEL tags="aws-cli, samtools, bowtie2, gatk"
 #==========================================================
 # Dependencies ============================================
 #==========================================================
-RUN yum install -y util-linux # flock
-
 # # Libraries for bowtie2
 #RUN sudo yum -y install perl-devel libtbb-dev@testing
 
