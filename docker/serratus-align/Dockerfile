@@ -5,7 +5,7 @@ FROM serratus-base:latest AS build_base
 #==========================================================
 # Container Information
 ARG TYPE='aligner'
-ARG VERSION='0.1.2'
+ARG VERSION='0.1.0'
 
 # Software Information
 # ENV SAMTOOLSVERSION='1.10' # from serratus-base
