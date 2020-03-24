@@ -241,7 +241,7 @@ aws s3 cp --recursive $S3_BAM ./
 # RUN MERGE ===============================================
 echo "  Running -- run_merge.sh --"
 echo ""
-bash $BASEDIR/scripts/run_merge.sh -s $SRA -b "*bam" 
+bash $BASEDIR/run_merge.sh -s $SRA -b "*bam" 
 
 
 # RUN UPLOAD ==============================================
