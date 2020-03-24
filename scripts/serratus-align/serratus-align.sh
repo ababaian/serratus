@@ -337,12 +337,13 @@ curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID?state=done"
 cd $BASEDIR; rm -rf $WORKDIR/*
 
 # Free up fq-blocks from s3
-if [[ "$PAIRED" = true ]]; then
-    aws s3 rm $S3_FQ1
-    aws s3 rm $S3_FQ2
-else
-    aws s3 rm $S3_FQ3
-fi
+# TODO Give this worker permission to do that!
+#if [[ "$PAIRED" = true ]]; then
+#    aws s3 rm $S3_FQ1
+#    aws s3 rm $S3_FQ2
+#else
+#    aws s3 rm $S3_FQ3
+#fi
 
 echo "============================"
 echo "======= RUN COMPLETE ======="
