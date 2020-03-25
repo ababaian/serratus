@@ -7,10 +7,16 @@ table {
 }
 td.top {
   vertical-align: top;
-  text-align: center;
-  border: 1px solid black;
+  text-align: left;
+  border: 1px solid #d9bfb7;
   border-collapse: true;
 }
+/* td:hover { background-color: #800000; } */
+body { background-color: #ffffee; }
+table { background-color: #ead6ca; }
+h1 { color: #117743; }
+th { color: #cc1105; }
+td { color: #800000; }
 </style>
 </head>
 <body>
@@ -44,6 +50,8 @@ td.top {
         {% endfor %}
       </table>
     </td>
+  </table>
+  <table>
     <td class="top">
       <h1>Blocks</h1>
       <table>
