@@ -58,7 +58,7 @@ FQ3=""
 
 # fq-block parameters -nzp
 BLOCKSIZE=1000000
-GZIP_FLAG="true"
+GZIP_FLAG="false"
 THREADS="1"
 
 # Output options -do
@@ -156,9 +156,10 @@ echo ""
     rm $1
 
     # gzip fq-blocks in parallel
-    if [ $GZIP_FLAG = "true" ]
-    then
+    if [ $GZIP_FLAG = "true" ]; then
       pigz -p $THREADS "$1"*
+    else
+      pigz -0 -p $THREADS "$1"*
     fi
   }
 
