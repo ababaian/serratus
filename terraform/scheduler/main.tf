@@ -71,10 +71,12 @@ resource "aws_instance" "scheduler" {
 
   user_data = <<-EOF
               #!/bin/bash
+              instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               docker run -d -p "${var.scheduler_port}":8000 \
                 --log-driver=awslogs \
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
                 --log-opt awslogs-group="${aws_cloudwatch_log_group.scheduler.name}" \
+                --log-opt awslogs-stream="$instance_id" \
                 --name sch \
                 ${var.dockerhub_account}/serratus-scheduler
               EOF
