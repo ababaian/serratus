@@ -1,21 +1,33 @@
 # serratus
-![serratus](img/serratus_logo.png)
+*Ultra-high throughput processing of SRA data on AWS*
+![Serratus Mountain in Squamish, BC. Canada](img/serratus_logo.png)
 
-AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
+COVID-19 came out of seemingly nowhere. We will ultra-deep search all SRA sequence data to find coronaviruses and trace the lineage of SARS-CoV-2. 
 
-## Repo folders
+#### Architecture
+![serratus-overview](img/serratus_overview.png)
 
-**/ami**: Make scripts for instance images (ami) and their respective ami-id
+## Repository organization
+### Folders
 
-**/img**: Diagrams of serratus workflows
+`docker/`: Container make files and tokens
 
-**/scripts**: Defined units of work (jobs) performed in serratus
+`img/`: Architecture/workflow diagrams
 
-# Project S3
+`packer/`: Standardized node images (ami)
+
+`scheduler/`: Code for `serratus` head-node and sraRunInfo management
+
+`scripts/`: Defined units of work performed in `serratus`
+
+`terraform/`: Cloud resources / pipeline management
+
+
+### S3 Bucket
 **s3://serratus-public/**
 
 **$S3/resources**: Genome indices
-- hgr1-bt2/ : human rDNA bowtie2 indexed
+- hgr1/ : human rDNA bowtie2 indexed
 
 **$S3/example-data**: Toy data for testing
 - bam/ : aligned bam files for breaking into blocks
@@ -37,13 +49,9 @@ AWS framework for cheap and fault-tolerant DNA/RNAs-seq alignment.
 )
 - [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
 
-#### Architecture
-
-![serratus-overview](img/serratus_overview.png)
-
 # Getting up and running
 
-## Building AMIs with Packer
+## 1) Building AMIs with Packer
 
 First, [download Packer](https://packer.io/downloads.html).  It comes as a single
 binary which you can just unzip.  I extracted it to `~/.local/bin` so that it ended
@@ -54,7 +62,7 @@ Next, use it to build the AMI: `/path/to/packer build serratus/packer/docker-ami
 This will start up a t3.nano, build the AMI, and then terminate it.  Currently this
 takes about 2 minutes, which should cost well under a penny.
 
-## Getting started with Terraform
+## 2) Getting started with Terraform
 
 ### Variables
 
