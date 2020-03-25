@@ -1,7 +1,7 @@
 #!/bin/bash
 # run_split
 #
-set -e
+set -eu
 # Base: serratus-Downloader (>0.1.1)
 # Amazon Linux 2 with Docker
 # AMI : aami-0fdf24f2ce3c33243
@@ -135,7 +135,6 @@ echo " -- fq-split Alignment Pipeline -- "
 echo " date:      $(date)"
 echo " version:   $PIPE_VERSION"
 echo " ami:       $AMI_VERSION"
-echo " run-id:    $RUNID"
 echo " workdir:   $WORKDIR"
 echo " input(s):  $BAM $FQ3 $FQ1 $FQ2"
 echo " output:    $OUTNAME"
