@@ -22,12 +22,24 @@ td.top {
             <th>Acc ID</th>
             <th>Run</th>
             <th>State</th>
+            <th>Split Start</th>
+            <th>Split End</th>
+            <th>Split Worker</th>
+            <th>Merge Start</th>
+            <th>Merge End</th>
+            <th>Merge Worker</th>
         </tr>
         {% for row in accs %}
           <tr>
             <td>{{ row.acc_id }}</td>
             <td>{{ row.sra_run_info["Run"] }} </td>
             <td>{{ row.state }}</td>
+            <td>{{ row.split_start_time }}</td>
+            <td>{{ row.split_end_time }}</td>
+            <td>{{ row.split_worker }}</td>
+            <td>{{ row.merge_start_time }}</td>
+            <td>{{ row.merge_end_time }}</td>
+            <td>{{ row.merge_worker }}</td>
           </tr>
         {% endfor %}
       </table>
@@ -40,6 +52,9 @@ td.top {
             <th>Run</th>
             <th>Number</th>
             <th>State</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Worker</th>
         </tr>
         {% for block, acc in blocks %}
           <tr>
@@ -47,6 +62,9 @@ td.top {
             <td>{{ acc.sra_run_info["Run"] }} </td>
             <td>{{ block.block_id }}</td>
             <td>{{ block.state }}</td>
+            <td>{{ block.align_start_time }}</td>
+            <td>{{ block.align_end_time }}</td>
+            <td>{{ block.align_worker }}</td>
           </tr>
         {% endfor %}
       </table>

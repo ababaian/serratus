@@ -3,7 +3,7 @@ from flask import current_app, g
 from flask.cli import with_appcontext
 
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, JSON, ForeignKey, Boolean, Enum
+from sqlalchemy import Column, Integer, JSON, ForeignKey, Boolean, Enum, DateTime, String
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -33,6 +33,14 @@ class Accession(Base, Dicter):
     blocks = Column(Integer)
     sra_run_info = Column(JSON)
 
+    split_start_time = Column(DateTime)
+    split_end_time = Column(DateTime)
+    split_worker = Column(String)
+
+    merge_start_time = Column(DateTime)
+    merge_end_time = Column(DateTime)
+    merge_worker = Column(String)
+
 BLOCK_STATES = ('new', 'aligning', 'done', 'fail')
 
 class Block(Base, Dicter):
@@ -42,6 +50,10 @@ class Block(Base, Dicter):
     state = Column(Enum(name='state', *BLOCK_STATES))
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
     n = Column(Integer)
+
+    align_start_time = Column(DateTime)
+    align_end_time = Column(DateTime)
+    align_worker = Column(String)
 
 def get_engine(echo=False, engine=[]):
     if not engine:

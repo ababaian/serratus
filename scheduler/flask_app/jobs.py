@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, abort, render_template
 from sqlalchemy import func
+from datetime import datetime
 from . import db
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
@@ -42,15 +43,18 @@ def start_split_job():
         .first()
 
     if acc is None:
-        # TODO: Think about this behaviour
         return jsonify({'action': 'wait'})
 
     acc.state = 'splitting'
+    acc.split_start_time = datetime.now()
+    acc.split_end_time = None
+    acc.split_worker = request.args.get("worker_id")
+
     session.add(acc)
     response = acc.to_dict()
     session.commit()
-    response['action'] = 'process'
 
+    response['action'] = 'process'
     response['split_args'] = ""
 
     # Send the response as JSON
@@ -108,6 +112,7 @@ def finish_split_job(acc_id):
     if acc.state != 'splitting':
         abort(400)
     acc.state = state
+    acc.split_end_time = datetime.now()
 
     if state in ('new', 'split_err'):
         # Not ready to process more
@@ -158,6 +163,9 @@ def start_align_job():
     block, acc = query
 
     block.state = 'aligning'
+    block.align_start_time = datetime.now()
+    block.align_end_time = None
+    block.align_worker = request.args.get("worker_id")
     session.add(block)
 
     response = block.to_dict()
@@ -187,6 +195,7 @@ def finish_align_job(block_id):
     session = db.get_session()
     block = session.query(db.Block).filter_by(block_id=block_id).one()
     block.state = state
+    block.align_end_time = datetime.now()
 
     # Check the other blocks---are there any waiting or running still?
     state_counts_q = session.query(db.Block.state,
@@ -235,6 +244,9 @@ def start_merge_job():
         return jsonify({'action': 'wait'})
 
     acc.state = 'merging'
+    acc.merge_start_time = datetime.now()
+    acc.merge_end_time = None
+    acc.merge_worker = request.args.get("worker_id")
     session.add(acc)
     response = acc.to_dict()
     session.commit()
@@ -264,6 +276,7 @@ def finish_merge_job(acc_id):
         abort(400)
 
     acc.state = state
+    acc.merge_end_time = datetime.now()
     session.commit()
     return jsonify({
         'result': 'success'
