@@ -17,17 +17,6 @@ if [ -z "$SCHEDULER" ]; then
 fi
 WORKERS=${WORKERS:-'1'}
 
-# Default base directory is /home/serratus
-function wait_for_scheduler {
-    while true; do
-        if [ "$(curl -s "$SCHEDULER/status" | jq -r .status)" == "up" ]; then
-            break
-        else
-            sleep 5
-        fi
-    done
-}
-
 function terminate_handler {
     echo "    $ACC_ID was terminated without completing. Reset status."
     echo "    In trap $(date -In)"
@@ -45,10 +34,9 @@ function main_loop {
     WORKER_ID="$INSTANCE_ID-$1"
     shift
 
-    # TODO: Wrap job query into self-contained function?
     while true; do
         echo "$WORKER_ID - Requesting job from Scheduler..."
-        JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/" || true)
+        JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/?worker_id=$WORKER_ID" || true)
 
         if [ -n "$JOB_JSON" ]; then
             ACTION=$(echo $JOB_JSON | jq -r .action)
@@ -66,12 +54,12 @@ function main_loop {
             ;;
           wait)
             echo "  $WORKER_ID - Wait State received."
-            sleep 10
+            sleep 10 & wait
             continue
             ;;
           retry)
             echo "  $WORKER_ID - Scheduler not reached.  Waiting"
-            sleep 10
+            sleep 10 & wait
             continue
             ;;
           shutdown)
@@ -89,14 +77,22 @@ echo "=========================================="
 echo "                SERRATUS                  "
 echo "=========================================="
 cd $BASEDIR
-wait_for_scheduler
-
 
 INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 # Fire up main loop (SRA downloader)
 for i in $(seq 1 "$WORKERS"); do
     main_loop "$i" "$@" & worker[i]=$!
 done
+
+function kill_workers {
+    for i in $(seq 1 "$WORKERS"); do
+        kill -USR1 ${worker[i]} 2>/dev/null || true
+    done
+    exit 1
+}
+
+# Send signal if docker is shutting down.
+trap kill_workers TERM
 
 # Spot Operations ===============================
 # Monitor AWS Cloudwatch for spot-termination signal
@@ -116,11 +112,8 @@ while true; do
         echo "SPOT TERMINATION SIGNAL RECEIEVED."
         echo "Initiating shutdown procedures for all workers"
 
-        for i in $(seq 1 "$WORKERS"); do
-            kill -USR1 ${worker[i]} 2>/dev/null || true
-        done
-        break
+        kill_workers
     fi
 
-    sleep 60 # TODO Change this back to 5.
+    sleep 5
 done
