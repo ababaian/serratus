@@ -1,5 +1,5 @@
 import click
-from flask import Blueprint, current_app, g, send_file, jsonify
+from flask import Blueprint, current_app, g, send_file, jsonify, request
 from flask.cli import with_appcontext
 
 from sqlalchemy import create_engine
@@ -81,19 +81,26 @@ def init_db():
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-@bp.route('/reset', methods=['POST'])
-def reset_db():
-    """Delete all database content, and reset with the base schema"""
-    init_db()
-    return jsonify('Database cleared')
-
-@bp.route('/dump', methods=['GET'])
+@bp.route('', methods=['GET'])
 def dump_db_sqlite():
     """Get a full copy of the SQLite database file"""
     return send_file(current_app.config['DATABASE'],
                      mimetype="application/x-sqlite3",
                      as_attachment=True,
                      attachment_filename='dump.sqlite')
+
+@bp.route('', methods=['PUT'])
+def load_db_sqlite():
+    """Replace the DB with a given SQLite file"""
+    if not request.data:
+        init_db()
+        return jsonify('Database reset to initial state')
+
+    # Do I have to delete and replace my engine object?
+    with open(current_app.config['DATABASE'], 'wb') as f:
+        f.write(request.data)
+
+    return jsonify("Database replaced")
 
 @click.command('init-db')
 @with_appcontext
