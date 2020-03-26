@@ -321,8 +321,6 @@ fi
 echo "  Uploading bam-block data..."
 echo "  $SRA.$BL_N.bam"
 
-# Get rid of .se extension.  TODO I'm just shooting at straws, no idea what this does.
-mv $SRA.$BL_N{.se,}.bam
 aws s3 cp $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
 
 echo "  Status: DONE"

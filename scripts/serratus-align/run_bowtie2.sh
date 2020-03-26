@@ -192,8 +192,10 @@ then
 else
   echo " type:    single-end"
   echo " fq0:     $FQ0"
-  echo " output:  $OUTNAME.se.bam"
+  echo " output:  $OUTNAME.bam"
 fi
+
+# ---------------------------
 
 echo " genome:  $GENOME"
 echo " bt2 arguments:   $BT2_ARG -p $THREADS"
@@ -278,31 +280,31 @@ else
   echo ""
   echo "Alignment complete."
 
-  if [ $DEBUG = "F" ]
-  then
-    echo "clearing fq-files"
-    # Clean-up FQ
-    rm $FQ0
-  fi
+    if [ $DEBUG = "F" ]
+    then
+      echo "clearing fq-files"
+      # Clean-up FQ
+      rm $FQ0
+    fi
   
   echo "Extracting mapped reads + unmapped pairs"
 
   ## NOTE: Possibly skip sort / index steps if
   ## using fq/bam-blocks and not complete bam files
   # samtools flagstat > "$OUTNAME".flagstat
-  # samtools view -bh -F 4 aligned_unsorted > "$OUTNAME".se.bam
+  # samtools view -bh -F 4 aligned_unsorted > "$OUTNAME".bam
   
   # Extract Mapped Reads and sort (flag 0x4)
   samtools view -bh -F 4 aligned_unsorted.bam | \
-  samtools sort -@ $THREADS -O BAM - > "$OUTNAME".se.bam
+  samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
 
   # Flagstat and index
-  samtools flagstat aligned_unsorted.bam > "$OUTNAME".se.flagstat
-  samtools index "$OUTNAME".se.bam
+  samtools flagstat aligned_unsorted.bam > "$OUTNAME".flagstat
+  samtools index "$OUTNAME".bam
 
-  # OUTPUT: $OUTNAME.se.bam
-  # OUTPUT: $OUTNAME.se.bam.bai
-  # OUTPUT: $OUTNAME.se.flagstat
+  # OUTPUT: $OUTNAME.bam
+  # OUTPUT: $OUTNAME.bam.bai
+  # OUTPUT: $OUTNAME.flagstat
 
   if [ $DEBUG = "F" ]
   then
