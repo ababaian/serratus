@@ -5,11 +5,6 @@ from . import db
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
-@bp.route('/reset_db', methods=['POST'])
-def reset_db():
-    db.init_db()
-    return jsonify('Database cleared')
-
 @bp.route('/add_sra_run_info/<filename>', methods=['POST'])
 def add_sra_runinfo(filename):
     ## Read the CSV into the DB

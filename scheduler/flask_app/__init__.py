@@ -34,6 +34,7 @@ def create_app(test_config=None):
     def status():
         return jsonify({'status': 'up'})
 
+    app.register_blueprint(db.bp)
     app.register_blueprint(jobs.bp)
 
     db.init_app(app)

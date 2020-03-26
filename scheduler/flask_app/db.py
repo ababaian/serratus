@@ -1,5 +1,5 @@
 import click
-from flask import current_app, g
+from flask import Blueprint, current_app, g, send_file, jsonify
 from flask.cli import with_appcontext
 
 from sqlalchemy import create_engine
@@ -11,6 +11,8 @@ Base = declarative_base()
 
 ACC_STATES = ('new', 'splitting', 'split_done', 'merge_wait', 'merging',
               'merge_done', 'split_err', 'merge_err')
+
+bp = Blueprint('db', __name__, url_prefix='/db')
 
 class Dicter():
     """Give Base class option to output dicts"""
@@ -78,6 +80,20 @@ def init_db():
     engine = get_engine(echo=False)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+
+@bp.route('/reset', methods=['POST'])
+def reset_db():
+    """Delete all database content, and reset with the base schema"""
+    init_db()
+    return jsonify('Database cleared')
+
+@bp.route('/dump', methods=['GET'])
+def dump_db_sqlite():
+    """Get a full copy of the SQLite database file"""
+    return send_file(current_app.config['DATABASE'],
+                     mimetype="application/x-sqlite3",
+                     as_attachment=True,
+                     attachment_filename='dump.sqlite')
 
 @click.command('init-db')
 @with_appcontext
