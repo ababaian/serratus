@@ -71,7 +71,7 @@ module "scheduler" {
   scheduler_port     = var.scheduler_port
 }
 
-module "splitter" {
+module "download" {
   source = "../worker"
 
   up                 = var.up
