@@ -210,9 +210,9 @@ RGSM=$(echo $JOB_JSON | jq -r .sra_run_info.BioSample)
 RGPO=$(echo $JOB_JSON | jq -r .sra_run_info.Experiment)
 RGPL=$(echo $JOB_JSON | jq -r .sra_run_info.Platform)
 
-S3_FQ1=$(printf 's3://%s/fq-blocks/%s/%s.1.fq.%010d.gz' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
-S3_FQ2=$(printf 's3://%s/fq-blocks/%s/%s.2.fq.%010d.gz' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
-S3_FQ3=$(printf 's3://%s/fq-blocks/%s/%s.3.fq.%010d.gz' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
+S3_FQ1=$(printf 's3://%s/fq-blocks/%s/%s.1.fq.%010d' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
+S3_FQ2=$(printf 's3://%s/fq-blocks/%s/%s.2.fq.%010d' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
+S3_FQ3=$(printf 's3://%s/fq-blocks/%s/%s.3.fq.%010d' "$S3_BUCKET" "$SRA" "$SRA" "$BL_N")
 
 # TODO: Allow the scheduler/main data-table to have arugments
 # which will be passed on to the aligner scripts

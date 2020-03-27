@@ -87,7 +87,7 @@ module "download" {
   image_name         = "serratus-dl"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k s3://${aws_s3_bucket.work.bucket}/fq-blocks"
+  options            = "-k ${aws_s3_bucket.work.bucket}"
 }
 
 module "align" {

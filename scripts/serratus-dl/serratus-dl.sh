@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -eux
 # ENTRYPOINT SCRIPT ===================
 # serrtaus-dl
 # =====================================
@@ -74,7 +74,7 @@ THREADS='1'
 
 # AWS Options -ak
 AWS_CONFIG='TRUE'
-S3_BUCKET='s3://serratus-public/fq-blocks'
+S3_BUCKET='serratus-public'
 
 # Script Arguments -DPU
 DL_ARGS=''
@@ -82,7 +82,7 @@ SPLIT_ARGS=''
 UL_ARGS=''
 
 # Output options -do
-BASEDIR="/home/serratus"
+BASEDIR=${BASEDIR:-"/home/serratus"}
 OUTNAME="$SRA"
 
 while getopts u:w:n:s:ak:D:P:U:d:oh FLAG; do
@@ -145,7 +145,6 @@ ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
 function error {
     echo Error encountered.  Notifying the scheduler.
     curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_err"
-    exit 0 # Already told the calling script.
 }
 trap error ERR
 
@@ -158,17 +157,18 @@ fi
 # TODO: Allow the scheduler/main data-table to have arugments
 # which will be passed on to the downloader scripts
 
-# TODO: If we're going to lock the system so the split commands
-# in each container don't collide on the CPU then we need to mount
-# a folder from filesystem into the container and `flock` a file
-# on the shared mount. For now use 1 worker per download EC2?
-
 # Run job --------------------------------------------------
 # ----------------------------------------------------------
 # Generate random alpha-numeric for run-id
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 WORKDIR=$BASEDIR/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
+
+# Cleanup on exit, regardless of whether we encounter an error
+function cleanup {
+    rm -rf "$WORKDIR"
+}
+trap cleanup EXIT
 
 echo "============================"
 echo "    serratus-dl Pipeline    "
@@ -184,19 +184,30 @@ echo " S3 url:    $S3_BUCKET"
 echo ""
 
 # RUN DOWNLOAD ==============================================
-echo "  Running -- run_download.sh --"
-echo "  $BASEDIR/run_download.sh -s $SRA $DL_ARGS"
+echo "  Running -- run_dl-sra.sh --"
+echo "  $BASEDIR/run_dl-sra.sh $SRA $DL_ARGS"
 
-$BASEDIR/run_download.sh -s $SRA -n $THREADS $DL_ARGS
+export BASEDIR
+$BASEDIR/run_dl-sra.sh "$SRA" "$S3_BUCKET"
 
 echo ''
 
-# Detect downloaded fastq files for split logic
-FQ1=$(ls *_1.fastq 2>/dev/null || true)
-FQ2=$(ls *_2.fastq 2>/dev/null || true)
-FQ3=$(ls *_3.fastq 2>/dev/null || true)
+# TODO Detecting paired / unpaired reads for the scheduler.
+FQ1_PREFIX="fq-blocks/$SRA/$SRA.1.fq."
+FQ2_PREFIX="fq-blocks/$SRA/$SRA.2.fq."
+FQ3_PREFIX="fq-blocks/$SRA/$SRA.3.fq."
 
-if [[ ( -s $FQ1 && -n $FQ1 ) && ( -s $FQ2 && -n $FQ2 ) ]]
+N_FQ1=$(aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix "$FQ1_PREFIX" --query "length(Contents[])" || echo "0")
+N_FQ2=$(aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix "$FQ2_PREFIX" --query "length(Contents[])" || echo "0")
+N_FQ3=$(aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix "$FQ3_PREFIX" --query "length(Contents[])" || echo "0")
+
+if [ "$N_FQ1" != "$N_FQ2" ]
+then
+  echo "Number of FQ1 files != FQ2 files.  Notifying scheduler"
+  false # Handle error and quit
+fi
+  
+if [[ ( "$N_FQ1" -gt 0 ) && ( "$N_FQ2" -gt 0 ) ]]
 then
   paired_exists=true
   echo "  Paired-end reads detected"
@@ -205,13 +216,19 @@ else
   echo "  Paired-end reads not-detected"
 fi
 
-if [[ ( -s $FQ3 && -n $FQ3 ) ]]
+if [[ ( "$N_FQ3" -gt 0 ) ]]
 then
   unpaired_exists=true
   echo "  Unpaired reads detected"
 else
   unpaired_exists=false
   echo "  unpaired reads not-detected"
+fi
+
+if [[ "$paired_exists" = false && "$unpaired_exists" = false ]]
+then
+  echo "Neither paired-end nor unpaired exist.  Notifying scheduler"
+  false # Handle error and quit
 fi
 
 if [[ "$paired_exists" = true && "$unpaired_exists" = true ]]
@@ -221,56 +238,19 @@ then
   echo "   WARNING: Paired and Unpaired data detected"
   echo "            Using only Paired-End Reads"
   unpaired_exists=FALSE
-fi
-
-# RUN SPLIT ===============================================
-# Add FQ3 vs. FQ1+FQ2 logic here
-echo "  Running -- run_split.sh --"
-
-if [[ "$paired_exists" = true ]]
-then
-  echo "  .$BASEDIR/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-  bash $BASEDIR/run_split.sh -1 $FQ1 -2 $FQ2 -o $SRA -p $THREADS $SPLIT_ARGS
-
-elif [[ "$unpaired_exists" = true ]]
-then
-  echo "  .$BASEDIR/run_split.sh -o $OUTNAME -p $THREADS $SPLIT_ARGS"
-  bash $BASEDIR/run_split.sh -f $FQ3 -o $SRA -p $THREADS $SPLIT_ARGS
-
-else
-  echo "   ERROR: Neither paired or unpaired reads detected"
-  # Update scheduler with fail message
-  exit 1
+  N_FQ3=0
 fi
 
 # Count output blocks
-N_paired=$( (ls *1.fq.* 2>/dev/null ) | wc -l)
-echo "    N paired-end fq-blocks: $N_paired"
-
-N_unpaired=$((ls *3.fq.* 2>/dev/null ) | wc -l)
-echo "    N unpaired   fq-blocks: $N_unpaired"
+echo "    N paired-end fq-blocks: $N_FQ1"
+echo "    N unpaired   fq-blocks: $N_FQ3"
 echo ""
-
-# RUN UPLOAD ==============================================
-echo "  Running -- run_upload.sh --"
-echo "  $BASEDIR/run_upload.sh -k $S3_BUCKET -s $SRA $UL_ARGS"
-
-bash $BASEDIR/run_upload.sh \
-     -k $S3_BUCKET \
-     -s $SRA
-
-echo "  Uploading complete."
-echo "  Status: DONE"
-
-# CLEAN-UP ================================================
-# rm is super necessary since we're running in a loop. ;)
-cd $BASEDIR; rm -rf $WORKDIR/*
 
 # Update to scheduler -------------------------------------
 # ---------------------------------------------------------
 ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
 echo "  $WORKER_ID - Job $ACC_ID is complete. Update scheduler."
-curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_done&N_paired=$N_paired&N_unpaired=$N_unpaired"
+curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_done&N_paired=$N_FQ1&N_unpaired=$N_FQ3"
 
 echo "============================"
 echo "======= RUN COMPLETE ======="
