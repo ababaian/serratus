@@ -19,7 +19,9 @@ set -eu
 #     file_0000000001.fastq
 #     [...]
 # on S3, in parallel.
+FMT="$1"
+N=$(expr "$2" - 1) # Parallel is one based. :/
 
-DEST=$(printf "$1" "$2")
+DEST=$(printf "$FMT" "$N")
 shift 2
 aws s3 cp - "$DEST" "$@" <&0
