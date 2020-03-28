@@ -78,7 +78,7 @@ echo "                SERRATUS                  "
 echo "=========================================="
 cd $BASEDIR
 
-INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 # Fire up main loop (SRA downloader)
 for i in $(seq 1 "$WORKERS"); do
     main_loop "$i" "$@" & worker[i]=$!

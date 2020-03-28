@@ -20,7 +20,8 @@ set -eu
 #     [...]
 # on S3, in parallel.
 FMT="$1"
-N=$(expr "$2" - 1) # Parallel is one based. :/
+N=$(expr "$2" - 1 || true) # Parallel is one based. :/
+                           # Also expr 1 - 1 = ERROR because... reasons?
 
 DEST=$(printf "$FMT" "$N")
 shift 2
