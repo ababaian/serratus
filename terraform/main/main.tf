@@ -79,12 +79,11 @@ module "download" {
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
   spot_price         = 0.04
-  volume_size        = 50 # TODO 1TB and test st1/sc
-  volume_type        = "gp2"
   s3_bucket          = aws_s3_bucket.work.bucket
   s3_prefix          = "fq-blocks"
   dockerhub_account  = var.dockerhub_account
   image_name         = "serratus-dl"
+  workers            = 2
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
   options            = "-k ${aws_s3_bucket.work.bucket}"
@@ -98,7 +97,6 @@ module "align" {
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
   spot_price         = 0.04
-  asg_size           = 1
   s3_bucket          = aws_s3_bucket.work.bucket
   s3_delete_prefix   = "fq-blocks"
   s3_prefix          = "bam-blocks"
