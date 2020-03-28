@@ -35,6 +35,12 @@ variable "scheduler" {
   type = string
 }
 
+variable "workers" {
+  type        = number
+  description = "Number of worker threads to use"
+  default     = 1
+}
+
 variable "dev_cidrs" {
   description = "Remote IP Address, for SSH, HTTP, etc access"
   type        = set(string)
@@ -180,6 +186,7 @@ resource "aws_launch_configuration" "worker" {
                 --log-opt awslogs-stream="$instance_id" \
                 --name ${var.image_name} \
                 -e SCHEDULER=${var.scheduler} \
+                -e WORKERS=${var.workers} \
                 ${var.dockerhub_account}/${var.image_name} \
                 ${var.options}
               EOF
