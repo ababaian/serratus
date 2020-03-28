@@ -48,6 +48,9 @@ COVID-19 came out of seemingly nowhere. We will ultra-deep search all SRA sequen
 - [Clever SRA alignment pipeline](https://github.com/FredHutch/sra-pipeline
 )
 - [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
+- [Bigsi: Bloom filter indexing of SRA/ENA for organism search](https://github.com/phelimb/bigsi)
+- [Virus detection from RNA-seq proof of concept paper](https://www.ncbi.nlm.nih.gov/pubmed/21603639)
+
 
 # Getting up and running
 

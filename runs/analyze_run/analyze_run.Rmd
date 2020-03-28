@@ -1,0 +1,146 @@
+---
+title: "serratus: analyze-run"
+author: "ababaian"
+date: "3/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#install.packages("RSQLite")
+library("RSQLite")
+library("jsonlite")
+library("ggplot2")
+library("gridExtra")
+
+```
+
+```{r, include = FALSE}
+# Data Import and pre-processing
+SQLITE_INPUT <- 'example.sqlite'
+
+# Connect to SQLite database
+con <- dbConnect(drv=RSQLite::SQLite(), dbname= SQLITE_INPUT)
+
+## Contains two tables:
+## -- acc
+## -- blocks
+
+# Accession Table
+ACC <- data.frame( dbGetQuery(conn=con,
+                              statement=paste("SELECT * FROM '",
+                                              "acc", "'", sep="")))
+ACC <- ACC[,-6] # DROP JSON for legibility
+
+# Blocks Table
+BLOCKS <- data.frame( dbGetQuery(conn=con,
+                              statement=paste("SELECT * FROM '",
+                                              "blocks", "'", sep="")))
+rm(con)
+```
+
+```{r, include=FALSE}
+# Calculate total split times
+ACC$split_runtime <- difftime(ACC$split_end_time,
+                              ACC$split_start_time)
+
+ACC$merge_runtime <- difftime(ACC$merge_end_time,
+                              ACC$merge_start_time)
+
+BLOCKS$align_runtime <- difftime(BLOCKS$align_end_time,
+                                 BLOCKS$align_start_time)
+
+countBlocks <- function(acc.id, BLOCKS = BLOCKS){
+  # For each acc.id in ACC
+  # apply to find how many matching blocks there are
+  nBlock <- length(which(BLOCKS$acc_id == acc.id))
+  return(nBlock)
+}
+
+ACC$N_blocks <- sapply(ACC$acc_id, countBlocks, BLOCKS = BLOCKS)
+
+countRuntimeAlign <- function(acc.id, BLOCKS = BLOCKS){
+  # For each acc.id in ACC
+  # apply to find how many matching blocks there are
+  acc.id.match <- which(BLOCKS$acc_id == acc.id)
+  
+  align_runtime <- sum(BLOCKS$align_runtime[acc.id.match])
+  return(align_runtime)
+}
+
+ACC$align_runtime <- sapply(ACC$acc_id, countRuntimeAlign, BLOCKS = BLOCKS)
+
+total.cpu.runtime <- sum()
+rm(countBlocks, countRuntimeAlign)
+```
+
+
+### Runtime statistics
+```{r, include = FALSE}
+split.color = 'goldenrod'
+align.color = 'deepskyblue'
+merge.color = 'darkred'
+state.colors <- c(align.color, merge.color, split.color)
+
+# Global runtimes
+global.runtimes <- data.frame( split = as.numeric( sum(ACC$split_runtime, na.rm = T) ),
+                               align = as.numeric( sum(ACC$align_runtime, na.rm = T) ),
+                               merge = as.numeric( sum(ACC$merge_runtime, na.rm = T) ) )
+global.runtimes <- data.frame( t(global.runtimes) )
+global.runtimes$process <- rownames(global.runtimes)
+colnames(global.runtimes) <- c('runtime', 'process')
+
+global.plot <- ggplot(global.runtimes, aes(process, runtime)) +
+  geom_bar(stat = 'identity', fill = state.colors) +
+  theme_bw() +
+  ylab('Global Runtime (s)') + xlab('Process Type')
+# global.plot
+
+# Accession Runtime Stats
+acc.runtime <- data.frame( ACC$acc_id, ACC$state, ACC$blocks, ACC$split_runtime, ACC$align_runtime, ACC$merge_runtime)
+  colnames(acc.runtime) <- c("acc.id", "state", "fq.blocks", "split", "align", "merge")
+
+x_max <- max( acc.runtime$fq.blocks, na.rm = T) + 5
+  
+runtime.plot <- ggplot(acc.runtime, aes(fq.blocks, split)) +
+  geom_point(aes(fq.blocks, split), color = split.color ) +
+  geom_point(aes(fq.blocks, align), color = align.color ) +
+  geom_point(aes(fq.blocks, merge), color = merge.color ) +
+  theme_bw() + xlim(0, x_max) +
+  ylab('Runtime (s)') + xlab('fq-blocks per library')
+# runtime.plot
+
+# Block Alignment statistics 
+block.align.run <- data.frame(paired = 'unset',
+                              align.runtime = as.numeric(BLOCKS$align_runtime))
+
+y_max <- ceiling( max( block.align.run$align.runtime) )
+block.align.plot <- ggplot(block.align.run, aes(paired, align.runtime)) +
+  geom_boxplot() + geom_jitter() +
+  theme_bw() + ylim(0, y_max*1.1)
+# block.align.plot
+
+```
+
+```{r, echo = FALSE}
+print ("========= SERRATUS RUN ANALYSIS ===========")
+print( paste0(" SQLITE Input File        : ", SQLITE_INPUT))
+print( paste0(" Date                     : ", date()))
+print( paste0(" SRA Run Entries          : ", length(ACC$acc_id)))
+print( paste0(" Successfly Completed SRA : ", length(which(ACC$state == 'merge_done'))))
+print( paste0(" Total Runtime            : ", sum(global.runtimes$runtime)))
+print( paste0("       Download runtime   : ", global.runtimes$runtime[1] ))
+print( paste0("       Align    runtime   : ", global.runtimes$runtime[2] ))
+print( paste0("       Merge    runtime   : ", global.runtimes$runtime[3] ))
+```
+
+### Global Runtimes
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+grid.arrange(global.plot,
+             runtime.plot, ncol = 2)
+```
+
+### Block Alignment Times
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+block.align.plot
+```
+
