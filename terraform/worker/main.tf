@@ -202,5 +202,17 @@ resource "aws_autoscaling_group" "worker" {
   min_size         = 0
   desired_capacity = var.up ? var.asg_size : 0
   max_size         = var.up ? var.asg_size : 0
+
+  tag {
+    key                 = "project"
+    value               = "serratus"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "component"
+    value               = var.image_name
+    propagate_at_launch = true
+  }
 }
 

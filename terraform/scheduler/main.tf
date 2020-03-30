@@ -58,6 +58,11 @@ resource "aws_cloudwatch_log_group" "scheduler" {
 resource "aws_eip" "sch" {
   instance = aws_instance.scheduler.id
   vpc      = true
+
+  tags = {
+    "project": "serratus"
+    "component": "serratus-scheduler"
+  }
 }
 
 resource "aws_instance" "scheduler" {
@@ -83,6 +88,11 @@ resource "aws_instance" "scheduler" {
 
   credit_specification {
     cpu_credits = "standard"
+  }
+
+  tags = {
+    "project": "serratus"
+    "component": "serratus-scheduler"
   }
 }
 

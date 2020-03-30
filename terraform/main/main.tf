@@ -58,6 +58,11 @@ resource "aws_security_group" "internal" {
 resource "aws_s3_bucket" "work" {
   bucket_prefix = "tf-serratus-work-"
   force_destroy = true
+
+  tags = {
+    "project": "serratus"
+    "component": "serratus-scheduler"
+  }
 }
 
 module "scheduler" {
