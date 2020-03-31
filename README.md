@@ -42,7 +42,12 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 )
 - [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
 - [Bigsi: Bloom filter indexing of SRA/ENA for organism search](https://github.com/phelimb/bigsi)
+
+## Papers
+
 - [Virus detection from RNA-seq: proof of concept](https://www.ncbi.nlm.nih.gov/pubmed/21603639)
+- [Fast Search of Thousands of Short-Read Sequencing Experiments](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4804353/)
+- [Ultra-fast search of all deposited bacterial and viral genomic data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6420049/)
 
 # Setting up and running Serratus
 
