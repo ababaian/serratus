@@ -51,6 +51,17 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 
 # Setting up and running Serratus
 
+### 0) Prerequisite: AWS account
+
+1. Sign up for an AWS account if you don't have one yet. You can use the free basic tier.
+2. [Create an IAM Admin User with Access Key](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html). For **Access type**, use **Progammatic access**.
+3. Note the Access Key ID and Secret values.
+
+Set these as environment variables for the future steps. Run:
+
+    $ export AWS_ACCESS_KEY_ID="your_access_key"
+    $ export AWS_SECRET_ACCESS_KEY="your_secret_key"
+
 ### 1) Building AMIs with Packer
 
 First, [download Packer](https://packer.io/downloads.html).  It comes as a single
@@ -66,7 +77,7 @@ takes about 2 minutes, which should cost well under a penny.
 
 #### Variables
 
-Before starting, you'll need to [setup a keypair on EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair).  Make sure to use the us-east-1 region, as that's where the SRA data is stored.  Keep the name of the keypair, you'll need it later.
+Before starting, you'll need to [setup a keypair on EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair).  Make sure to use the us-east-1 region, as that's where the SRA data is stored.  Keep the name of the keypair and the `.pem` file, you'll need them later.
 
 You'll also need to find out your public IP.  Try `curl ipecho.net/plain; echo`.
 
