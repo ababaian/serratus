@@ -13,6 +13,14 @@
 ## Build all containers for serratus
 
 ```
+# From base amazon linux 2
+sudo yum install -y docker
+sudo yum install -y git
+sudo service docker start
+
+```
+
+```
 git clone https://github.com/ababaian/serratus.git; cd serratus
 sudo docker build -t serratus-base:0 -t serratus-base:latest -f docker/Dockerfile .
 sudo docker build -t serratus-dl:0 -t serratus-dl:latest -f docker/serratus-dl/Dockerfile .
@@ -44,7 +52,7 @@ Paste resulting command in terminal to authenticate
 
 ## Run interactive serratus-dl
 ```
-sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:0
+sudo docker run --rm --entrypoint /bin/bash -it serratus-base:0
 ```
 
 ## Testing scheduler
