@@ -249,10 +249,10 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
         echo "  $GENDIR found."
     else
         echo "  $GENDIR not found. Attempting download from"
-        echo "  s3://serratus-public/resources/$GENOME"
+        echo "  s3://serratus-public/seq/$GENOME"
         mkdir -p $GENDIR; cd $GENDIR
 
-        aws s3 cp --recursive s3://serratus-public/resources/$GENOME/ $GENDIR/
+        aws s3 cp --recursive s3://serratus-public/seq/$GENOME/ $GENDIR/
 
         if [[ -e "$GENDIR/$GENOME.fa" && -e "$GENDIR/$GENOME.1.bt2" ]]
         then
