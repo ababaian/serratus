@@ -56,6 +56,17 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 
 # Setting up and running Serratus
 
+### 0) Prerequisite: AWS account
+
+1. Sign up for an AWS account if you don't have one yet. You can use the free basic tier.
+2. [Create an IAM Admin User with Access Key](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html). For **Access type**, use **Progammatic access**.
+3. Note the Access Key ID and Secret values.
+
+Set these as environment variables for the future steps. Run:
+
+    $ export AWS_ACCESS_KEY_ID="your_access_key"
+    $ export AWS_SECRET_ACCESS_KEY="your_secret_key"
+
 ### 1) Building AMIs with Packer
 
 First, [download Packer](https://packer.io/downloads.html).  It comes as a single binary which you can just unzip.  I extracted it to `~/.local/bin` so that it ended up on my PATH.
@@ -68,7 +79,7 @@ This will start up a t3.nano, build the AMI, and then terminate it.  Currently t
 
 #### Variables
 
-Before starting, you'll need to [setup a keypair on EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair).  Make sure to use the us-east-1 region, as that's where the SRA data is stored.  Keep the name of the keypair, you'll need it later.
+Before starting, you'll need to [setup a keypair on EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair).  Make sure to use the us-east-1 region, as that's where the SRA data is stored.  Keep the name of the keypair and the `.pem` file, you'll need them later.
 
 You'll also need to find out your public IP.  Try `curl ipecho.net/plain; echo`.
 
@@ -100,7 +111,7 @@ At the end of `tf apply`, it will output the scheduler's DNS address.  Keep this
 By default, the scheduler exposes port 8000.  This port is *not* exposed to the public internet because it doesn't support any authentication or encryption yet.  You'll need to create an SSH tunnel to allow your local web-browser and terminal to connect.  
 
     $ scheduler_dns=<copied this from terraform>
-    $ ssh -L 8000:localhost:8000 ec2-user@$scheduler_dns
+    $ ssh -i /path/to/key.pem -L 8000:localhost:8000 ec2-user@$scheduler_dns
 
 Leave this terminal open.  It will route requests from port 8000 on your local machine to the application running on the scheduler.
 
