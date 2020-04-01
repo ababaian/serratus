@@ -113,7 +113,7 @@ internet because it doesn't support any authentication or encryption yet.  You'l
 to create an SSH tunnel to allow your local web-browser and terminal to connect.  
 
     $ scheduler_dns=<copied this from terraform>
-    $ ssh -L 8000:localhost:8000 ec2-user@$scheduler_dns
+    $ ssh -i /path/to/key.pem -L 8000:localhost:8000 ec2-user@$scheduler_dns
 
 Leave this terminal open.  It will route requests from port 8000 on your local machine
 to the application running on the scheduler.
