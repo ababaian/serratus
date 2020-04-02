@@ -47,7 +47,7 @@ RUN wget --quiet ftp://ftp.ncbi.nlm.nih.gov/blast/executables/magicblast/"$MBVER
   rm ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz
 
 # magicblast; makeblatsdb
-RUN mv ncbi-magicblast-$MBVERSION"/bin /usr/local/bin/ &&\
+RUN mv ncbi-magicblast-"$MBVERSION"/bin /usr/local/bin/ &&\
   rm -rf ncbi-magicblast-*
 
 #==========================================================
