@@ -8,19 +8,9 @@ variable "instance_type" {
   type = string
 }
 
-variable "dev_cidrs" {
-  description = "Remote IP Address, for testing access"
-  type        = set(string)
-}
-
 variable "key_name" {
   description = "Name of the AWS key pair to assign instances"
   type        = string
-}
-
-variable "security_groups" {
-  type    = list(string)
-  default = []
 }
 
 variable "dockerhub_account" {
@@ -41,7 +31,6 @@ data "aws_ami" "amazon_linux_2" {
     name   = "name"
     values = ["packer-amazon-linux-2-docker-*"]
   }
-
 }
 
 data "aws_region" "current" {}
@@ -55,6 +44,8 @@ resource "aws_cloudwatch_log_group" "scheduler" {
   name = "scheduler"
 }
 
+# Give the scheduler an Elastic-IP so we can destroy and recreate it without
+# Also destroying everything that depends on its IP.
 resource "aws_eip" "sch" {
   instance = aws_instance.scheduler.id
   vpc      = true
