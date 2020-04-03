@@ -1,0 +1,13 @@
+# See https://grafana.com/docs/grafana/latest/administration/provisioning/
+# for a description of this file format.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    url: "http://localhost:9090"
+    isDefault: true
+  - name: Cloudwatch
+    type: cloudwatch
+    jsonData:
+      defaultRegion: us-east-1
+    
