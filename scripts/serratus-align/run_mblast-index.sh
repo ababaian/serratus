@@ -23,13 +23,20 @@ function usage {
   echo "    -r    Do not create REVERSE control index [false]"
   echo "          Reverse, non-compliment input sequence."
   echo "          Headers prefixed with 'REVERSE_'"
-  echo "          Output appended with '.r' suffix"
+  echo "          Output appended with 'r' suffix"
   echo "    -d    Working directory [$PWD]"
   echo "    -o    <output_filename_prefix>"
+  echo "          note: if REVERSE sequence is generated"
+  echo "          the suffix 'r' is added to <output_prefix>"
   echo ""
   echo "    Outputs: "
   echo ""
-  echo "ex: ./run_mblast-index.sh -x seq/cov0.fa -r -o cov0 "
+  echo "ex: ./run_mblast-index.sh -x seq/cov0.fa -o cov0 "
+  echo "out:      cov0r.fa"
+  echo "          cov0r.blastdb.log"
+  echo "          cov0r.nhr"
+  echo "          cov0r.nin"
+  echo "          cov0r.nsq"
   exit 1
 }
 
@@ -101,16 +108,17 @@ fi
 
 if [ "$ADD_REVERSE" = "true" ]
 then
-  TMP="$OUTPUT".r
-  OUTPUT=$TMP
+  TMP="$OUTPUT"r
+  OUTNAME=$TMP
 else
   TMP="$OUTPUT"
-  OUTPUT=$TMP
+  OUTNAME=$TMP
 fi
 
 # ALIGN ===================================================
 # Generate random alpha-numeric for run-id
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
+mkdir -p $RUNID; cd $RUNID
 
 # Logging to STDOUT
 echo " -- mblast-index Pipeline -- "
@@ -120,132 +128,37 @@ echo " ami:     $AMI_VERSION  "
 echo " output:  $OUTNAME"
 echo " run-id:  $RUNID"
 
-if [ $paired_run = "T" ]
-then
-  echo " type:    paired"
-  echo " fq1:     $FQ1"
-  echo " fq2:     $FQ2"
-  echo " output:  $OUTNAME.bam"
-else
-  echo " type:    single-end"
-  echo " fq0:     $FQ0"
-  echo " output:  $OUTNAME.bam"
-fi
-
 # ---------------------------
 
 echo " genome:  $GENOME"
-echo " bt2 arguments:   $BT2_ARG -p $THREADS"
-echo " Read Group LB:   $RGLB"
-echo "            ID:   $RGID"
-echo "            SM:   $RGSM"
-echo "            PO:   $RGPO"
-echo "            PL:   $RGPL"
-
+echo " index args : $BT2_ARG -p $THREADS"
 echo""
 echo 'Initializing ...'
 echo ""
 
-if [ $paired_run = "T" ]
+if [ "$ADD_REVERSE" = "true" ]
 then
-  # Paired Read Alignment
-  echo "bowtie2 $BT2_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -1 $FQ1 -2 $FQ2 | \\"
-  echo "samtools view -bS - > aligned_unsorted.bam"
+  # A control sequence of reversed, non-compliment CoV
+  # sequences as internal 'control' for BLAST
+  grep -e '^>' $GENOME | tac - | sed 's/>/>REVERSE_/g' - > header.tmp
+  sed 's/^>.*/\>/g' $GENOME | tr '\n' '*' | rev | sed 's/>/\n/g' - | \
+  paste -d'\n' header.tmp - | sed 's/*/\n/g' - | sed '/^$/d' - > rev.fa.tmp
+  rm header.tmp
 
-  bowtie2 $BT2_ARG -p $THREADS \
-    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
-    --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -1 $FQ1 -2 $FQ2 | \
-    samtools view -bS - > aligned_unsorted.bam
+  # Concatenate reverse sequences into genome file
+  GENOMEr=$(echo $GENOME | sed 's/.fa/r.fa/g' -)
 
-  echo ""
-  echo "Alignment complete."
-
-  if [ $DEBUG = "F" ]
-  then
-    echo "clearing fq-files"
-    # Clean-up FQ files to save space
-    rm $FQ1 $FQ2
-  fi
-
-  echo "Extracting mapped reads + unmapped pairs"
-
-  # Extract aligned reads header
-    samtools view -H aligned_unsorted.bam > align.header.tmp
-
-  # Extract Mapped Reads and their unmapped pairs
-    samtools view -b -F 4 aligned_unsorted.bam > align.F4.bam  # mapped
-    samtools view -b -f 4 -F 8 aligned_unsorted.bam > align.f4F8.bam # unmapped-pair
-
-  # Re-compile bam output
-    samtools cat -h align.header.tmp -o align.tmp.bam align.F4.bam align.f4F8.bam
-    samtools sort -@ $THREADS -O BAM align.tmp.bam > "$OUTNAME".bam
-
-  echo "Flagstat and index of output"
-
-  # Flagstat and index
-    samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
-    samtools index "$OUTNAME".bam
-
-  # OUTPUT: $OUTNAME.bam
-  # OUTPUT: $OUTNAME.bam.bai
-  # OUTPUT: $OUTNAME.flagstat
-
-  if [ $DEBUG = "F" ]
-  then
-    # Clean-up temporary files
-    rm *tmp aligned_unsorted.bam align.F4.bam align.f4F8.bam
-  fi
-
-else
-  # Unpaired Read Alignment
-  echo "bowtie2 $BT2_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -U $FQ0 | \\"
-  echo "samtools view -bS - > aligned_unsorted.bam"
-
-  bowtie2 $BT2_ARG -p $THREADS \
-    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
-    --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -U $FQ0 | \
-    samtools view -bS - > aligned_unsorted.bam
-
-  echo ""
-  echo "Alignment complete."
-
-    if [ $DEBUG = "F" ]
-    then
-      echo "clearing fq-files"
-      # Clean-up FQ
-      rm $FQ0
-    fi
-  
-  echo "Extracting mapped reads + unmapped pairs"
-
-  ## NOTE: Possibly skip sort / index steps if
-  ## using fq/bam-blocks and not complete bam files
-  # samtools flagstat > "$OUTNAME".flagstat
-  # samtools view -bh -F 4 aligned_unsorted > "$OUTNAME".bam
-  
-  # Extract Mapped Reads and sort (flag 0x4)
-  samtools view -bh -F 4 aligned_unsorted.bam | \
-  samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
-
-  # Flagstat and index
-  samtools flagstat aligned_unsorted.bam > "$OUTNAME".flagstat
-  samtools index "$OUTNAME".bam
-
-  # OUTPUT: $OUTNAME.bam
-  # OUTPUT: $OUTNAME.bam.bai
-  # OUTPUT: $OUTNAME.flagstat
-
-  if [ $DEBUG = "F" ]
-  then
-    # Clean-up temporary files
-    rm aligned_unsorted.bam
-  fi
+  cat $GENOME rev.fa.tmp > $GENOMEr
+  rm rev.fa.tmp
+  GENOME=$GENOMEr
 fi
+
+#TODO layer in taxonomy data to BLAST DB
+makeblastdb -dbtype nucl -in $GENOME -title $OUTNAME -out $OUTNAME \
+  &> "$OUTNAME".blastdb.log
+
+# output:
+#  $OUTNAME.blastdb.log
+#  $OUTNAME.nhr
+#  $OUTNAME.nin
+#  $OUTNAME.nsq
