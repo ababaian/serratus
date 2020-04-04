@@ -18,7 +18,7 @@ function usage {
   echo ""
   echo "    Magic-blast alignment Parameters"
   echo "    -x    path to _file_ of genome (include .fa extension)"
-  echo "    -i    Index arguments  []"
+  echo "    -i    Index arguments  [-parse_seqids]"
   echo "    -p    N parallel threads [1]"
   echo ""
   echo "    Output options"
@@ -47,7 +47,7 @@ function usage {
 
 # bowtie2 run parameters -xap
 GENOME=""
-IDX_ARG=""
+IDX_ARG="-parse_seqids"
 THREADS="1"
 
 # Output options -do
@@ -148,7 +148,8 @@ then
 fi
 
 #TODO layer in taxonomy data to BLAST DB
-makeblastdb -dbtype nucl -in $GENOME -title $OUTNAME -out $OUTNAME \
+makeblastdb -dbtype nucl  $IDX_ARG  \
+  -in $GENOME -title $OUTNAME -out $OUTNAME \
   &> "$OUTNAME".blastdb.log
 
 # output:

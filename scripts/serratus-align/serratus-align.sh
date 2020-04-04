@@ -37,7 +37,8 @@ function usage {
   echo "    -k    S3 bucket path for bam-blocks [s3://serratus-public/bam-blocks]"
   echo ""
   echo "    Alignment Parameters"
-  echo "    -a    Alignment software [bowtie2] (no alt. currently)"
+  echo "    -a    Alignment software ['bowtie2']"
+  echo "          or ['magic-blast']"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
   echo ""
   echo "    Manual overwrites"
@@ -236,6 +237,7 @@ echo " run-id:    $RUNID"
 echo " sra:       $SRA"
 echo " block:     $BL_N"
 echo " genome:    $GENOME"
+echo " aligner:   $ALIGNER"
 echo " align arg: $ALIGN_ARGS"
 echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RGPL"
 
@@ -292,30 +294,59 @@ fi
 # RGLB='tmp'; RGID='tmp2'; RGSM='tmp3'; RGPO='tmp4'
 
 # RUN ALIGN ===============================================
-echo "  Running -- run_bowtie2.sh --"
 
-if [[ "$PAIRED" = true ]]
-then
-  echo "  bash $BASEDIR/run_bowtie2.sh " &&\
-  echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
-  echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
-  echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
+if [ "$ALIGNER" = "bowtie2" ]
+then 
+  echo "  Running -- run_bowtie2.sh --"
 
-  bash $BASEDIR/run_bowtie2.sh \
-    -1 $FQ1 -2 $FQ2 -x $GENOME \
-    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
-    -L $RGLB -I $RGID -S $RGSM -P $RGPO
-else
-  echo "  bash $BASEDIR/run_bowtie2.sh " &&\
-  echo "    -0 $FQ3 -x $GENOME" &&\
-  echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
-  echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
+  if [[ "$PAIRED" = true ]]
+  then
+    echo "  bash $BASEDIR/run_bowtie2.sh " &&\
+    echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
+    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
+    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
-  bash $BASEDIR/run_bowtie2.sh \
-    -0 $FQ3 -x $GENOME \
-    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
-    -L $RGLB -I $RGID -S $RGSM -P $RGPO
-fi
+    bash $BASEDIR/run_bowtie2.sh \
+      -1 $FQ1 -2 $FQ2 -x $GENOME \
+      -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
+      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+  else
+    echo "  bash $BASEDIR/run_bowtie2.sh " &&\
+    echo "    -0 $FQ3 -x $GENOME" &&\
+    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
+    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
+
+    bash $BASEDIR/run_bowtie2.sh \
+      -0 $FQ3 -x $GENOME \
+      -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
+      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+  fi
+
+elif [ "$ALIGNER" = "magicblast" ]
+  echo "  Running -- run_mblast.sh --"
+
+  if [[ "$PAIRED" = true ]]
+  then
+    echo "  bash $BASEDIR/run_mblast.sh " &&\
+    echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
+    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
+    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
+
+    bash $BASEDIR/run_mblast.sh \
+      -1 $FQ1 -2 $FQ2 -x $GENOME \
+      -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
+      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+  else
+    echo "  bash $BASEDIR/run_mblast.sh " &&\
+    echo "    -0 $FQ3 -x $GENOME" &&\
+    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
+    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
+
+    bash $BASEDIR/run_mblast.sh \
+      -0 $FQ3 -x $GENOME \
+      -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
+      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+  fi
 
 # RUN UPLOAD ==============================================
 echo "  Uploading bam-block data..."

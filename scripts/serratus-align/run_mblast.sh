@@ -24,7 +24,8 @@ function usage {
   echo ""
   echo "    magic-blast Alignment Parameters"
   echo "    -x    path to _name_ of genome (exclude .fa extension)"
-  echo "    -a    Aligner arguments  []"
+  echo "    -a    Aligner arguments"
+  echo "          [-splice F -no_unaligned -max_db_word_count 1000000]"
   echo "    -p    N parallel threads [1]"
   echo ""
   echo "    Output options"
@@ -46,11 +47,11 @@ function usage {
 # Input Fastq files - paired 1+2 | unpaired 0
 FQ1=""
 FQ2=""
-FQ0=""
+FQ3=""
 
 # bowtie2 run parameters -xap
 GENOME=""
-ALG_ARG=""
+ALG_ARG="-splice F -no_unaligned -max_db_word_count 1000000"
 THREADS="1"
 
 # Read Group meta-data (required for GATK) -LISPF
@@ -69,7 +70,7 @@ while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
   case $FLAG in
     # Fastq Options ---------
     0)
-      FQ0=$(readlink -f $OPTARG)
+      FQ3=$(readlink -f $OPTARG)
       ;;
     1)
       FQ1=$(readlink -f $OPTARG)
@@ -82,7 +83,7 @@ while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
       GENOME=$(readlink -f $OPTARG)
       ;;
     a)
-      BT2_ARG=$OPTARG
+      ALG_ARG=$OPTARG
       ;;
     p)
       THREADS=$OPTARG
@@ -125,11 +126,11 @@ shift $((OPTIND-1))
 
 # Check inputs --------------
 
-# Fastq required inputs: FQ1 and FQ2 or FQ0
+# Fastq required inputs: FQ1 and FQ2 or FQ3
 paired_run=''
 if [ -z "$FQ1" ] & [ -z "$FQ2" ]
 then
-  if [ -z "$FQ0" ]
+  if [ -z "$FQ3" ]
   then
     echo "Fastq input required. Either -1 & -2, or -U"
     usage
@@ -169,7 +170,7 @@ fi
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Logging to STDOUT
-echo " -- bowtie2 Alignment Pipeline -- "
+echo " -- magic-blast Alignment Pipeline -- "
 echo " date:    $(date)"
 echo " version: $PIPE_VERSION "
 echo " ami:     $AMI_VERSION  "
@@ -184,14 +185,14 @@ then
   echo " output:  $OUTNAME.bam"
 else
   echo " type:    single-end"
-  echo " fq0:     $FQ0"
+  echo " fq3:     $FQ3"
   echo " output:  $OUTNAME.bam"
 fi
 
 # ---------------------------
 
 echo " genome:  $GENOME"
-echo " bt2 arguments:   $BT2_ARG -p $THREADS"
+echo " mblast arguments: $MB_ARG -p $THREADS"
 echo " Read Group LB:   $RGLB"
 echo "            ID:   $RGID"
 echo "            SM:   $RGSM"
@@ -204,18 +205,18 @@ echo ""
 
 if [ $paired_run = "T" ]
 then
-  # Paired Read Alignment
-  echo "bowtie2 $BT2_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -1 $FQ1 -2 $FQ2 | \\"
-  echo "samtools view -bS - > aligned_unsorted.bam"
+  ALG_ARG="-splice F -no_unaligned -max_db_word_count 1000000"
+  GENOME='cov0r'
 
-  bowtie2 $BT2_ARG -p $THREADS \
-    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
-    --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -1 $FQ1 -2 $FQ2 | \
-    samtools view -bS - > aligned_unsorted.bam
+  echo "magicblast -infmt fastq -paired $ALG_ARG "
+  echo "  -query $FQ1 -query_mate $FQ2 "
+  echo "  -db $GENOME | "
+  echo "  samtools view -b - > aligned_unsorted.bam"
+
+  magicblast -infmt fastq -paired $ALG_ARG \
+    -query $FQ1 -query_mate $FQ2 \
+    -db $GENOME | \
+    samtools view -b - > aligned_unsorted.bam
 
   echo ""
   echo "Alignment complete."
@@ -257,18 +258,18 @@ then
   fi
 
 else
-  # Unpaired Read Alignment
-  echo "bowtie2 $BT2_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -U $FQ0 | \\"
-  echo "samtools view -bS - > aligned_unsorted.bam"
 
-  bowtie2 $BT2_ARG -p $THREADS \
-    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
-    --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -U $FQ0 | \
-    samtools view -bS - > aligned_unsorted.bam
+  echo "magicblast -infmt fastq $ALG_ARG "
+  echo "  -query $FQ3 "
+  echo "  -db $GENOME | "
+  echo "  samtools view -b - > aligned_unsorted.bam"
+
+  magicblast -infmt fastq $ALG_ARG \
+    -query $FQ3 \
+    -db $GENOME | \
+    samtools view -b - \
+    samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
+
 
   echo ""
   echo "Alignment complete."
@@ -277,7 +278,7 @@ else
     then
       echo "clearing fq-files"
       # Clean-up FQ
-      rm $FQ0
+      rm $FQ3
     fi
   
   echo "Extracting mapped reads + unmapped pairs"
@@ -288,7 +289,7 @@ else
   # samtools view -bh -F 4 aligned_unsorted > "$OUTNAME".bam
   
   # Extract Mapped Reads and sort (flag 0x4)
-  samtools view -bh -F 4 aligned_unsorted.bam | \
+  # samtools view -bh -F 4 aligned_unsorted.bam | \
   samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
 
   # Flagstat and index

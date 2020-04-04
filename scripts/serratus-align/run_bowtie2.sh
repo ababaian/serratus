@@ -53,7 +53,7 @@ function usage {
 # Input Fastq files - paired 1+2 | unpaired 0
 FQ1=""
 FQ2=""
-FQ0=""
+FQ3=""
 
 # bowtie2 run parameters -xap
 GENOME=""
@@ -76,7 +76,7 @@ while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
   case $FLAG in
     # Fastq Options ---------
     0)
-      FQ0=$(readlink -f $OPTARG)
+      FQ3=$(readlink -f $OPTARG)
       ;;
     1)
       FQ1=$(readlink -f $OPTARG)
@@ -132,11 +132,11 @@ shift $((OPTIND-1))
 
 # Check inputs --------------
 
-# Fastq required inputs: FQ1 and FQ2 or FQ0
+# Fastq required inputs: FQ1 and FQ2 or FQ3
 paired_run=''
 if [ -z "$FQ1" ] & [ -z "$FQ2" ]
 then
-  if [ -z "$FQ0" ]
+  if [ -z "$FQ3" ]
   then
     echo "Fastq input required. Either -1 & -2, or -U"
     usage
@@ -191,7 +191,7 @@ then
   echo " output:  $OUTNAME.bam"
 else
   echo " type:    single-end"
-  echo " fq0:     $FQ0"
+  echo " fq3:     $FQ3"
   echo " output:  $OUTNAME.bam"
 fi
 
@@ -268,13 +268,13 @@ else
   echo "bowtie2 $BT2_ARG -p $THREADS \\"
   echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
   echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -U $FQ0 | \\"
+  echo "  -x hgr1 -U $FQ3 | \\"
   echo "samtools view -bS - > aligned_unsorted.bam"
 
   bowtie2 $BT2_ARG -p $THREADS \
     --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
     --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -U $FQ0 | \
+    -x hgr1 -U $FQ3 | \
     samtools view -bS - > aligned_unsorted.bam
 
   echo ""
@@ -284,7 +284,7 @@ else
     then
       echo "clearing fq-files"
       # Clean-up FQ
-      rm $FQ0
+      rm $FQ3
     fi
   
   echo "Extracting mapped reads + unmapped pairs"
