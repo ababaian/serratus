@@ -18,7 +18,7 @@ LABEL container.type=${TYPE}
 LABEL container.version=${VERSION}
 LABEL container.description="serratus: alignment container"
 LABEL software.license="GPLv3"
-LABEL tags="aws-cli, samtools, bowtie2, magicblast, makeblatsdb"
+LABEL tags="aws-cli, samtools, bowtie2, magicblast, makeblatsdb, seqkit"
 
 #==========================================================
 # Dependencies ============================================

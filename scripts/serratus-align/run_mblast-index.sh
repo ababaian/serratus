@@ -6,6 +6,8 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
+set -eu
+
 PIPE_VERSION="0.2"
 AMI_VERSION='ami-059b454759561d9f4'
 
@@ -15,7 +17,7 @@ function usage {
   echo "Usage: run_mblast-index.sh -x GENOME.fa -o <output_prefix>"
   echo ""
   echo "    Magic-blast alignment Parameters"
-  echo "    -x    path to _name_ of genome (exclude .fa extension)"
+  echo "    -x    path to _file_ of genome (include .fa extension)"
   echo "    -i    Index arguments  []"
   echo "    -p    N parallel threads [1]"
   echo ""
@@ -108,17 +110,15 @@ fi
 
 if [ "$ADD_REVERSE" = "true" ]
 then
-  TMP="$OUTPUT"r
+  TMP="$OUTNAME"r
   OUTNAME=$TMP
 else
-  TMP="$OUTPUT"
+  TMP="$OUTNAME"
   OUTNAME=$TMP
 fi
 
 # ALIGN ===================================================
-# Generate random alpha-numeric for run-id
-RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-mkdir -p $RUNID; cd $RUNID
+# Run inplace where the fasta file is
 
 # Logging to STDOUT
 echo " -- mblast-index Pipeline -- "
@@ -126,30 +126,24 @@ echo " date:    $(date)"
 echo " version: $PIPE_VERSION "
 echo " ami:     $AMI_VERSION  "
 echo " output:  $OUTNAME"
-echo " run-id:  $RUNID"
 
 # ---------------------------
 
 echo " genome:  $GENOME"
-echo " index args : $BT2_ARG -p $THREADS"
+echo " index args : $IDX_ARG -p $THREADS"
 echo""
 echo 'Initializing ...'
 echo ""
 
 if [ "$ADD_REVERSE" = "true" ]
 then
-  # A control sequence of reversed, non-compliment CoV
-  # sequences as internal 'control' for BLAST
-  grep -e '^>' $GENOME | tac - | sed 's/>/>REVERSE_/g' - > header.tmp
-  sed 's/^>.*/\>/g' $GENOME | tr '\n' '*' | rev | sed 's/>/\n/g' - | \
-  paste -d'\n' header.tmp - | sed 's/*/\n/g' - | sed '/^$/d' - > rev.fa.tmp
-  rm header.tmp
-
   # Concatenate reverse sequences into genome file
-  GENOMEr=$(echo $GENOME | sed 's/.fa/r.fa/g' -)
+  GENOMEr="$OUTNAME".fa
 
-  cat $GENOME rev.fa.tmp > $GENOMEr
-  rm rev.fa.tmp
+  # Seqkit is fast
+  seqkit seq -r $GENOME | sed 's/>/>REVERSE_/g' - > rev.tmp
+  cat $GENOME rev.tmp > $GENOMEr
+  rm rev.tmp
   GENOME=$GENOMEr
 fi
 

@@ -1,5 +1,6 @@
 # serratus
 ![Serratus Mountain in Squamish, BC. Canada](img/serratus_logo.png)
+*Serratus Mountain, Squamish,BC*
 
 ### Background
 The SARS-CoV-2 pandemic will infect millions and has already crippled the global economy. 
