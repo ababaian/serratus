@@ -1,6 +1,6 @@
 {
   "variables": {
-    "image_version": "002"
+    "image_version": "004"
   },
 
   "builders": [
@@ -27,14 +27,18 @@
       "type": "shell",
       "inline": [
         "sleep 30",
-        "sudo yum update -yq",
-        "sudo yum install docker -yq",
+        "sudo yum update -y -q",
+        "sudo yum install docker -y -q",
         "sudo systemctl enable docker",
         "sudo systemctl start docker",
         "sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm",
         "sudo yum-config-manager --enable epel",
         "sudo yum install -y iftop nload iotop"
       ]
+    },
+    {
+      "type": "shell",
+      "script": "setup_node_exporter.sh"
     }
   ]
 }

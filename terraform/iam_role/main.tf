@@ -1,10 +1,15 @@
+# Create an IAM Role, Role Policy, Role Policy Attachment, and Instance
+# Profile.  Attach named policies by ARN to the Instance Profile.
+
 variable "name" { 
   type = string
+  description = "Descriptive name used to identify components"
 }
 
 variable "policy_arns" {
-  type = set(string)
-  default = []
+  type        = set(string)
+  default     = []
+  description = "ARNs to attach to the role"
 }
 
 resource "aws_iam_role" "role" {

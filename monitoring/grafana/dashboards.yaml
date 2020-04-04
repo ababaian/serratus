@@ -1,0 +1,11 @@
+apiVersion: 1.0
+providers:
+  - name: json_files
+    folder: ''
+    type: file
+    disableDeletion: true
+    editable: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

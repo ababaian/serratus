@@ -1,0 +1,27 @@
+[
+  {
+    "name": "prometheus",
+    "image": "jefftaylor42/serratus-prometheus:1",
+    "memoryReservation": 128,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 9090,
+        "hostPort": 9090
+      }
+    ]
+  },
+  {
+    "name": "grafana",
+    "image": "jefftaylor42/serratus-grafana",
+    "cpu": 256,
+    "memoryReservation": 128,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 3000,
+        "hostPort": 3000
+      }
+    ]
+  }
+]
