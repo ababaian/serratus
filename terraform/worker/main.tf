@@ -202,6 +202,7 @@ resource "aws_autoscaling_group" "worker" {
   min_size         = 0
   desired_capacity = var.up ? var.asg_size : 0
   max_size         = var.up ? var.asg_size : 0
+  enable_monitoring = false
 
   tag {
     key                 = "project"

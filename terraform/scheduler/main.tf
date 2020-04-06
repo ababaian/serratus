@@ -63,7 +63,7 @@ resource "aws_instance" "scheduler" {
   vpc_security_group_ids               = var.security_group_ids
   key_name                             = var.key_name
   iam_instance_profile                 = module.iam_role.instance_profile.name
-  monitoring                           = true
+  monitoring                           = false
 
   user_data = <<-EOF
               #!/bin/bash
