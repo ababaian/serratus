@@ -32,13 +32,17 @@ LABEL tags="aws-cli, samtools, bowtie2, gatk"
 # /usr/local/bin/bowtie2
 # /usr/local/bin/bowtie2-*
 
-# Pre-compiled binary
-RUN wget --quiet https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/"$BOWTIEVERSION"/bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip &&\
-  unzip bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip &&\
-  rm    bowtie2-"$BOWTIEVERSION"-linux-x86_64.zip
+# install git
+RUN yum -y install git
 
-RUN mv bowtie2-"$BOWTIEVERSION"*/bowtie2* /usr/local/bin/
-RUN rm -rf bowtie2-"$BOWTIEVERSION"*
+#compile bowtie from sources
+RUN git clone --recursive https://github.com/BenLangmead/bowtie2.git &&\
+  cd bowtie2 &&\
+  make POPCNT_CAPABILITY=0 NO_TBB=1 &&\
+  mv bowtie2 /usr/local/bin/ &&\
+  mv bowtie2-* /usr/local/bin/ &&\
+  cd .. &&\
+  rm -rf bowtie2
 
 #==========================================================
 # Serratus Initialize =====================================
