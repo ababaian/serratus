@@ -16,3 +16,8 @@ scrape_configs:
         region: us-east-1
         port: 9100
 
+  - job_name: 'scheduler'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['scheduler:8000']
+
