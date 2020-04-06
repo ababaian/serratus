@@ -6,6 +6,7 @@ variable "aws_region" {
 variable "up" {
   type    = bool
   default = true
+  description = "Spin up the ASGs"
 }
 
 variable "dev_cidrs" {
