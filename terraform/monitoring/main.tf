@@ -42,10 +42,6 @@ resource aws_instance "monitor" {
   key_name                             = var.key_name
   iam_instance_profile                 = aws_iam_instance_profile.monitor.name
 
-  credit_specification {
-    cpu_credits = "standard"
-  }
-
   tags = {
     "project": "serratus"
     "component": "serratus-monitor"

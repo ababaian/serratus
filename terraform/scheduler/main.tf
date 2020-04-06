@@ -77,10 +77,6 @@ resource "aws_instance" "scheduler" {
                 ${var.dockerhub_account}/serratus-scheduler
               EOF
 
-  credit_specification {
-    cpu_credits = "standard"
-  }
-
   tags = {
     "project": "serratus"
     "component": "serratus-scheduler"
