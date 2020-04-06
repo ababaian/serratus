@@ -21,7 +21,7 @@ def acc_count(state):
 
 def block_count(state):
     session = db.get_session()
-    return session.query(db.Accession)\
+    return session.query(db.Block)\
         .filter_by(state=state)\
         .count()
     session.close()
