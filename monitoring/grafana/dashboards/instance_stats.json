@@ -681,6 +681,212 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Cloudwatch",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "hiddenSeries": false,
+      "id": 14,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "Post",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "PostRequests",
+          "namespace": "AWS/S3",
+          "refId": "B",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Put",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "PutRequests",
+          "namespace": "AWS/S3",
+          "refId": "C",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "List",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "ListRequests",
+          "namespace": "AWS/S3",
+          "refId": "D",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Get",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "GetRequests",
+          "namespace": "AWS/S3",
+          "refId": "E",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Delete",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "DeleteRequests",
+          "namespace": "AWS/S3",
+          "refId": "F",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Head",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "HeadRequests",
+          "namespace": "AWS/S3",
+          "refId": "G",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Select",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "SelectRequests",
+          "namespace": "AWS/S3",
+          "refId": "H",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "S3 Requests",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:537",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:538",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
   "refresh": "5s",
@@ -709,10 +915,10 @@
     ]
   },
   "timezone": "",
-  "title": "New dashboard 2",
+  "title": "Instance Stats",
   "uid": "-jAPZ9rWzthtaoeu",
   "variables": {
     "list": []
   },
-  "version": 9
+  "version": 11
 }
