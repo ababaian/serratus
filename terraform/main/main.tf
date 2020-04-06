@@ -69,7 +69,6 @@ resource "aws_s3_bucket" "work" {
 module "scheduler" {
   source = "../scheduler"
 
-  dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "t3.nano"
   dockerhub_account  = var.dockerhub_account
