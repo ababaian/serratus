@@ -87,6 +87,14 @@ resource "aws_instance" "scheduler" {
   }
 }
 
+output "private_ip" {
+  value = aws_instance.scheduler.private_ip
+}
+
+output "public_ip" {
+  value = aws_eip.sch.public_ip
+}
+
 output "public_dns" {
   value = aws_eip.sch.public_dns
 }

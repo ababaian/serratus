@@ -1,13 +1,19 @@
 [
   {
     "name": "prometheus",
-    "image": "jefftaylor42/serratus-prometheus:1",
+    "image": "jefftaylor42/serratus-prometheus",
     "memoryReservation": 128,
     "essential": true,
     "portMappings": [
       {
         "containerPort": 9090,
         "hostPort": 9090
+      }
+    ],
+    "extraHosts": [
+      {
+        "hostname": "scheduler",
+        "ipAddress": "${sched_ip}"
       }
     ]
   },

@@ -76,6 +76,12 @@ module "scheduler" {
   scheduler_port     = var.scheduler_port
 }
 
+module "monitoring" {
+  source = "../monitoring"
+  security_group_ids = [aws_security_group.internal.id]
+  scheduler_ip = module.scheduler.private_ip
+}
+
 module "download" {
   source = "../worker"
 
@@ -132,4 +138,8 @@ module "merge" {
 
 output "scheduler_dns" {
   value = module.scheduler.public_dns
+}
+
+output "monitor_dns" {
+  value = module.monitoring.public_dns
 }
