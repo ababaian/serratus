@@ -6,7 +6,7 @@ variable "aws_region" {
 variable "up" {
   type    = bool
   default = true
-  description = "Spin up the ASGs"
+  description = "Spin up the ASGs.  Run `terraform apply -var up=false` to test just the infrastructure."
 }
 
 variable "dev_cidrs" {
@@ -56,14 +56,10 @@ resource "aws_security_group" "internal" {
   }
 }
 
-resource "aws_s3_bucket" "work" {
-  bucket_prefix = "tf-serratus-work-"
-  force_destroy = true
+module "work_bucket" {
+  source   = "../bucket"
 
-  tags = {
-    "project": "serratus"
-    "component": "serratus-scheduler"
-  }
+  prefixes = ["fq-blocks", "bam-blocks", "out"]
 }
 
 module "scheduler" {
@@ -90,14 +86,14 @@ module "download" {
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
   spot_price         = 0.04
-  s3_bucket          = aws_s3_bucket.work.bucket
+  s3_bucket          = module.work_bucket.name
   s3_prefix          = "fq-blocks"
   dockerhub_account  = var.dockerhub_account
   image_name         = "serratus-dl"
   workers            = 2
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${aws_s3_bucket.work.bucket}"
+  options            = "-k ${module.work_bucket.name}"
 }
 
 module "align" {
@@ -108,14 +104,14 @@ module "align" {
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
   spot_price         = 0.04
-  s3_bucket          = aws_s3_bucket.work.bucket
+  s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "fq-blocks"
   s3_prefix          = "bam-blocks"
   dockerhub_account  = var.dockerhub_account
   image_name         = "serratus-align"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${aws_s3_bucket.work.bucket}"
+  options            = "-k ${module.work_bucket.name}"
 }
 
 module "merge" {
@@ -126,14 +122,14 @@ module "merge" {
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "t3.small"
   spot_price         = 0.007
-  s3_bucket          = aws_s3_bucket.work.bucket
+  s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "bam-blocks"
   s3_prefix          = "out"
   dockerhub_account  = var.dockerhub_account
   image_name         = "serratus-merge"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${aws_s3_bucket.work.bucket} -b s3://${aws_s3_bucket.work.bucket}/out"
+  options            = "-k ${module.work_bucket.name} -b s3://${module.work_bucket.name}/out"
 }
 
 output "scheduler_dns" {
