@@ -33,7 +33,7 @@ LABEL tags="aws-cli, samtools, bowtie2, gatk"
 # /usr/local/bin/bowtie2-*
 
 # install git
-RUN yum -y install git
+RUN yum -y install git gcc-c++
 
 #compile bowtie from sources
 RUN git clone --recursive https://github.com/BenLangmead/bowtie2.git &&\
