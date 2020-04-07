@@ -188,7 +188,6 @@ resource "aws_launch_configuration" "worker" {
                 --log-opt awslogs-stream="$instance_id" \
                 --name ${var.image_name} \
                 -e SCHEDULER=${var.scheduler} \
-                -e WORKERS=${var.workers} \
                 ${var.dockerhub_account}/${var.image_name} \
                 ${var.options}
               EOF

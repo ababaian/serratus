@@ -15,7 +15,9 @@ if [ -z "$SCHEDULER" ]; then
     echo Please set SCHEDULER environment variable.
     exit 1
 fi
-WORKERS=${WORKERS:-'1'}
+
+# Run with 2*nproc workers by default, 1 if nproc returns 0
+WORKERS=${WORKERS:-$(expr $(nproc) \* 2 || echo 1)}
 
 function terminate_handler {
     echo "    $JOB_ID was terminated without completing. Reset status."
@@ -86,6 +88,7 @@ cd $BASEDIR
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 # Fire up main loop (SRA downloader)
+echo "Creating $WORKERS worker processes"
 for i in $(seq 1 "$WORKERS"); do
     main_loop "$i" "$@" & worker[i]=$!
 done
