@@ -14,14 +14,14 @@ AMI_VERSION='ami-059b454759561d9f4'
 function usage {
   echo ""
   echo "Usage: run_mblast.sh -1 READ1.fq(.gz) -2 READ2.fq -x GENOME -o <output_prefix>"
-  echo "   or: run_mblast.sh -U READ0.fq(.gz) -x GENOME -o <output_prefix>"
+  echo "   or: run_mblast.sh -3 READ0.fq(.gz) -x GENOME -o <output_prefix>"
   echo ""
   echo "    Default behaviour is to retain mapped-reads and their unmapped-pairs only"
   echo ""
   echo "    Fastq input req: (-1 <1.fq> -2 <2.fq> ) || -U <0.fq>"
   echo "    -1    path to fastq paired-end reads 1"
   echo "    -2    path to fastq paired-end reads 2"
-  echo "    -U    path to fastq unpaired reads"
+  echo "    -3    path to fastq unpaired reads"
   echo ""
   echo "    magic-blast Alignment Parameters"
   echo "    -x    path to _name_ of genome (exclude .fa extension)"
@@ -38,7 +38,7 @@ function usage {
   echo "             <output_prefix>.bam.bai"
   echo "             <output_prefix>.flagstat"
   echo ""
-  echo "ex: ./run_mblast.sh -U ~/unpaired.fq -x ~/hg38 -o testLib -I SRAX -S example -P silico"
+  echo "ex: ./run_mblast.sh -3 ~/unpaired.fq -x ~/hg38 -o testLib -I SRAX -S example -P silico"
   echo "ex: ./run_mblast.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x /tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
   exit 1
 }
@@ -67,10 +67,10 @@ WORKDIR="$PWD"
 OUTNAME=''
 DEBUG='F'
 
-while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
+while getopts h3:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
   case $FLAG in
     # Fastq Options ---------
-    0)
+    3)
       FQ3=$(readlink -f $OPTARG)
       ;;
     1)
@@ -271,9 +271,7 @@ else
   magicblast -infmt fastq $ALG_ARG \
     -query $FQ3 \
     -db $GENOME | \
-    samtools view -b - \
-    samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
-
+    samtools view -b - > "$OUTNAME".bam
 
   echo ""
   echo "Alignment complete."
@@ -294,10 +292,10 @@ else
   
   # Extract Mapped Reads and sort (flag 0x4)
   # samtools view -bh -F 4 aligned_unsorted.bam | \
-  samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
+  #samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
 
   # Flagstat and index
-  samtools flagstat aligned_unsorted.bam > "$OUTNAME".flagstat
+  samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
   samtools index "$OUTNAME".bam
 
   # OUTPUT: $OUTNAME.bam
