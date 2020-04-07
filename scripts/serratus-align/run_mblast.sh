@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eux
 # run_mblast
 #
 # Base: serratus-Aligner (>0.2)
@@ -192,7 +193,7 @@ fi
 # ---------------------------
 
 echo " genome:  $GENOME"
-echo " mblast arguments: $MB_ARG -p $THREADS"
+echo " mblast arguments: $ALG_ARG -p $THREADS"
 echo " Read Group LB:   $RGLB"
 echo "            ID:   $RGID"
 echo "            SM:   $RGSM"
