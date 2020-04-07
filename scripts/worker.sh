@@ -16,8 +16,10 @@ if [ -z "$SCHEDULER" ]; then
     exit 1
 fi
 
-# Run with 2*nproc workers by default, 1 if nproc returns 0
-WORKERS=${WORKERS:-$(expr $(nproc) \* 2 || echo 1)}
+# Run with nproc workers by default.  We can probably improve CPU usage
+# by running 2*nproc, at the expense of disk space...  which is a bit
+# limiting at the moment.
+WORKERS=${WORKERS:-$(nproc)}
 
 function terminate_handler {
     echo "    $JOB_ID was terminated without completing. Reset status."
