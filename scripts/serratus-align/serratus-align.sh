@@ -322,7 +322,7 @@ then
       -L $RGLB -I $RGID -S $RGSM -P $RGPO
   fi
 
-elif [ "$ALIGNER" = "magicblast" ]
+elif [ "$ALIGNER" = "magicblast" ]; then
   echo "  Running -- run_mblast.sh --"
 
   if [[ "$PAIRED" = true ]]
@@ -347,6 +347,10 @@ elif [ "$ALIGNER" = "magicblast" ]
       -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
       -L $RGLB -I $RGID -S $RGSM -P $RGPO
   fi
+else
+  echo "Unknown aligner $ALIGNER"
+  false # Call the error handler and exit
+fi
 
 # RUN UPLOAD ==============================================
 echo "  Uploading bam-block data..."
