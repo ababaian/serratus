@@ -18,11 +18,11 @@ fi
 WORKERS=${WORKERS:-'1'}
 
 function terminate_handler {
-    echo "    $ACC_ID was terminated without completing. Reset status."
+    echo "    $JOB_ID was terminated without completing. Reset status."
     echo "    In trap $(date -In)"
     # Tell server to reset this job to a "new" state, since we couldn't
     # finish processing it.
-    curl -s -X POST "$SCHEDULER/jobs/$TYPE/$ACC_ID&state=terminated"
+    curl -s -X POST "$SCHEDULER/jobs/$TYPE/$JOB_ID&state=terminated"
 }
 
 function main_loop {
@@ -37,6 +37,12 @@ function main_loop {
     while true; do
         echo "$WORKER_ID - Requesting job from Scheduler..."
         JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/?worker_id=$WORKER_ID" || true)
+
+        if [ "$TYPE" = align ]; then
+            JOB_ID=$(echo $JOB_JSON | jq -r .block_id)
+        else
+            JOB_ID=$(echo $JOB_JSON | jq -r .acc_id)
+        fi
 
         if [ -n "$JOB_JSON" ]; then
             ACTION=$(echo $JOB_JSON | jq -r .action)
@@ -68,7 +74,7 @@ function main_loop {
             ;;
           *)        echo "  $WORKER_ID - ERROR: Unknown State received."
             echo "  $WORKER_ID - ERROR: Unknown State received."
-            exit 1
+            # Don't exit; we just got one invalid request.
         esac
     done
 }
@@ -88,7 +94,7 @@ function kill_workers {
     for i in $(seq 1 "$WORKERS"); do
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
-    exit 1
+    exit 0
 }
 
 # Send signal if docker is shutting down.
