@@ -165,6 +165,7 @@ resource "aws_launch_configuration" "worker" {
   spot_price           = var.spot_price
   key_name             = var.key_name
   iam_instance_profile = module.iam_role.instance_profile.name
+  enable_monitoring    = false
 
   root_block_device {
     volume_size = var.volume_size
@@ -202,7 +203,6 @@ resource "aws_autoscaling_group" "worker" {
   min_size         = 0
   desired_capacity = var.up ? var.asg_size : 0
   max_size         = var.up ? var.asg_size : 0
-  enable_monitoring = false
 
   tag {
     key                 = "project"
