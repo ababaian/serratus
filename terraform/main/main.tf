@@ -111,7 +111,7 @@ module "align" {
   image_name         = "serratus-align"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${module.work_bucket.name}"
+  options            = "-k ${module.work_bucket.name} -a magicblast"
 }
 
 module "merge" {

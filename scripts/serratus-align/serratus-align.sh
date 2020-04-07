@@ -38,7 +38,7 @@ function usage {
   echo ""
   echo "    Alignment Parameters"
   echo "    -a    Alignment software ['bowtie2']"
-  echo "          or ['magic-blast']"
+  echo "          or ['magicblast']"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
   echo ""
   echo "    Manual overwrites"
@@ -107,8 +107,7 @@ while getopts u:k:a:n:s:g:0:1:2:A:U:d:o:wh FLAG; do
       ;;
     # Aligner Options ---------
     a)
-      #ALIGNER=$OPTARG
-      ALIGNER="bowtie2"
+      ALIGNER=$OPTARG
       ;;
     n)
       THREADS=$OPTARG
@@ -256,7 +255,7 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
 
         aws s3 cp --recursive s3://serratus-public/seq/$GENOME/ $GENDIR/
 
-        if [[ -e "$GENDIR/$GENOME.fa" && -e "$GENDIR/$GENOME.1.bt2" ]]
+        if [[ -e "$GENDIR/$GENOME.fa" ]]
         then
             echo "  genome download complete"
         else
