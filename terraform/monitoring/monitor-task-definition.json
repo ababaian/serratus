@@ -15,7 +15,11 @@
         "hostname": "scheduler",
         "ipAddress": "${sched_ip}"
       }
-    ]
+    ],
+    "mountPoints": [{
+      "sourceVolume": "prometheus-data",
+      "containerPath": "/prometheus"
+    }]
   },
   {
     "name": "grafana",

@@ -132,6 +132,16 @@ resource aws_ecs_task_definition "monitor" {
                                        { sched_ip = var.scheduler_ip})
   task_role_arn = aws_iam_role.task_role.arn
   network_mode = "host"
+
+  volume {
+    name = "prometheus-data"
+
+    docker_volume_configuration {
+      scope = "shared"
+      autoprovision = true
+      driver = "local"
+    }
+  }
 }
 
 resource aws_ecs_service "monitor" {
