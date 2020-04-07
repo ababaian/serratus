@@ -9,6 +9,10 @@ variable "security_group_ids" {
   default = ["sg-05978c64cc44e9807", "sg-de40aaf6"] # rosario, default
 }
 
+variable "scheduler_ip" {
+  type = string
+}
+
 data "aws_ami" "ecs" {
   most_recent = true
   owners      = ["591542846629"] # Amazon
@@ -37,10 +41,6 @@ resource aws_instance "monitor" {
   vpc_security_group_ids               = var.security_group_ids
   key_name                             = var.key_name
   iam_instance_profile                 = aws_iam_instance_profile.monitor.name
-
-  credit_specification {
-    cpu_credits = "standard"
-  }
 
   tags = {
     "project": "serratus"
@@ -128,9 +128,20 @@ resource "aws_iam_role_policy_attachment" "attachment" {
 
 resource aws_ecs_task_definition "monitor" {
   family = "monitor"
-  container_definitions = file("monitor-task-definition.json")
+  container_definitions = templatefile("../monitoring/monitor-task-definition.json",
+                                       { sched_ip = var.scheduler_ip})
   task_role_arn = aws_iam_role.task_role.arn
   network_mode = "host"
+
+  volume {
+    name = "prometheus-data"
+
+    docker_volume_configuration {
+      scope = "shared"
+      autoprovision = true
+      driver = "local"
+    }
+  }
 }
 
 resource aws_ecs_service "monitor" {
@@ -142,5 +153,13 @@ resource aws_ecs_service "monitor" {
   # default "replica" mode, ECS tries to create a new container before
   # destroying the old one, which fails because the ports are already taken.
   scheduling_strategy = "DAEMON"
+}
+
+output "private_ip" {
+  value = aws_eip.monitor.private_ip
+}
+
+output "public_dns" {
+  value = aws_eip.monitor.public_dns
 }
 

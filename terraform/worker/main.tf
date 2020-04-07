@@ -165,6 +165,7 @@ resource "aws_launch_configuration" "worker" {
   spot_price           = var.spot_price
   key_name             = var.key_name
   iam_instance_profile = module.iam_role.instance_profile.name
+  enable_monitoring    = false
 
   root_block_device {
     volume_size = var.volume_size
@@ -179,6 +180,7 @@ resource "aws_launch_configuration" "worker" {
   user_data = <<-EOF
               #!/bin/bash
               instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              hostname ${var.image_name}-$instance_id
               docker run -d \
                 --log-driver=awslogs \
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
@@ -186,7 +188,6 @@ resource "aws_launch_configuration" "worker" {
                 --log-opt awslogs-stream="$instance_id" \
                 --name ${var.image_name} \
                 -e SCHEDULER=${var.scheduler} \
-                -e WORKERS=${var.workers} \
                 ${var.dockerhub_account}/${var.image_name} \
                 ${var.options}
               EOF

@@ -1,5 +1,7 @@
 # See https://grafana.com/docs/grafana/latest/administration/provisioning/
 # for a description of this file format.
+# Cloudwatch provisioning is described here:
+#  https://grafana.com/docs/grafana/latest/features/datasources/cloudwatch/
 apiVersion: 1
 datasources:
   - name: Prometheus
@@ -10,4 +12,4 @@ datasources:
     type: cloudwatch
     jsonData:
       defaultRegion: us-east-1
-    
+

@@ -63,11 +63,12 @@ resource "aws_instance" "scheduler" {
   vpc_security_group_ids               = var.security_group_ids
   key_name                             = var.key_name
   iam_instance_profile                 = module.iam_role.instance_profile.name
-  monitoring                           = true
+  monitoring                           = false
 
   user_data = <<-EOF
               #!/bin/bash
               instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              hostname serratus-scheduler
               docker run -d -p "${var.scheduler_port}":8000 \
                 --log-driver=awslogs \
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
@@ -77,14 +78,18 @@ resource "aws_instance" "scheduler" {
                 ${var.dockerhub_account}/serratus-scheduler
               EOF
 
-  credit_specification {
-    cpu_credits = "standard"
-  }
-
   tags = {
     "project": "serratus"
     "component": "serratus-scheduler"
   }
+}
+
+output "private_ip" {
+  value = aws_instance.scheduler.private_ip
+}
+
+output "public_ip" {
+  value = aws_eip.sch.public_ip
 }
 
 output "public_dns" {

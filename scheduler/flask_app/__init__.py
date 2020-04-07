@@ -3,8 +3,8 @@ them information about work that needs doing."""
 import os
 
 from flask import Flask, jsonify
-from . import db, jobs
 
+from . import db, jobs, metrics
 
 def create_app(test_config=None):
     """Main entrypoint.  Run this program using:
@@ -36,6 +36,8 @@ def create_app(test_config=None):
 
     app.register_blueprint(db.bp)
     app.register_blueprint(jobs.bp)
-
+    app.register_blueprint(metrics.bp)
     db.init_app(app)
+
     return app
+

@@ -222,7 +222,7 @@ S3_FQ3=$(printf 's3://%s/fq-blocks/%s/%s.3.fq.%010d' "$S3_BUCKET" "$SRA" "$SRA" 
 # ----------------------------------------------------------
 # Generate random alpha-numeric for run-id
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-WORKDIR=$BASEDIR/$RUNID
+WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
 GENDIR=$BASEDIR/$GENOME
 
@@ -268,7 +268,7 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
     # Link genome files to workdir
     cd $WORKDIR
     ln -s $GENDIR/* ./
-) 200> .genome-lock
+) 200> "$BASEDIR/.genome-lock"
 
 # DOWNlOAD FQ Files =======================================
 
@@ -322,7 +322,7 @@ then
       -L $RGLB -I $RGID -S $RGSM -P $RGPO
   fi
 
-elif [ "$ALIGNER" = "magicblast" ]
+elif [ "$ALIGNER" = "magicblast" ]; then
   echo "  Running -- run_mblast.sh --"
 
   if [[ "$PAIRED" = true ]]
@@ -347,6 +347,10 @@ elif [ "$ALIGNER" = "magicblast" ]
       -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
       -L $RGLB -I $RGID -S $RGSM -P $RGPO
   fi
+else
+  echo "Unknown aligner $ALIGNER"
+  false # Call the error handler and exit
+fi
 
 # RUN UPLOAD ==============================================
 echo "  Uploading bam-block data..."
