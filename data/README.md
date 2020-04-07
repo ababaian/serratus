@@ -30,6 +30,16 @@ SRA Accession and Run Information master tables. Accessed via SRA website and th
 "type_rnaseq"[Filter] AND cluster_public[prop] AND "platform illumina"[Properties] AND "cloud s3"[Properties] NOT "scRNA"[All Fields] AND <SUBFILTER>
 ```
 
+- **Test Data Set**
+	- Mammals and CoV+ swabs for testing pipeline
+	- SARS-CoV-2: `PRJNA616446`
+	- Felis catus: `PRJNA432069`
+	- Homo sapiens (HCT116): `PRJEB29794`
+	- Macaca fascicularis: `PRJNA553361`
+	- Mus musculus: `PRJNA553361`
+	- Date Accessed: 2020/04/07
+	- Results: 49 libraries
+
 - **Non-Human, Non-Mouse Mammals**
 	- `BASE AND "Mammalia"[Organism] NOT "Homo sapiens"[Organism]) NOT "Mus musculus"[orgn]`
 	- Date Accessed: 2020/03/28
