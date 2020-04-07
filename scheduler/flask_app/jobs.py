@@ -169,7 +169,7 @@ def start_align_job():
 
     # TODO Move these into the database
     response['align_args'] = "--very-sensitive-local"
-    response['genome'] = "hgr1"
+    response['genome'] = "cov0"
     response['action'] = "process"
 
     # Send the response as JSON
