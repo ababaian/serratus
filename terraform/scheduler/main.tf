@@ -68,6 +68,7 @@ resource "aws_instance" "scheduler" {
   user_data = <<-EOF
               #!/bin/bash
               instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              hostname serratus-scheduler
               docker run -d -p "${var.scheduler_port}":8000 \
                 --log-driver=awslogs \
                 --log-opt awslogs-region="${data.aws_region.current.name}" \
