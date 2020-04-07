@@ -268,7 +268,7 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
     # Link genome files to workdir
     cd $WORKDIR
     ln -s $GENDIR/* ./
-) 200> .genome-lock
+) 200> "$BASEDIR/.genome-lock"
 
 # DOWNlOAD FQ Files =======================================
 
