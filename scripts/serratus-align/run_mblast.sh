@@ -81,7 +81,7 @@ while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
       ;;
     # bowtie2 options -------
     x)
-      GENOME=$(readlink -f $OPTARG)
+      GENOME=$OPTARG
       ;;
     a)
       ALG_ARG=$OPTARG
@@ -259,6 +259,9 @@ then
   fi
 
 else
+  # Paired is not true
+  ALG_ARG="-splice F -no_unaligned -max_db_word_count 1000000"
+  GENOME='cov0r'
 
   echo "magicblast -infmt fastq $ALG_ARG "
   echo "  -query $FQ3 "
