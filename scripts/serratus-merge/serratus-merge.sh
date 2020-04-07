@@ -198,7 +198,7 @@ MERGE_ARGS=$(echo $JOB_JSON | jq -r .merge_args)
 # ----------------------------------------------------------
 # Generate random alpha-numeric for run-id
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-WORKDIR=$BASEDIR/$RUNID
+WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
 
 S3_BAM=s3://$S3_BUCKET/bam-blocks/$SRA

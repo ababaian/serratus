@@ -161,7 +161,7 @@ fi
 # ----------------------------------------------------------
 # Generate random alpha-numeric for run-id
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-WORKDIR=$BASEDIR/$RUNID
+WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
 
 # Cleanup on exit, regardless of whether we encounter an error

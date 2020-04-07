@@ -222,7 +222,7 @@ S3_FQ3=$(printf 's3://%s/fq-blocks/%s/%s.3.fq.%010d' "$S3_BUCKET" "$SRA" "$SRA" 
 # ----------------------------------------------------------
 # Generate random alpha-numeric for run-id
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-WORKDIR=$BASEDIR/$RUNID
+WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
 GENDIR=$BASEDIR/$GENOME
 
