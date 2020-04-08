@@ -160,12 +160,48 @@ resource "local_file" "create_tunnel" {
     #!/bin/bash
     set -eu
     echo "Tunnels created:"
-    ssh -Nf -L 3000:localhost:3000 ${module.monitoring.public_dns}
+    ssh -Nf -L 3000:localhost:3000 ec2-user@${module.monitoring.public_dns}
     echo "    localhost:3000 -- grafana"
-    ssh -Nf -L 9090:localhost:9090 ${module.monitoring.public_dns}
+    ssh -Nf -L 9090:localhost:9090 ec2-user@${module.monitoring.public_dns}
     echo "    localhost:9090 -- prometheus"
-    ssh -Nf -L 8000:localhost:8000 ${module.scheduler.public_dns}
+    ssh -Nf -L 8000:localhost:8000 ec2-user@${module.scheduler.public_dns}
     echo "    localhost:8000 -- scheduler"
+  EOF
+}
+
+resource "local_file" "dl_set_capacity" {
+  filename = "${path.module}/dl_set_capacity.sh"
+  file_permission = 0777
+  content = <<-EOF
+    #!/bin/bash
+    set -eux
+    aws autoscaling set-desired-capacity \
+      --auto-scaling-group-name ${module.download.asg_name} \
+      --desired-capacity $1
+  EOF
+}
+
+resource "local_file" "align_set_capacity" {
+  filename = "${path.module}/align_set_capacity.sh"
+  file_permission = 0777
+  content = <<-EOF
+    #!/bin/bash
+    set -eux
+    aws autoscaling set-desired-capacity \
+      --auto-scaling-group-name ${module.align.asg_name} \
+      --desired-capacity $1
+  EOF
+}
+
+resource "local_file" "merge_set_capacity" {
+  filename = "${path.module}/merge_set_capacity.sh"
+  file_permission = 0777
+  content = <<-EOF
+    #!/bin/bash
+    set -eux
+    aws autoscaling set-desired-capacity \
+      --auto-scaling-group-name ${module.merge.asg_name} \
+      --desired-capacity $1
   EOF
 }
 
@@ -181,4 +217,14 @@ output "scheduler_dns" {
 
 output "monitor_dns" {
   value = module.monitoring.public_dns
+}
+
+output "dl_asg_name" {
+  value = module.download.asg_name
+}
+output "merge_asg_name" {
+  value = module.merge.asg_name
+}
+output "algin_asg_name" {
+  value = module.align.asg_name
 }
