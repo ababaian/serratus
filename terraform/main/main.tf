@@ -38,6 +38,8 @@ provider "aws" {
   region = var.aws_region
 }
 
+provider "local" {}
+
 resource "aws_security_group" "internal" {
   name = "serratus-internal"
   ingress {
@@ -140,6 +142,37 @@ module "merge" {
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
   options            = "-k ${module.work_bucket.name} -b s3://${module.work_bucket.name}/out"
+}
+
+resource "local_file" "hosts" {
+  filename = "${path.module}/serratus-hosts"
+  file_permission = 0666
+  content = <<-EOF
+    aws_monitor ${module.monitoring.public_dns}
+    aws_scheduler ${module.scheduler.public_dns}
+  EOF
+}
+
+resource "local_file" "create_tunnel" {
+  filename = "${path.module}/create_tunnels.sh"
+  file_permission = 0777
+  content = <<-EOF
+    #!/bin/bash
+    set -eu
+    echo "Tunnels created:"
+    ssh -Nf -L 3000:localhost:3000 ${module.monitoring.public_dns}
+    echo "    localhost:3000 -- grafana"
+    ssh -Nf -L 9090:localhost:9090 ${module.monitoring.public_dns}
+    echo "    localhost:9090 -- prometheus"
+    ssh -Nf -L 8000:localhost:8000 ${module.scheduler.public_dns}
+    echo "    localhost:8000 -- scheduler"
+  EOF
+}
+
+output "help" {
+  value = <<-EOF
+    Run ${local_file.create_tunnel.filename} to create SSH tunnels for all services.
+  EOF
 }
 
 output "scheduler_dns" {
