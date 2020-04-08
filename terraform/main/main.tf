@@ -3,10 +3,16 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
-variable "up" {
-  type    = bool
-  default = true
-  description = "Spin up the ASGs.  Run `terraform apply -var up=false` to test just the infrastructure."
+variable "dl_size" {
+  type    = number
+  default = 0
+  description = "Default size of download ASG"
+}
+
+variable "align_size" {
+  type    = number
+  default = 0
+  description = "Default size of alignment ASG"
 }
 
 variable "dev_cidrs" {
@@ -19,7 +25,8 @@ variable "key_name" {
 }
 
 variable "dockerhub_account" {
-  type = string
+  type        = string
+  description = "Dockerhub account name, where images will be pulled from"
 }
 
 variable "scheduler_port" {
@@ -81,7 +88,8 @@ module "monitoring" {
 module "download" {
   source = "../worker"
 
-  up                 = var.up
+  desired_size       = 0
+  max_size           = 32
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
@@ -99,7 +107,8 @@ module "download" {
 module "align" {
   source = "../worker"
 
-  up                 = var.up
+  desired_size       = 0
+  max_size           = 32
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
@@ -117,7 +126,8 @@ module "align" {
 module "merge" {
   source = "../worker"
 
-  up                 = var.up
+  desired_size       = 1
+  max_size           = 10
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "t3.small"

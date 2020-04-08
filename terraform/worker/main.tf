@@ -1,9 +1,3 @@
-variable "up" {
-  description = "Spin up actual instances"
-  type        = bool
-  default     = true
-}
-
 variable "instance_type" {
   description = "Type of node to use for the workers"
   type        = string
@@ -77,9 +71,16 @@ variable "s3_delete_prefix" {
   default     = ""
 }
 
-variable "asg_size" {
-  type    = number
-  default = 1
+variable "desired_size" {
+  description = "Desired size of the ASG"
+  type        = number
+  default     = 0
+}
+
+variable "max_size" {
+  description = "Desired size of the ASG"
+  type        = number
+  default     = 1
 }
 
 variable "security_group_ids" {
@@ -201,8 +202,8 @@ resource "aws_autoscaling_group" "worker" {
   availability_zones   = data.aws_availability_zones.all.names
 
   min_size         = 0
-  desired_capacity = var.up ? var.asg_size : 0
-  max_size         = var.up ? var.asg_size : 0
+  desired_capacity = var.desired_size
+  max_size         = var.max_size
 
   tag {
     key                 = "project"
