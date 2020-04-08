@@ -19,6 +19,12 @@ Reference gene/genome sets and their associated index files.
 	- Date Accessed: 2020/03/30
 	- Results: 33296
 
+- `cov1`  : Initial pan-coronavirus genome
+	- Based off of `cov0` with non-CoV accessions removed and polyA[10+] masked
+	- See: `~/serratus/notebook/200408_cov1_pangenome.ipynb` for make commands
+	- Date: 2020/04/08
+	- `cov01r` contains reverse non-compliment control sequences
+
 - `hgr1`  : Human rDNA testing sequence
 	- From [this publication](https://www.biorxiv.org/content/10.1101/118760v2)
 
