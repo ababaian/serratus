@@ -206,7 +206,7 @@ echo ""
 
 if [ $paired_run = "T" ]
 then
-  ALG_ARG="-splice F -no_unaligned -max_db_word_count 1000000"
+  ALG_ARG="-splice F -max_db_word_count 1000000"
   GENOME='cov0r'
 
   echo "magicblast -infmt fastq -paired $ALG_ARG "
@@ -217,7 +217,7 @@ then
   magicblast -infmt fastq -paired $ALG_ARG \
     -query $FQ1 -query_mate $FQ2 \
     -db $GENOME | \
-    samtools view -b - > aligned_unsorted.bam
+    samtools view -b -G 12 - > "$OUTNAME".bam
 
   echo ""
   echo "Alignment complete."
@@ -228,19 +228,6 @@ then
     # Clean-up FQ files to save space
     rm $FQ1 $FQ2
   fi
-
-  echo "Extracting mapped reads + unmapped pairs"
-
-  # Extract aligned reads header
-    samtools view -H aligned_unsorted.bam > align.header.tmp
-
-  # Extract Mapped Reads and their unmapped pairs
-    samtools view -b -F 4 aligned_unsorted.bam > align.F4.bam  # mapped
-    samtools view -b -f 4 -F 8 aligned_unsorted.bam > align.f4F8.bam # unmapped-pair
-
-  # Re-compile bam output
-    samtools cat -h align.header.tmp -o align.tmp.bam align.F4.bam align.f4F8.bam
-    samtools sort -@ $THREADS -O BAM align.tmp.bam > "$OUTNAME".bam
 
   echo "Flagstat and index of output"
 
@@ -260,7 +247,7 @@ then
 
 else
   # Paired is not true
-  ALG_ARG="-splice F -no_unaligned -max_db_word_count 1000000"
+  ALG_ARG="-splice F -max_db_word_count 1000000"
   GENOME='cov0r'
 
   echo "magicblast -infmt fastq $ALG_ARG "
@@ -268,7 +255,7 @@ else
   echo "  -db $GENOME | "
   echo "  samtools view -b - > aligned_unsorted.bam"
 
-  magicblast -infmt fastq $ALG_ARG \
+  magicblast -infmt fastq -no_unaligned $ALG_ARG \
     -query $FQ3 \
     -db $GENOME | \
     samtools view -b - > "$OUTNAME".bam
@@ -295,7 +282,8 @@ else
   #samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
 
   # Flagstat and index
-  samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
+  samtools flagstat "$OUTNAME
+  ".bam > "$OUTNAME".flagstat
   samtools index "$OUTNAME".bam
 
   # OUTPUT: $OUTNAME.bam
