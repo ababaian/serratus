@@ -205,6 +205,13 @@ resource "aws_autoscaling_group" "worker" {
   desired_capacity = var.desired_size
   max_size         = var.max_size
 
+  lifecycle {
+    ignore_changes = [
+      # This can be changed by scripts or by the scheduler (in the future)
+      desired_capacity,
+    ]
+  }
+
   tag {
     key                 = "project"
     value               = "serratus"
