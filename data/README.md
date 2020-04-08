@@ -4,7 +4,7 @@
 
 For `aws-cli` access use `aws s3 cp s3://serratus-public/<file_path>`.
 You can also list the directory with `aws s3 ls s3://serratus-public/`
-For `wget`/`curl` access use `wget https://serratus-public.s3-us-west-2.amazonaws.com/<file_path>`
+For `wget`/`curl` access use `wget https://serratus-public.s3-us-east-1.amazonaws.com/<file_path>`
 
 ## `./out` : Serratus Output data
 Currently output from ~50 librarires using standard alignment
