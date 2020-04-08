@@ -1,0 +1,479 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "$$hashKey": "object:57",
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 3,
+  "iteration": 1586374716536,
+  "links": [],
+  "panels": [
+    {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Cloudwatch",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 14,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": true,
+        "values": true
+      },
+      "lines": false,
+      "linewidth": 1,
+      "maxPerRow": 4,
+      "nullPointMode": "null as zero",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "repeat": null,
+      "repeatDirection": "h",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "Post",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "$prefix"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "PostRequests",
+          "namespace": "AWS/S3",
+          "refId": "B",
+          "region": "default",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Put",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "$prefix"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "PutRequests",
+          "namespace": "AWS/S3",
+          "refId": "C",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "List",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "$prefix"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "ListRequests",
+          "namespace": "AWS/S3",
+          "refId": "D",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Get",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "$prefix"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "GetRequests",
+          "namespace": "AWS/S3",
+          "refId": "E",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Delete",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "$prefix"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "DeleteRequests",
+          "namespace": "AWS/S3",
+          "refId": "F",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Head",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "$prefix"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "HeadRequests",
+          "namespace": "AWS/S3",
+          "refId": "G",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        },
+        {
+          "alias": "Head",
+          "dimensions": {
+            "BucketName": "*",
+            "FilterId": "$prefix"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "SelectRequests",
+          "namespace": "AWS/S3",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": [
+            "Sum"
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "S3 Requests ($prefix)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:537",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:538",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                1
+              ],
+              "type": "lt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "10m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "last"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "0",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "CPU Credits alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Cloudwatch",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": true,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:589",
+          "alias": "/.*CPUSurplusCreditBalance/",
+          "transform": "negative-Y"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "alias": "",
+          "dimensions": {
+            "InstanceId": "*"
+          },
+          "expression": "",
+          "id": "",
+          "matchExact": true,
+          "metricName": "CPUCreditBalance",
+          "namespace": "AWS/EC2",
+          "period": "300",
+          "refId": "A",
+          "region": "default",
+          "statistics": [
+            "Average"
+          ]
+        },
+        {
+          "alias": "",
+          "dimensions": {
+            "InstanceId": "*"
+          },
+          "expression": "",
+          "hide": false,
+          "id": "",
+          "matchExact": true,
+          "metricName": "CPUSurplusCreditBalance",
+          "namespace": "AWS/EC2",
+          "period": "300",
+          "refId": "B",
+          "region": "us-east-1",
+          "statistics": [
+            "Average"
+          ]
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "CPU Credits",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:334",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:335",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 22,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "$$hashKey": "object:284",
+          "selected": true,
+          "text": "full",
+          "value": "full"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket Prefix",
+        "multi": false,
+        "name": "prefix",
+        "options": [
+          {
+            "$$hashKey": "object:284",
+            "selected": true,
+            "text": "full",
+            "value": "full"
+          },
+          {
+            "$$hashKey": "object:285",
+            "selected": false,
+            "text": "prefix-fq-blocks",
+            "value": "prefix-fq-blocks"
+          },
+          {
+            "$$hashKey": "object:286",
+            "selected": false,
+            "text": "prefix-bam-blocks",
+            "value": "prefix-bam-blocks"
+          },
+          {
+            "$$hashKey": "object:287",
+            "selected": false,
+            "text": "prefix-out",
+            "value": "prefix-out"
+          }
+        ],
+        "query": "full,prefix-fq-blocks,prefix-bam-blocks,prefix-out",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "timezone": "",
+  "title": "Serratus Cloudwatch",
+  "uid": "-jAPZ9rWzthtaoeuaaoeu",
+  "variables": {
+    "list": []
+  },
+  "version": 2
+}

@@ -17,97 +17,172 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 2,
+  "iteration": 1586374884829,
   "links": [],
   "panels": [
     {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
       "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 3,
         "w": 12,
         "x": 0,
         "y": 0
       },
-      "hiddenSeries": false,
-      "id": 10,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
+      "id": 18,
       "options": {
-        "dataLinks": []
+        "colorMode": "value",
+        "fieldOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [],
+          "values": false
+        },
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto"
       },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
+      "pluginVersion": "6.7.1",
       "targets": [
         {
-          "expr": "scheduler_block_state",
+          "expr": "scheduler_accesion_state",
+          "instant": true,
           "interval": "",
           "legendFormat": "{{state}}",
           "refId": "A"
         }
       ],
-      "thresholds": [],
       "timeFrom": null,
-      "timeRegions": [],
       "timeShift": null,
-      "title": "Block State",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
+      "title": "Accessions",
+      "type": "stat"
+    },
+    {
+      "cacheTimeout": null,
+      "datasource": null,
+      "gridPos": {
+        "h": 3,
+        "w": 9,
+        "x": 12,
+        "y": 0
       },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:280",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
+      "id": 16,
+      "links": [],
+      "options": {
+        "colorMode": "value",
+        "fieldOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [],
+          "values": false
         },
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "pluginVersion": "6.7.1",
+      "targets": [
         {
-          "$$hashKey": "object:281",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
+          "expr": "scheduler_block_state",
+          "format": "time_series",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{state}}",
+          "refId": "A"
         }
       ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Blocks",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 21,
+        "y": 0
+      },
+      "id": 20,
+      "options": {
+        "fieldOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "defaults": {
+            "decimals": 2,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [],
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false
+      },
+      "pluginVersion": "6.7.1",
+      "targets": [
+        {
+          "expr": "60 * rate(scheduler_block_state{state=\"done\"}[5m])",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Blocks / min",
+      "type": "gauge"
     },
     {
       "aliasColors": {},
@@ -120,8 +195,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 0
+        "x": 0,
+        "y": 3
       },
       "hiddenSeries": false,
       "id": 8,
@@ -210,11 +285,11 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 8
+        "x": 12,
+        "y": 3
       },
       "hiddenSeries": false,
-      "id": 2,
+      "id": 10,
       "legend": {
         "avg": false,
         "current": false,
@@ -223,6 +298,97 @@
         "show": true,
         "total": false,
         "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "scheduler_block_state",
+          "interval": "",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Block State",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:280",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:281",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
+      "hiddenSeries": false,
+      "id": 2,
+      "legend": {
+        "alignAsTable": false,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
       "lines": true,
       "linewidth": 1,
@@ -301,7 +467,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 11
       },
       "hiddenSeries": false,
       "id": 4,
@@ -427,7 +593,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 19
       },
       "hiddenSeries": false,
       "id": 6,
@@ -512,381 +678,6 @@
         "align": false,
         "alignLevel": null
       }
-    },
-    {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                1
-              ],
-              "type": "lt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "10m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "last"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "0",
-        "frequency": "1m",
-        "handler": 1,
-        "name": "CPU Credits alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Cloudwatch",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "hiddenSeries": false,
-      "id": 12,
-      "legend": {
-        "alignAsTable": false,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:589",
-          "alias": "/.*CPUSurplusCreditBalance/",
-          "transform": "negative-Y"
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "alias": "",
-          "dimensions": {
-            "InstanceId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "CPUCreditBalance",
-          "namespace": "AWS/EC2",
-          "period": "300",
-          "refId": "A",
-          "region": "us-east-1",
-          "statistics": [
-            "Average"
-          ]
-        },
-        {
-          "alias": "",
-          "dimensions": {
-            "InstanceId": "*"
-          },
-          "expression": "",
-          "hide": false,
-          "id": "",
-          "matchExact": true,
-          "metricName": "CPUSurplusCreditBalance",
-          "namespace": "AWS/EC2",
-          "refId": "B",
-          "region": "us-east-1",
-          "statistics": [
-            "Average"
-          ]
-        }
-      ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 1
-        }
-      ],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "CPU Credits",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:334",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:335",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": true,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Cloudwatch",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
-      },
-      "hiddenSeries": false,
-      "id": 14,
-      "legend": {
-        "alignAsTable": false,
-        "avg": false,
-        "current": false,
-        "hideEmpty": true,
-        "hideZero": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": false,
-      "linewidth": 1,
-      "nullPointMode": "null as zero",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "alias": "Post",
-          "dimensions": {
-            "BucketName": "*",
-            "FilterId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "PostRequests",
-          "namespace": "AWS/S3",
-          "refId": "B",
-          "region": "us-east-1",
-          "statistics": [
-            "Sum"
-          ]
-        },
-        {
-          "alias": "Put",
-          "dimensions": {
-            "BucketName": "*",
-            "FilterId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "PutRequests",
-          "namespace": "AWS/S3",
-          "refId": "C",
-          "region": "us-east-1",
-          "statistics": [
-            "Sum"
-          ]
-        },
-        {
-          "alias": "List",
-          "dimensions": {
-            "BucketName": "*",
-            "FilterId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "ListRequests",
-          "namespace": "AWS/S3",
-          "refId": "D",
-          "region": "us-east-1",
-          "statistics": [
-            "Sum"
-          ]
-        },
-        {
-          "alias": "Get",
-          "dimensions": {
-            "BucketName": "*",
-            "FilterId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "GetRequests",
-          "namespace": "AWS/S3",
-          "refId": "E",
-          "region": "us-east-1",
-          "statistics": [
-            "Sum"
-          ]
-        },
-        {
-          "alias": "Delete",
-          "dimensions": {
-            "BucketName": "*",
-            "FilterId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "DeleteRequests",
-          "namespace": "AWS/S3",
-          "refId": "F",
-          "region": "us-east-1",
-          "statistics": [
-            "Sum"
-          ]
-        },
-        {
-          "alias": "Head",
-          "dimensions": {
-            "BucketName": "*",
-            "FilterId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "HeadRequests",
-          "namespace": "AWS/S3",
-          "refId": "G",
-          "region": "us-east-1",
-          "statistics": [
-            "Sum"
-          ]
-        },
-        {
-          "alias": "Select",
-          "dimensions": {
-            "BucketName": "*",
-            "FilterId": "*"
-          },
-          "expression": "",
-          "id": "",
-          "matchExact": true,
-          "metricName": "SelectRequests",
-          "namespace": "AWS/S3",
-          "refId": "H",
-          "region": "us-east-1",
-          "statistics": [
-            "Sum"
-          ]
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "S3 Requests",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:537",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:538",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
     }
   ],
   "refresh": "5s",
@@ -894,7 +685,51 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "$$hashKey": "object:284",
+          "selected": true,
+          "text": "full",
+          "value": "full"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket Prefix",
+        "multi": false,
+        "name": "prefix",
+        "options": [
+          {
+            "$$hashKey": "object:284",
+            "selected": true,
+            "text": "full",
+            "value": "full"
+          },
+          {
+            "$$hashKey": "object:285",
+            "selected": false,
+            "text": "prefix-fq-blocks",
+            "value": "prefix-fq-blocks"
+          },
+          {
+            "$$hashKey": "object:286",
+            "selected": false,
+            "text": "prefix-bam-blocks",
+            "value": "prefix-bam-blocks"
+          },
+          {
+            "$$hashKey": "object:287",
+            "selected": false,
+            "text": "prefix-out",
+            "value": "prefix-out"
+          }
+        ],
+        "query": "full,prefix-fq-blocks,prefix-bam-blocks,prefix-out",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
@@ -915,10 +750,10 @@
     ]
   },
   "timezone": "",
-  "title": "Instance Stats",
-  "uid": "-jAPZ9rWzthtaoeu",
+  "title": "Instance Stats 2",
+  "uid": "-jAPZ9rWzthtaoeueue",
   "variables": {
     "list": []
   },
-  "version": 11
+  "version": 1
 }
