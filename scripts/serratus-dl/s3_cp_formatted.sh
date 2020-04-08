@@ -25,4 +25,11 @@ N=$(expr "$2" - 1 || true) # Parallel is one based. :/
 
 DEST=$(printf "$FMT" "$N")
 shift 2
-aws s3 cp - "$DEST" "$@" <&0
+
+# Create a temporary file to hold the stdin data.  We used to stream this through
+# `aws s3 cp`, but it crashes when using a large chunksize combined with streaming.
+TEMPFILE="$(basename "$DEST")"
+cat - > "$TEMPFILE"
+trap 'rm -f "$TEMPFILE"' EXIT
+
+aws s3 cp "$TEMPFILE" "$DEST" "$@"

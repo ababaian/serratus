@@ -88,6 +88,15 @@ RUN echo 'alias serratus="sudo -u serratus"' >> /root/.bashrc
 
 WORKDIR /home/serratus
 
+# Increase the default chunksize for `aws s3 cp`.  By default it is 8MB,
+# which results in a very high number of PUT and POST requests.  These
+# numbers have NOT been experimented on, but chosen to be just below the
+# max size for a single-part upload (5GB).  I haven't pushed it higher
+# because I don't want to test the edge cases where a filesize is around
+# the part limit.
+RUN aws configure set default.s3.multipart_threshold 4GB \
+ && aws configure set default.s3.multipart_chunksize 4GB
+
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
