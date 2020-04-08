@@ -337,12 +337,12 @@ elif [ "$ALIGNER" = "magicblast" ]; then
       -L $RGLB -I $RGID -S $RGSM -P $RGPO
   else
     echo "  bash $BASEDIR/run_mblast.sh " &&\
-    echo "    -U $FQ3 -x $GENOME" &&\
+    echo "    -3 $FQ3 -x $GENOME" &&\
     echo "    -o $SRA.$BL_N -p $THREADS" &&\
     echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
     bash $BASEDIR/run_mblast.sh \
-      -0 $FQ3 -x $GENOME \
+      -3 $FQ3 -x $GENOME \
       -o $SRA.$BL_N -p $THREADS \
       -L $RGLB -I $RGID -S $RGSM -P $RGPO
   fi
