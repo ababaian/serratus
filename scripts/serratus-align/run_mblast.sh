@@ -242,7 +242,7 @@ then
   if [ $DEBUG = "F" ]
   then
     # Clean-up temporary files
-    rm *tmp aligned_unsorted.bam align.F4.bam align.f4F8.bam
+    rm -f *tmp aligned_unsorted.bam align.F4.bam align.f4F8.bam
   fi
 
 else
@@ -267,7 +267,7 @@ else
     then
       echo "clearing fq-files"
       # Clean-up FQ
-      rm $FQ3
+      rm -f $FQ3
     fi
   
   echo "Extracting mapped reads + unmapped pairs"
@@ -293,6 +293,6 @@ else
   if [ $DEBUG = "F" ]
   then
     # Clean-up temporary files
-    rm aligned_unsorted.bam
+    rm -f aligned_unsorted.bam
   fi
 fi
