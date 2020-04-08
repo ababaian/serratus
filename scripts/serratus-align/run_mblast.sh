@@ -232,8 +232,8 @@ then
   echo "Flagstat and index of output"
 
   # Flagstat and index
-    samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
-    samtools index "$OUTNAME".bam
+  samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
+  #samtools index "$OUTNAME".bam # Not working atm
 
   # OUTPUT: $OUTNAME.bam
   # OUTPUT: $OUTNAME.bam.bai
@@ -282,9 +282,8 @@ else
   #samtools sort -@ $THREADS -O BAM - > "$OUTNAME".bam
 
   # Flagstat and index
-  samtools flagstat "$OUTNAME
-  ".bam > "$OUTNAME".flagstat
-  samtools index "$OUTNAME".bam
+  #samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
+  #samtools index "$OUTNAME".bam
 
   # OUTPUT: $OUTNAME.bam
   # OUTPUT: $OUTNAME.bam.bai
