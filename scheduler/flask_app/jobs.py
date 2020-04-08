@@ -213,7 +213,7 @@ def finish_align_job(block_id):
         # state when a single align fails, so this should be no-op?
         session.commit()
         return jsonify({
-            'result': ':('
+            'result': 'success'
         })
     else:
         # All blocks are done.  Move Accession into the merge_wait state.
