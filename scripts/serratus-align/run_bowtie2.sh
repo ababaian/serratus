@@ -86,7 +86,7 @@ while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
       ;;
     # bowtie2 options -------
     x)
-      GENOME=$(readlink -f $OPTARG)
+      GENOME=$OPTARG
       ;;
     a)
       BT2_ARG=$OPTARG
@@ -215,14 +215,14 @@ then
   echo "bowtie2 $BT2_ARG -p $THREADS \\"
   echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
   echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -1 $FQ1 -2 $FQ2 | \\"
+  echo "  -x $GENOME -1 $FQ1 -2 $FQ2 | \\"
   echo "samtools view -bS -G 12 - > aligned_unsorted.bam"
 
   # -G 12 excludes reads with both reads in pair unmapped
   bowtie2 $BT2_ARG -p $THREADS \
     --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
     --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -1 $FQ1 -2 $FQ2 | \
+    -x $GENOME -1 $FQ1 -2 $FQ2 | \
     samtools view -b -G 12 - > "$OUTNAME".bam
 
   echo ""
@@ -254,13 +254,13 @@ else
   echo "bowtie2 $BT2_ARG -p $THREADS \\"
   echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
   echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x hgr1 -U $FQ3 | \\"
+  echo "  -x $GENOME -U $FQ3 | \\"
   echo "samtools view -bS - > aligned_unsorted.bam"
 
   bowtie2 $BT2_ARG -p $THREADS \
     --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
     --rg PL:$RGPL --rg PU:$RGPU \
-    -x hgr1 -U $FQ3 | \
+    -x $GENOME -U $FQ3 | \
     samtools view -b -F 4 - > "$OUTNAME".bam
 
   echo ""
