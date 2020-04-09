@@ -12,8 +12,8 @@ AMI_VERSION='ami-059b454759561d9f4'
 #Usage function
 function usage {
   echo ""
-  echo "Usage: run_bowtie2.sh -1 READ1.fq(.gz) -2 READ2.fq -x GENOME [-LISPF] -o <output_prefix>"
-  echo "   or: run_bowtie2.sh -U READ0.fq(.gz) -x GENOME [-LISPF] -o <output_prefix>"
+  echo "Usage: run_bowtie2.sh -1 READ_1.fq(.gz) -2 READ_2.fq -x <genome> -L <RGLB> -I <RGID> -S <RGSM> -P <RGPO> -o <output_prefix>"
+  echo "   or: run_bowtie2.sh -3 READS.fq(.gz) -x <genome> [-LISPF] -o <output_prefix>"
   echo ""
   echo "    Default behaviour is to retain mapped-reads and their unmapped-pairs only"
   echo ""
@@ -40,8 +40,6 @@ function usage {
   echo "    -!    Debug mode, will not rm intermediate files"
   echo ""
   echo "    Outputs: <output_prefix>.bam"
-  echo "             <output_prefix>.bam.bai"
-  echo "             <output_prefix>.flagstat"
   echo ""
   echo "ex: ./run_bowtie2.sh -3 ~/unpaired.fq -x cov1r -o testLib -I SRAX -S example -P silico"
   echo "ex: ./run_bowtie2.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x ~/tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
@@ -89,7 +87,11 @@ while getopts h3:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
       GENOME=$OPTARG
       ;;
     a)
-      BT2_ARG=$OPTARG
+      if [ ! -z "$OPTARG" ]
+      then
+        # Use user-input 
+        BT2_ARG=$OPTARG
+      fi
       ;;
     p)
       THREADS=$OPTARG
@@ -233,9 +235,8 @@ then
     # Clean-up FQ files to save space
     rm $FQ1 $FQ2
   fi
-
   # OUTPUT: $OUTNAME.bam
-
+  
 else
   # Unpaired Read Alignment
   echo "bowtie2 $BT2_ARG -p $THREADS \\"
@@ -244,6 +245,7 @@ else
   echo "  -x $GENOME -U $FQ3 | \\"
   echo "samtools view -bS - > aligned_unsorted.bam"
 
+  # -F 4 will retain only mapped reads
   bowtie2 $BT2_ARG -p $THREADS \
     --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
     --rg PL:$RGPL --rg PU:$RGPU \

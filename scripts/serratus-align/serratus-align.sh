@@ -298,6 +298,7 @@ then
 
   if [[ "$PAIRED" = true ]]
   then
+    # Paired-end read alignment -----------------
     echo "  bash $BASEDIR/run_bowtie2.sh " &&\
     echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
     echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
@@ -305,9 +306,10 @@ then
 
     bash $BASEDIR/run_bowtie2.sh \
       -1 $FQ1 -2 $FQ2 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
-      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   else
+    # Single-end read alignment -----------------
     echo "  bash $BASEDIR/run_bowtie2.sh " &&\
     echo "    -0 $FQ3 -x $GENOME" &&\
     echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
@@ -315,11 +317,14 @@ then
 
     bash $BASEDIR/run_bowtie2.sh \
       -3 $FQ3 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
-      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   fi
 
-elif [ "$ALIGNER" = "magicblast" ]; then
+#elif [ "$ALIGNER" = "magicblast" ]; then
+# magicblast not implemented. Untested functions be here.
+elif [ "$ALIGNER" = "TOMATO" ]; then
+
   echo "  Running -- run_mblast.sh --"
 
   if [[ "$PAIRED" = true ]]
