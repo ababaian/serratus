@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 set -eux
-BLOCKSIZE=1000000
+BLOCKSIZE=${BLOCKSIZE:-1000000}
 BASEDIR=${BASEDIR:-.}
 
 while getopts n: FLAG; do
