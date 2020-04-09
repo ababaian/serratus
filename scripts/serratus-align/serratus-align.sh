@@ -290,11 +290,6 @@ else
   FQ3=$(basename $S3_FQ3)
 fi
 
-## Test data
-# S3_FQ1='s3://serratus-public/fq-blocks/SRR11166696/SRR11166696.1.fq.0000000000.gz'
-# S3_FQ2='s3://serratus-public/fq-blocks/SRR11166696/SRR11166696.2.fq.0000000000.gz'
-# RGLB='tmp'; RGID='tmp2'; RGSM='tmp3'; RGPO='tmp4'
-
 # RUN ALIGN ===============================================
 
 if [ "$ALIGNER" = "bowtie2" ]
@@ -319,7 +314,7 @@ then
     echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
     bash $BASEDIR/run_bowtie2.sh \
-      -0 $FQ3 -x $GENOME \
+      -3 $FQ3 -x $GENOME \
       -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS \
       -L $RGLB -I $RGID -S $RGSM -P $RGPO
   fi

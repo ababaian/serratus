@@ -20,7 +20,7 @@ function usage {
   echo "    Fastq input req: (-1 <1.fq> -2 <2.fq> ) || -U <0.fq>"
   echo "    -1    path to fastq paired-end reads 1"
   echo "    -2    path to fastq paired-end reads 2"
-  echo "    -U    path to fastq unpaired reads"
+  echo "    -3    path to fastq unpaired reads"
   echo ""
   echo "    bowtie2 Alignment Parameters"
   echo "    -x    path to _name_ of bt2-indexed genome (exclude .fa extension)"
@@ -43,8 +43,8 @@ function usage {
   echo "             <output_prefix>.bam.bai"
   echo "             <output_prefix>.flagstat"
   echo ""
-  echo "ex: ./run_bowtie2.sh -U ~/unpaired.fq -x ~/hg38 -o testLib -I SRAX -S example -P silico"
-  echo "ex: ./run_bowtie2.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x /tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bowtie2.sh -3 ~/unpaired.fq -x cov1r -o testLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bowtie2.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x ~/tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
   exit 1
 }
 
@@ -72,10 +72,10 @@ WORKDIR="$PWD"
 OUTNAME=''
 DEBUG='F'
 
-while getopts h0:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
+while getopts h3:1:2:x:a:p:L:I:S:P:F:d:o:! FLAG; do
   case $FLAG in
     # Fastq Options ---------
-    0)
+    3)
       FQ3=$(readlink -f $OPTARG)
       ;;
     1)
@@ -204,7 +204,6 @@ echo "            ID:   $RGID"
 echo "            SM:   $RGSM"
 echo "            PO:   $RGPO"
 echo "            PL:   $RGPL"
-
 echo""
 echo 'Initializing ...'
 echo ""
@@ -216,7 +215,7 @@ then
   echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
   echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
   echo "  -x $GENOME -1 $FQ1 -2 $FQ2 | \\"
-  echo "samtools view -bS -G 12 - > aligned_unsorted.bam"
+  echo "samtools view -bS -G 12 - > "$OUTNAME".bam"
 
   # -G 12 excludes reads with both reads in pair unmapped
   bowtie2 $BT2_ARG -p $THREADS \
@@ -235,19 +234,7 @@ then
     rm $FQ1 $FQ2
   fi
 
-  # Flagstat and index
-  #samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
-  #samtools index "$OUTNAME".bam
-
   # OUTPUT: $OUTNAME.bam
-  # OUTPUT: $OUTNAME.bam.bai
-  # OUTPUT: $OUTNAME.flagstat
-
-  if [ $DEBUG = "F" ]
-  then
-    # Clean-up temporary files
-    rm *tmp aligned_unsorted.bam align.F4.bam align.f4F8.bam
-  fi
 
 else
   # Unpaired Read Alignment
@@ -272,18 +259,5 @@ else
       # Clean-up FQ
       rm $FQ3
     fi
-
-  # Flagstat and index
-  #samtools flagstat aligned_unsorted.bam > "$OUTNAME".flagstat
-  #samtools index "$OUTNAME".bam
-
   # OUTPUT: $OUTNAME.bam
-  # OUTPUT: $OUTNAME.bam.bai
-  # OUTPUT: $OUTNAME.flagstat
-
-  if [ $DEBUG = "F" ]
-  then
-    # Clean-up temporary files
-    rm aligned_unsorted.bam
-  fi
 fi
