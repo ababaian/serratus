@@ -168,7 +168,7 @@ def start_align_job():
     session.commit()
 
     # TODO Move these into the database
-    response['align_args'] = ""
+    response['align_args'] = "--very-sensitive-local"
     response['genome'] = "cov1"
     response['action'] = "process"
 
