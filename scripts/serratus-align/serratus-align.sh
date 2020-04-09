@@ -64,6 +64,7 @@ function usage {
   echo "          <output_prefix>.fq.xxxx ... <output_prefix>.fq.yyyy"
   echo ""
   echo "ex: docker exec serratus-dl -u localhost:8000"
+  false
   exit 1
 }
 
@@ -157,6 +158,7 @@ shift $((OPTIND-1))
 
 if [ -z "$SCHEDULER" ]; then
     echo Please set SCHEDULER environment variable or use -k flag.
+    false
     exit 1
 fi
 
@@ -265,7 +267,8 @@ if [ -e "$GENDIR/$GENOME.fa" ]
 then
     echo "  genome download complete"
 else
-    echo " ERROR: $GENOME.fa or $GENOME.1.bt2 index not found"
+    echo " ERROR: $GENOME.fa not found"
+    false
     exit 1
 fi
 
