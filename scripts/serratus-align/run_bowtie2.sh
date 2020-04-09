@@ -236,8 +236,8 @@ then
   fi
 
   # Flagstat and index
-    samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
-    samtools index "$OUTNAME".bam
+  #samtools flagstat "$OUTNAME".bam > "$OUTNAME".flagstat
+  #samtools index "$OUTNAME".bam
 
   # OUTPUT: $OUTNAME.bam
   # OUTPUT: $OUTNAME.bam.bai
@@ -274,8 +274,8 @@ else
     fi
 
   # Flagstat and index
-  samtools flagstat aligned_unsorted.bam > "$OUTNAME".flagstat
-  samtools index "$OUTNAME".bam
+  #samtools flagstat aligned_unsorted.bam > "$OUTNAME".flagstat
+  #samtools index "$OUTNAME".bam
 
   # OUTPUT: $OUTNAME.bam
   # OUTPUT: $OUTNAME.bam.bai
