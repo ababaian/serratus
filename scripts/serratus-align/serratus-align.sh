@@ -250,9 +250,6 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
     flock 200
     if [ -d $GENDIR ]; then
         echo "  $GENDIR found."
-        # Link genome files to workdir
-        cd $WORKDIR
-        ln -s $GENDIR/* ./
     else
         echo "  $GENDIR not found. Attempting download from"
         echo "  s3://serratus-public/seq/$GENOME"
