@@ -64,17 +64,25 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 3. Note the Access Key ID and Secret values.
 
 Set these as environment variables for the future steps. Run:
-
-    $ export AWS_ACCESS_KEY_ID="your_access_key"
-    $ export AWS_SECRET_ACCESS_KEY="your_secret_key"
-
+```
+export AWS_ACCESS_KEY_ID="your_access_key"
+export AWS_SECRET_ACCESS_KEY="your_secret_key"
+```
 ### 1) Building AMIs with Packer
 
 First, [download Packer](https://packer.io/downloads.html).  It comes as a single binary which you can just unzip.  I extracted it to `~/.local/bin` so that it ended up on my PATH.
 
-Next, use it to build the AMI: `/path/to/packer build serratus/packer/docker-ami.json`
+Next, use it to build the AMI: 
+```
+cd serratus/packer
+/path/to/packer build docker-ami.json
+cd ../..
+```
 
-This will start up a t3.nano, build the AMI, and then terminate it.  Currently this takes about 2 minutes, which should cost well under a penny.
+This will start up a t3.nano, build the AMI, and then terminate it.  Currently this takes about 2 minutes, which should cost well under a penny. The final line of STDOUT will be the region and AMI. Retain this information
+```
+us-east-1: ami-04c1625cf0bcb4159
+```
 
 ###  2) Getting started with Terraform
 
@@ -84,7 +92,7 @@ Before starting, you'll need to [setup a keypair on EC2](https://docs.aws.amazon
 
 You'll also need to find out your public IP.  Try `curl ipecho.net/plain; echo`.
 
-Open terraform/main/terraform.tfvars.  There are three environment variables in this file:
+Open `terraform/main/terraform.tfvars`.  There are three environment variables in this file:
 
  * `dev_cidrs`: Your public IP, followed by "/32"
  * `key_name`: EC2 key pair name
@@ -92,8 +100,11 @@ Open terraform/main/terraform.tfvars.  There are three environment variables in 
 
 ### 3) Initialization
 
-The top-level module is in serratus/terraform/main.  Change directory to there, run `tf init`, and then `tf apply` to create some infrastructure.
-
+The top-level module is in `serratus/terraform/main`.  Change directory to there, run `tf init`, and then `tf apply` to create some infrastructure.
+```
+cd serratus/terraform/main
+tf init
+```
 At the time of writing, this will create:
 
   * a t3.nano, for the scheduler, with an Elastic IP
