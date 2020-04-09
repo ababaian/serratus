@@ -254,20 +254,20 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
         mkdir -p $GENDIR; cd $GENDIR
 
         aws s3 cp --recursive s3://serratus-public/seq/$GENOME/ $GENDIR/
-
-        if [[ -e "$GENDIR/$GENOME.fa" ]]
-        then
-            echo "  genome download complete"
-        else
-            echo " ERROR: $GENOME.fa or $GENOME.1.bt2 index not found"
-            exit 1
-        fi
     fi
 
     # Link genome files to workdir
     cd $WORKDIR
     ln -s $GENDIR/* ./
 ) 200> "$BASEDIR/.genome-lock"
+
+if [ -e "$GENDIR/$GENOME.fa" ]
+then
+    echo "  genome download complete"
+else
+    echo " ERROR: $GENOME.fa or $GENOME.1.bt2 index not found"
+    exit 1
+fi
 
 # DOWNlOAD FQ Files =======================================
 
