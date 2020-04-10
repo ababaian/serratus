@@ -107,7 +107,7 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 32
+  max_size           = 256
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
@@ -127,7 +127,7 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 32
+  max_size           = 256
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
