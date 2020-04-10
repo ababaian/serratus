@@ -17,6 +17,11 @@ variable "scheduler_ip" {
   type = string
 }
 
+variable "instance_type" {
+  type = string
+  default = "t3.nano"
+}
+
 data "aws_ami" "ecs" {
   most_recent = true
   owners      = ["591542846629"] # Amazon
@@ -42,7 +47,7 @@ resource "aws_iam_instance_profile" "monitor" {
 
 resource aws_instance "monitor" {
   ami = data.aws_ami.ecs.id
-  instance_type = "t3.nano"
+  instance_type = var.instance_type
   instance_initiated_shutdown_behavior = "terminate"
   vpc_security_group_ids               = var.security_group_ids
   key_name                             = var.key_name

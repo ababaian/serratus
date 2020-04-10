@@ -99,6 +99,7 @@ module "monitoring" {
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
+  instance_type      = "t3.small"
 }
 
 // Serratus-dl
