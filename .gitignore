@@ -3,6 +3,9 @@ local*
 *local*
 *LOCAL*
 
+# Serratus Specific ======================================
+data/sra/*
+
 # AWS gitignore ===========================================
 # local credentials file
 .env
