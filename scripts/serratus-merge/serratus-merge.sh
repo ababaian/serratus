@@ -263,6 +263,7 @@ if [[ -s "$SRA.flagstat" ]]
 then
   echo "  ...$SRA.flagstat detected. Uploading."
   aws s3 cp $SRA.flagstat $S3_OUT/flagstat/
+  aws s3 cp $SRA.refCount $S3_OUT/flagstat/
 fi    
 echo "  Status: DONE"
 
