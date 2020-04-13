@@ -150,6 +150,7 @@ if [[ "$SORT" -eq 'true' ]]
 then
   # Sort + Reheader
   samtools sort -@ $THREADS temporary.bam | \
+  tee >(awk '/^[^@]/ {count[$3]++} END {for (id in count) {print id, count[id]}}' > refCount) | \
   samtools reheader 0.header.sam - >\
   merged_sorted.bam
 
@@ -157,7 +158,9 @@ then
   rm 0.header.sam
 else
   # Re-header only
-  samtools reheader 0.header.sam temporary.bam > \
+  samtools view -h temporary.bam | \
+  tee >(awk '/^[^@]/ {count[$3]++} END {for (id in count) {print id, count[id]}}' > refCount) | \
+  samtools reheader 0.header.sam - > \
   reheader.bam
 
   mv reheader.bam temporary.bam
@@ -180,6 +183,7 @@ fi
 if [[ "$FLAGSTAT" -eq 'true' ]]
 then
   samtools flagstat $OUTBAM > $SRA.flagstat
+  mv refCount > $SRA.refCount
 
   echo "  Post Merge Flagstat"
   cat $SRA.flagstat
