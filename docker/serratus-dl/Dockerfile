@@ -5,7 +5,7 @@ FROM serratus-base:latest AS build_base
 #==========================================================
 # Container Information
 ARG TYPE='downloader'
-ARG VERSION='0.1.0'
+ARG VERSION='0.1.2'
 
 # Software Information
 # ENV SAMTOOLSVERSION='1.10'  # from serratus-base
@@ -60,8 +60,8 @@ COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
 
 WORKDIR /home/serratus
-COPY scripts/worker.sh ./
-COPY scripts/serratus-dl/* ./
+COPY docker/worker.sh ./
+COPY docker/serratus-dl/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================

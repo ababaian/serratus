@@ -18,7 +18,7 @@ FROM amazonlinux:2 AS serratus-base
 # Container Information
 ARG PROJECT='serratus'
 ARG TYPE='base'
-ARG VERSION='0.1.0'
+ARG VERSION='0.1.2'
 
 # Software Versions (pass to shell)
 ENV SAMTOOLSVERSION='1.10'

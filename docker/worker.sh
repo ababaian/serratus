@@ -88,6 +88,9 @@ echo "                SERRATUS                  "
 echo "=========================================="
 cd $BASEDIR
 
+# Check AWS Credentials
+aws s3api head-object --bucket $S3_BUCKET --key aws-test-token.jpg
+
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 # Fire up main loop (SRA downloader)
 echo "Creating $WORKERS worker processes"

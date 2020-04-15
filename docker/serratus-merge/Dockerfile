@@ -5,7 +5,7 @@ FROM serratus-base:latest AS build_base
 #==========================================================
 # Container Information
 ARG TYPE='merge'
-ARG VERSION='0.1.0'
+ARG VERSION='0.1.2'
 
 # Software Information
 # ENV SAMTOOLSVERSION='1.10'  # from serratus-base
@@ -29,8 +29,8 @@ LABEL tags="aws-cli, samtools"
 # Serratus Initialize =====================================
 #==========================================================
 WORKDIR /home/serratus
-COPY scripts/worker.sh ./
-COPY scripts/serratus-merge/* ./
+COPY docker/worker.sh ./
+COPY docker/serratus-merge/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================

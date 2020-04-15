@@ -5,7 +5,7 @@ FROM serratus-base:latest AS build_base
 #==========================================================
 # Container Information
 ARG TYPE='aligner'
-ARG VERSION='0.1.0'
+ARG VERSION='0.1.2'
 
 # Software Information
 # ENV SAMTOOLSVERSION='1.10' # from serratus-base
@@ -60,8 +60,8 @@ RUN wget https://github.com/shenwei356/seqkit/releases/download/v0.12.0/seqkit_l
 # Serratus Initialize =====================================
 #==========================================================
 WORKDIR /home/serratus
-COPY scripts/worker.sh ./
-COPY scripts/serratus-align/* ./
+COPY docker/worker.sh ./
+COPY docker/serratus-align/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================
