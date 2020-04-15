@@ -17,19 +17,22 @@
 sudo yum install -y docker
 sudo yum install -y git
 sudo service docker start
-
 ```
 
 ```
 git clone https://github.com/ababaian/serratus.git; cd serratus
-sudo docker build -t serratus-base:0 -t serratus-base:latest -f docker/Dockerfile .
-sudo docker build -t serratus-dl:0 -t serratus-dl:latest -f docker/serratus-dl/Dockerfile .
-sudo docker build -t serratus-align:0 -t serratus-align:latest -f docker/serratus-align/Dockerfile .
-sudo docker build -t serratus-merge:0 -t serratus-merge:latest -f docker/serratus-merge/Dockerfile .
+
+# If you want to upload containers to your repository, include this.
+export DOCKERHUB_USER='serratusbio' # optional
+sudo docker login # optional
+
+# Build all containers and upload them docker hub repo (if available)
+./build.sh
+
 ```
 
 ## Uploading serratus container images to AWS ECR
-Paste resulting command in terminal to authenticate
+Paste resulting command in terminal to authenticate (not implemented)
 
 ```
 ## NOTE: Depricated. Jeff builds to dockerhub directly
@@ -52,7 +55,7 @@ Paste resulting command in terminal to authenticate
 
 ## Run interactive serratus-dl
 ```
-sudo docker run --rm --entrypoint /bin/bash -it serratus-base:0
+sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:latest
 ```
 
 ## Testing scheduler
