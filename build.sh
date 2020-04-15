@@ -15,11 +15,6 @@ VERSION=0.1.2
 # DOCKERHUB_USER='serratusbio'
 # sudo docker login
 
-if [ -z "$DOCKERHUB_USER" ]; then
-    echo "Environment variable DOCKERHUB_USER not set."
-    exit 1
-fi
-
 $builder build -f docker/Dockerfile \
   -t serratus-base -t serratus-base:latest \
   -t serratus-base:$VERSION .
@@ -50,8 +45,13 @@ for img in $images; do
               -t $DOCKERHUB_USER/serratus-$img:latest .
         fi
 
-        $builder push $DOCKERHUB_USER/serratus-$img
-        echo "Done pushing serratus-$img"
+        if [ -z "$DOCKERHUB_USER" ]; then
+          echo "No DOCKERHUB_USER set. Images are local only"
+        else 
+        # Push container images to repo
+          $builder push $DOCKERHUB_USER/serratus-$img
+          echo "Done pushing serratus-$img"
+        fi
     ) &
 done
 
