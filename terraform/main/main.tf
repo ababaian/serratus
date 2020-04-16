@@ -1,3 +1,8 @@
+///////////////////////////////////////////////////////////
+// MAIN.TF - SERRATUS
+///////////////////////////////////////////////////////////
+// VARIABLES ==============================================
+
 variable "aws_region" {
   type    = string
   default = "us-east-1"
@@ -6,13 +11,13 @@ variable "aws_region" {
 variable "dl_size" {
   type    = number
   default = 0
-  description = "Default size of download ASG"
+  description = "Default number of downloader nodes (ASG)"
 }
 
 variable "align_size" {
   type    = number
   default = 0
-  description = "Default size of alignment ASG"
+  description = "Default number of aligner nodes (ASG)"
 }
 
 variable "dev_cidrs" {
@@ -34,8 +39,10 @@ variable "scheduler_port" {
   default = 8000
 }
 
+// PROVIDER/AWS ===========================================
 provider "aws" {
-  region = var.aws_region
+  version     = "~> 2.49"
+  region      = var.aws_region
 }
 
 provider "local" {}
@@ -65,30 +72,38 @@ resource "aws_security_group" "internal" {
   }
 }
 
+// MODULES ================================================
+
+// Working S3 storage for Serratus
 module "work_bucket" {
   source   = "../bucket"
 
   prefixes = ["fq-blocks", "bam-blocks", "out"]
 }
 
+// Cluster scheduler and task manager
 module "scheduler" {
-  source = "../scheduler"
-
+  source             = "../scheduler"
+  
   security_group_ids = [aws_security_group.internal.id]
+  key_name           = var.key_name
   instance_type      = "t3.nano"
   dockerhub_account  = var.dockerhub_account
-  key_name           = var.key_name
   scheduler_port     = var.scheduler_port
 }
 
+// Cluster monitor
 module "monitoring" {
-  source = "../monitoring"
+  source             = "../monitoring"
+
   security_group_ids = [aws_security_group.internal.id]
-  scheduler_ip = module.scheduler.private_ip
+  key_name           = var.key_name
+  scheduler_ip       = module.scheduler.private_ip
 }
 
+// Serratus-dl
 module "download" {
-  source = "../worker"
+  source             = "../worker"
 
   desired_size       = 0
   max_size           = 32
@@ -106,8 +121,9 @@ module "download" {
   options            = "-k ${module.work_bucket.name}"
 }
 
+// Serratus-align
 module "align" {
-  source = "../worker"
+  source             = "../worker"
 
   desired_size       = 0
   max_size           = 32
@@ -125,8 +141,9 @@ module "align" {
   options            = "-k ${module.work_bucket.name} -a bowtie2"
 }
 
+//Serratus-merge
 module "merge" {
-  source = "../worker"
+  source             = "../worker"
 
   desired_size       = 1
   max_size           = 10
@@ -143,6 +160,9 @@ module "merge" {
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
   options            = "-k ${module.work_bucket.name} -b s3://${module.work_bucket.name}/out"
 }
+
+// RESOURCES ==============================================
+// Controller scripts created locally
 
 resource "local_file" "hosts" {
   filename = "${path.module}/serratus-hosts"
@@ -205,6 +225,7 @@ resource "local_file" "merge_set_capacity" {
   EOF
 }
 
+// OUTPUT =================================================
 output "help" {
   value = <<-EOF
     Run ${local_file.create_tunnel.filename} to create SSH tunnels for all services.

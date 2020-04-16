@@ -1,7 +1,6 @@
 variable "key_name" {
   description = "Name of the AWS key pair to assign instances"
   type        = string
-  default     = "jeff@rosario"
 }
 
 variable "security_group_ids" {

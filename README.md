@@ -57,22 +57,32 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 
 # Setting up and running Serratus
 
-### 0) Prerequisite: AWS account
+### 0) Dependencies
 
-1. Sign up for an AWS account if you don't have one yet. You can use the free basic tier.
+#### AWS account
+
+1. Sign up for an AWS account (you can use the free tier)
 2. [Create an IAM Admin User with Access Key](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html). For **Access type**, use **Progammatic access**.
 3. Note the Access Key ID and Secret values.
+4. Create a [EC2 keypair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) in `us-east-1` region. Retain the name of the keypair and the `.pem` file.
 
-Set these as environment variables for the future steps. Run:
+#### Packer
+
+1. [Download Packer](https://packer.io/downloads.html) as a binary. Extract it to a PATH directory (`~/.local/bin`)
+
+#### Terraform
+
+1. [Download Teraform](https://www.terraform.io/downloads.html) (>= v0.12.24) as a binary. Extract it to a PATH directory (`~/.local/bin`)
+
+### 1) Build Serratus AMIs with Packer
+
+Pass AWS credentials to pipeline via environmental variables
 ```
 export AWS_ACCESS_KEY_ID="your_access_key"
 export AWS_SECRET_ACCESS_KEY="your_secret_key"
 ```
-### 1) Building AMIs with Packer
 
-First, [download Packer](https://packer.io/downloads.html).  It comes as a single binary which you can just unzip.  I extracted it to `~/.local/bin` so that it ended up on my PATH.
-
-Next, use it to build the AMI: 
+Use packer to build the serratus instance image (AMI)
 ```
 cd serratus/packer
 /path/to/packer build docker-ami.json
@@ -80,30 +90,28 @@ cd ../..
 ```
 
 This will start up a t3.nano, build the AMI, and then terminate it.  Currently this takes about 2 minutes, which should cost well under a penny. The final line of STDOUT will be the region and AMI. Retain this information
+
+Current stable AMI: `us-east-1: ami-04c1625cf0bcb4159`
+
+###  2) Build Serratus resources with Terraform
+
+#### Set Terraform variables
+
+Open `terraform/main/terraform.tfvars` in a text editor. Set these variables
+ * `dev_cidrs`: Your public IP, followed by "/32". Use: `curl ipecho.net/plain; echo`
+ * `key_name`: Your EC2 key pair name
+ * `dockerhub_account`: (optional). Change this to your docker hub account to build your own images. Default images are in `serratusbio` organization.
+
+
+#### Create Serratus resources
+
+Navigate to the top-level module and run `terraform` initialization and apply. Retain the scheduler DNS address (last output line).
+
 ```
-us-east-1: ami-04c1625cf0bcb4159
-```
-
-###  2) Getting started with Terraform
-
-#### Variables
-
-Before starting, you'll need to [setup a keypair on EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair).  Make sure to use the us-east-1 region, as that's where the SRA data is stored.  Keep the name of the keypair and the `.pem` file, you'll need them later.
-
-You'll also need to find out your public IP.  Try `curl ipecho.net/plain; echo`.
-
-Open `terraform/main/terraform.tfvars`.  There are three environment variables in this file:
-
- * `dev_cidrs`: Your public IP, followed by "/32"
- * `key_name`: EC2 key pair name
- * `dockerhub_account`: Where the docker images are stored.  You can leave it as-is if you don't want to build the images.
-
-### 3) Initialization
-
-The top-level module is in `serratus/terraform/main`.  Change directory to there, run `tf init`, and then `tf apply` to create some infrastructure.
-```
-cd serratus/terraform/main
-tf init
+cd terraform/main
+terraform init
+terrafform apply
+cd ../..
 ```
 At the time of writing, this will create:
 
@@ -118,12 +126,14 @@ All ASGs have a max size of 1.  This can all be reconfigured in terraform/main/m
 
 At the end of `tf apply`, it will output the scheduler's DNS address.  Keep this for later.
 
-### 4) Creating an SSH Tunnel to the scheduler
+### 3) SSH to the scheduler
 
-By default, the scheduler exposes port 8000.  This port is *not* exposed to the public internet because it doesn't support any authentication or encryption yet.  You'll need to create an SSH tunnel to allow your local web-browser and terminal to connect.  
+The scheduler exposes port 8000.  This port is *not* exposed to the public internet. You will need to create an SSH tunnel to allow your local web-browser and terminal to connect.  
 
-    $ scheduler_dns=<copied this from terraform>
-    $ ssh -i /path/to/key.pem -L 8000:localhost:8000 ec2-user@$scheduler_dns
+```
+scheduler_dns=<copied this from terraform>
+ssh -i /path/to/key.pem -L 8000:localhost:8000 ec2-user@$scheduler_dns
+```
 
 Leave this terminal open.  It will route requests from port 8000 on your local machine to the application running on the scheduler.
 
