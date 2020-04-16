@@ -139,24 +139,27 @@ At the end of `tf apply`, it will output the scheduler's DNS address.  Keep this
 The scheduler exposes ports 3000/8000/9090.  This port is *not* exposed to the public internet. You will need to create an SSH tunnel to allow your local web-browser and terminal to connect.  
 
 ```
-scheduler_dns=<copied this from terraform>
-ssh -i /path/to/key.pem -L 8000:localhost:8000 ec2-user@$scheduler_dns
+./create_tunnel.sh
 ```
+Open a web browser for UI: [Status Page: http://localhost:8000/jobs/](http://localhost:8000/jobs/) [Grafana: http://localhost:3000/jobs/](http://localhost:8000/jobs/) [http://localhost:8000/jobs/](http://localhost:3000) [Prometheus: http://localhost:8000/jobs/](http://localhost:9090)
 
-Leave this terminal open.  It will route requests from port 8000 on your local machine to the application running on the scheduler.
+May take a few minutes to boot. Make tea.
 
-To test this, open a web browser at [http://localhost:8000/jobs/](http://localhost:8000/jobs/). You should some table headings with no actual data.  If so, the scheduler is ready to be loaded. The scheduler takes a few minutes to boot up.  If you're seeing strange errors (eg. connection reset by peer), go make a cup of tea and come back in ten minutes.
+### 5) Loading SRA Accesions into Serratus
 
-### 5) Loading SRA Data
+Once the scheduler is online, you can curl SRA accession data in the form of a `SraRunInfo.csv` file (NCBI SRA > `Send to: File`).
 
-Once the scheduler's up.  Assuming you have an `SraRunInfo.csv` file (NCBI SRA > `Send to: File`), and you've successfully connected, you can load it with curl
-
-    $ curl -s -X POST -T /path/to/SraRunInfo.csv localhost:8000/jobs/add_sra_run_info/
+```
+curl -s -X POST -T /path/to/SraRunInfo.csv localhost:8000/jobs/add_sra_run_info/
+```
 
 This should respond with a short JSON indicating the number of rows inserted, and the total number in the scheduler.
 
-In your web browser, refresh the status page.  You should now see a list of accessions by state.  If ASGs are online, they should start processing immediately.  In a few seconds, the first entry will switch to "splitting" state, which means it's working.
+In your web browser, refresh the status page.  You should now see a list of accessions by state. If ASGs are online, they should start processing immediately.  In a few seconds, the first entry will switch to "splitting" state, which means it's working.
 
+### 6) Launch cluster nodes (currently manual)
+
+With data loaded into the scheduler, manually set the number of `serratus-dl` nodes and `serratus-align` nodes to acquire/align the data.
 
 # Data Release Policy
 To achieve our objective of providing high quality CoV sequence data to the global research effort, Serratus ensures:

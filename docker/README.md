@@ -9,6 +9,8 @@
 # |    |     |--...
 # |    |--serratus-merge
 # serratus-scheduler
+# serratus-grafana
+# serratus-prometheus
 ```
 
 ## Build all containers for serratus
