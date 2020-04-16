@@ -1,3 +1,8 @@
+///////////////////////////////////////////////////////////
+// MONITORING MODULE
+///////////////////////////////////////////////////////////
+
+// VARIABLES ==============================================
 variable "key_name" {
   description = "Name of the AWS key pair to assign instances"
   type        = string
@@ -26,6 +31,8 @@ data "aws_ami" "ecs" {
     values = ["x86_64"]
   }
 }
+
+// RESOURCES ==============================================
 
 # Give our instance the set of permissions required to act as an ECS node.
 resource "aws_iam_instance_profile" "monitor" {
@@ -153,6 +160,8 @@ resource aws_ecs_service "monitor" {
   # destroying the old one, which fails because the ports are already taken.
   scheduling_strategy = "DAEMON"
 }
+
+// OUTPUT =================================================
 
 output "private_ip" {
   value = aws_eip.monitor.private_ip

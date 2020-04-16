@@ -1,3 +1,8 @@
+///////////////////////////////////////////////////////////
+// S3 WORK BUCKET MODULE
+///////////////////////////////////////////////////////////
+// VARIABLES ==============================================
+
 variable "prefixes" {
   type = set(string)
   default = []
@@ -14,6 +19,8 @@ resource "aws_s3_bucket" "work" {
   }
 }
 
+// RESOURCES ==============================================
+
 resource "aws_s3_bucket_metric" "full" {
   bucket = aws_s3_bucket.work.bucket
   name = "full"
@@ -28,6 +35,8 @@ resource "aws_s3_bucket_metric" "prefix" {
     prefix = each.value
   }
 }
+
+// OUTPUT =================================================
 
 output "name" {
   value = aws_s3_bucket.work.bucket

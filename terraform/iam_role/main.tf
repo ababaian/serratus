@@ -1,5 +1,10 @@
-# Create an IAM Role, Role Policy, Role Policy Attachment, and Instance
-# Profile.  Attach named policies by ARN to the Instance Profile.
+///////////////////////////////////////////////////////////
+// IAM ROLES
+///////////////////////////////////////////////////////////
+// Create an IAM Role, Role Policy, Role Policy Attachment, and Instance
+// Profile.  Attach named policies by ARN to the Instance Profile.
+
+// VARIABLES ==============================================
 
 variable "name" { 
   type = string
@@ -11,6 +16,8 @@ variable "policy_arns" {
   default     = []
   description = "ARNs to attach to the role"
 }
+
+// RESOURCES ==============================================
 
 resource "aws_iam_role" "role" {
   name = "SerratusIamRole-${var.name}"
@@ -64,6 +71,8 @@ resource "aws_iam_role_policy_attachment" "attachment" {
   role       = aws_iam_role.role.name
   policy_arn = each.value
 }
+
+// OUTPUT =================================================
 
 output "role" {
   value = aws_iam_role.role

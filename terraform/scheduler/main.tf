@@ -1,3 +1,8 @@
+///////////////////////////////////////////////////////////
+// SCHEDULER MODULE
+///////////////////////////////////////////////////////////
+// VARIABLES ==============================================
+
 variable "scheduler_port" {
   description = "HTTP port to use for the scheduler"
   type        = number
@@ -39,6 +44,8 @@ module "iam_role" {
   source = "../iam_role"
   name   = "scheduler"
 }
+
+// RESOURCES ==============================================
 
 resource "aws_cloudwatch_log_group" "scheduler" {
   name = "scheduler"
@@ -83,6 +90,8 @@ resource "aws_instance" "scheduler" {
     "component": "serratus-scheduler"
   }
 }
+
+// OUTPUT =================================================
 
 output "private_ip" {
   value = aws_instance.scheduler.private_ip
