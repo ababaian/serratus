@@ -8,6 +8,7 @@
 # |    |     |--serratus-align-hgr1
 # |    |     |--...
 # |    |--serratus-merge
+# serratus-scheduler
 ```
 
 ## Build all containers for serratus

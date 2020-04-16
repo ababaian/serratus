@@ -1,5 +1,6 @@
 # serratus
 ![Serratus Mountain in Squamish, BC. Canada](img/serratus_logo.png)
+
 *Serratus Mountain, Squamish,BC*
 
 ### Background
@@ -17,15 +18,13 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 
 `data/README.md`: README.md outlining location/acquisition of serratus data
 
-`docker/`: Container make files and tokens
+`docker/`: Container make files and job scripts
 
 `img/`: Architecture/workflow diagrams
 
 `packer/`: Standardized node images (ami)
 
 `scheduler/`: Code for `serratus` head-node and sraRunInfo management
-
-`scripts/`: Defined units of work performed in `serratus`
 
 `terraform/`: Cloud resources / pipeline management
 
@@ -64,7 +63,16 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 1. Sign up for an AWS account (you can use the free tier)
 2. [Create an IAM Admin User with Access Key](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html). For **Access type**, use **Progammatic access**.
 3. Note the Access Key ID and Secret values.
-4. Create a [EC2 keypair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) in `us-east-1` region. Retain the name of the keypair and the `.pem` file.
+4. Create a [EC2 keypair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) in `us-east-1` region. Retain the name of the keypair and the `.pem` file. Configure your `ssh` for easy AWS access(change `serratus.pem` to your identity file).
+
+`~/.ssh/config`: Add these lines
+```
+Host *.compute.amazonaws.com *.compute-1.amazonaws.com aws_*
+     User ec2-user
+     IdentityFile ~/.ssh/serratus.pem
+     StrictHostKeyChecking no
+     UserKnownHostsFile /dev/null
+```
 
 #### Packer
 
@@ -126,9 +134,9 @@ All ASGs have a max size of 1.  This can all be reconfigured in terraform/main/m
 
 At the end of `tf apply`, it will output the scheduler's DNS address.  Keep this for later.
 
-### 3) SSH to the scheduler
+### 3) Open SSH tunnel to the scheduler
 
-The scheduler exposes port 8000.  This port is *not* exposed to the public internet. You will need to create an SSH tunnel to allow your local web-browser and terminal to connect.  
+The scheduler exposes ports 3000/8000/9090.  This port is *not* exposed to the public internet. You will need to create an SSH tunnel to allow your local web-browser and terminal to connect.  
 
 ```
 scheduler_dns=<copied this from terraform>
