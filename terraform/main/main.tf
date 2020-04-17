@@ -108,14 +108,19 @@ module "download" {
 
   desired_size       = 0
   max_size           = 256
+
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "c5.large"
+
+  instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
+  volume_size        = 16 // Mitigate the storage leak in fastq-dump
   spot_price         = 0.04
+
   s3_bucket          = module.work_bucket.name
   s3_prefix          = "fq-blocks"
-  dockerhub_account  = var.dockerhub_account
+
   image_name         = "serratus-dl"
+  dockerhub_account  = var.dockerhub_account
   workers            = 2
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
