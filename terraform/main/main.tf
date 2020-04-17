@@ -247,6 +247,6 @@ output "dl_asg_name" {
 output "merge_asg_name" {
   value = module.merge.asg_name
 }
-output "algin_asg_name" {
+output "align_asg_name" {
   value = module.align.asg_name
 }
