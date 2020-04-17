@@ -196,6 +196,7 @@ resource "local_file" "dl_set_capacity" {
   content = <<-EOF
     #!/bin/bash
     set -eux
+    export AWS_REGION=${var.aws_region}
     aws autoscaling set-desired-capacity \
       --auto-scaling-group-name ${module.download.asg_name} \
       --desired-capacity $1
@@ -208,6 +209,7 @@ resource "local_file" "align_set_capacity" {
   content = <<-EOF
     #!/bin/bash
     set -eux
+    export AWS_REGION=${var.aws_region}
     aws autoscaling set-desired-capacity \
       --auto-scaling-group-name ${module.align.asg_name} \
       --desired-capacity $1
@@ -220,6 +222,7 @@ resource "local_file" "merge_set_capacity" {
   content = <<-EOF
     #!/bin/bash
     set -eux
+    export AWS_REGION=${var.aws_region}
     aws autoscaling set-desired-capacity \
       --auto-scaling-group-name ${module.merge.asg_name} \
       --desired-capacity $1
