@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////
 // SCHEDULER MODULE
 ///////////////////////////////////////////////////////////
-// VARIABLES ==============================================
+// VARIABLES ##############################
 
 variable "scheduler_port" {
   description = "HTTP port to use for the scheduler"
@@ -45,7 +45,7 @@ module "iam_role" {
   name   = "scheduler"
 }
 
-// RESOURCES ==============================================
+// RESOURCES ##############################
 
 resource "aws_cloudwatch_log_group" "scheduler" {
   name = "scheduler"
@@ -91,7 +91,7 @@ resource "aws_instance" "scheduler" {
   }
 }
 
-// OUTPUT =================================================
+// OUTPUT ##############################
 
 output "private_ip" {
   value = aws_instance.scheduler.private_ip

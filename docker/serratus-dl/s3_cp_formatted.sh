@@ -32,4 +32,4 @@ TEMPFILE="$(basename "$DEST")"
 cat - > "$TEMPFILE"
 trap 'rm -f "$TEMPFILE"' EXIT
 
-aws s3 cp "$TEMPFILE" "$DEST" "$@"
+aws s3 cp --quiet "$TEMPFILE" "$DEST" "$@"

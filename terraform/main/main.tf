@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////
 // SERRATUS MAIN TERRAFORM CONFIG
 ///////////////////////////////////////////////////////////
-// VARIABLES ==============================================
+// VARIABLES ##############################
 
 variable "aws_region" {
   type    = string
@@ -39,7 +39,7 @@ variable "scheduler_port" {
   default = 8000
 }
 
-// PROVIDER/AWS ===========================================
+// PROVIDER/AWS ##############################
 provider "aws" {
   version     = "~> 2.49"
   region      = var.aws_region
@@ -72,7 +72,7 @@ resource "aws_security_group" "internal" {
   }
 }
 
-// MODULES ================================================
+// MODULES ##############################
 
 // Working S3 storage for Serratus
 module "work_bucket" {
@@ -99,6 +99,7 @@ module "monitoring" {
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
+  instance_type      = "t3.medium"
 }
 
 // Serratus-dl
@@ -106,7 +107,7 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 32
+  max_size           = 256
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
@@ -126,7 +127,7 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 32
+  max_size           = 256
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
@@ -161,7 +162,7 @@ module "merge" {
   options            = "-k ${module.work_bucket.name} -b s3://${module.work_bucket.name}/out"
 }
 
-// RESOURCES ==============================================
+// RESOURCES ##############################
 // Controller scripts created locally
 
 resource "local_file" "hosts" {
@@ -195,6 +196,7 @@ resource "local_file" "dl_set_capacity" {
   content = <<-EOF
     #!/bin/bash
     set -eux
+    export AWS_REGION=${var.aws_region}
     aws autoscaling set-desired-capacity \
       --auto-scaling-group-name ${module.download.asg_name} \
       --desired-capacity $1
@@ -207,6 +209,7 @@ resource "local_file" "align_set_capacity" {
   content = <<-EOF
     #!/bin/bash
     set -eux
+    export AWS_REGION=${var.aws_region}
     aws autoscaling set-desired-capacity \
       --auto-scaling-group-name ${module.align.asg_name} \
       --desired-capacity $1
@@ -219,13 +222,14 @@ resource "local_file" "merge_set_capacity" {
   content = <<-EOF
     #!/bin/bash
     set -eux
+    export AWS_REGION=${var.aws_region}
     aws autoscaling set-desired-capacity \
       --auto-scaling-group-name ${module.merge.asg_name} \
       --desired-capacity $1
   EOF
 }
 
-// OUTPUT =================================================
+// OUTPUT ##############################
 output "help" {
   value = <<-EOF
     Run ${local_file.create_tunnel.filename} to create SSH tunnels for all services.
@@ -246,6 +250,6 @@ output "dl_asg_name" {
 output "merge_asg_name" {
   value = module.merge.asg_name
 }
-output "algin_asg_name" {
+output "align_asg_name" {
   value = module.align.asg_name
 }
