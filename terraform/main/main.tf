@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////
 // SERRATUS MAIN TERRAFORM CONFIG
 ///////////////////////////////////////////////////////////
-// VARIABLES ==============================================
+// VARIABLES ##############################
 
 variable "aws_region" {
   type    = string
@@ -39,7 +39,7 @@ variable "scheduler_port" {
   default = 8000
 }
 
-// PROVIDER/AWS ===========================================
+// PROVIDER/AWS ##############################
 provider "aws" {
   version     = "~> 2.49"
   region      = var.aws_region
@@ -72,7 +72,7 @@ resource "aws_security_group" "internal" {
   }
 }
 
-// MODULES ================================================
+// MODULES ##############################
 
 // Working S3 storage for Serratus
 module "work_bucket" {
@@ -162,7 +162,7 @@ module "merge" {
   options            = "-k ${module.work_bucket.name} -b s3://${module.work_bucket.name}/out"
 }
 
-// RESOURCES ==============================================
+// RESOURCES ##############################
 // Controller scripts created locally
 
 resource "local_file" "hosts" {
@@ -226,7 +226,7 @@ resource "local_file" "merge_set_capacity" {
   EOF
 }
 
-// OUTPUT =================================================
+// OUTPUT ##############################
 output "help" {
   value = <<-EOF
     Run ${local_file.create_tunnel.filename} to create SSH tunnels for all services.
