@@ -1,5 +1,5 @@
 # serratus
-![Serratus Mountain in Squamish, BC. Canada](img/serratus_logo.png)
+![Serratus Mountain in Squamish, BC. Canada](img/logo/splash.png)
 
 *Serratus Mountain, Squamish,BC*
 
