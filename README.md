@@ -1,5 +1,5 @@
 # serratus
-![Serratus Mountain in Squamish, BC. Canada](img/serratus_logo.png)
+![Serratus Mountain in Squamish, BC. Canada](img/logo/splash.png)
 
 *Serratus Mountain, Squamish,BC*
 
@@ -17,32 +17,6 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 `Serratus` is an Open-Science project. We welcome all scientists to contribute. [See CONTRIBUTING.md](CONTRIBUTING.md)
 
 Email (ababaian AT bccrc DOT ca) or join  [Slack (type `/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-dwdg5uw0-TTcfrFagariqKpOSU_d6wg)
-
-
-## Useful links
-- **S3 Bucket:** s3://serratus-public/ (public-readable)
-
-#### AWS-specific
-- [AWS Batch workflow - Introduction](https://aws.amazon.com/blogs/compute/building-high-throughput-genomics-batch-workflows-on-aws-introduction-part-1-of-4/)
-- [AWS Batch workflow - github page](https://github.com/aws-samples/aws-batch-genomics)
-- [SRAtoolkit in Cloud Computing](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud/)
-- [NCBI SRA Data on S3](https://registry.opendata.aws/ncbi-sra/)
-- [S3 transfer optimization](https://docs.aws.amazon.com/cli/latest/topic/s3-config.html)
-- [Paper on analyzing EC2 costs (2011)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0026624)
-- [Pushing the limits of Amazon S3 Upload Performance](https://improve.dk/pushing-the-limits-of-amazon-s3-upload-performance/)
-- [Clever SRA alignment pipeline](https://github.com/FredHutch/sra-pipeline
-)
-
-#### SARS-CoV-2
-- [SARS-CoV-2 UCSC Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=wuhCor1)
-- [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
-- [Virus detection from RNA-seq: proof of concept](https://www.ncbi.nlm.nih.gov/pubmed/21603639)
-
-#### Bloom Filters
-- [Bigsi: Bloom filter indexing of SRA/ENA for organism search](https://github.com/phelimb/bigsi)
-- [Fast Search of Thousands of Short-Read Sequencing Experiments](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4804353/)
-- [Ultra-fast search of all deposited bacterial and viral genomic data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6420049/)
-
 
 # Setting up and running Serratus
 
@@ -150,6 +124,29 @@ In your web browser, refresh the status page.  You should now see a list of acce
 ### 6) Launch cluster nodes (currently manual)
 
 With data loaded into the scheduler, manually set the number of `serratus-dl` & `serratus-align` nodes to process the data.
+
+## Useful links
+
+#### AWS-specific
+- [AWS Batch workflow - Introduction](https://aws.amazon.com/blogs/compute/building-high-throughput-genomics-batch-workflows-on-aws-introduction-part-1-of-4/)
+- [AWS Batch workflow - github page](https://github.com/aws-samples/aws-batch-genomics)
+- [SRAtoolkit in Cloud Computing](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud/)
+- [NCBI SRA Data on S3](https://registry.opendata.aws/ncbi-sra/)
+- [S3 transfer optimization](https://docs.aws.amazon.com/cli/latest/topic/s3-config.html)
+- [Paper on analyzing EC2 costs (2011)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0026624)
+- [Pushing the limits of Amazon S3 Upload Performance](https://improve.dk/pushing-the-limits-of-amazon-s3-upload-performance/)
+- [Clever SRA alignment pipeline](https://github.com/FredHutch/sra-pipeline
+)
+
+#### SARS-CoV-2
+- [SARS-CoV-2 UCSC Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=wuhCor1)
+- [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
+- [Virus detection from RNA-seq: proof of concept](https://www.ncbi.nlm.nih.gov/pubmed/21603639)
+
+#### Bloom Filters
+- [Bigsi: Bloom filter indexing of SRA/ENA for organism search](https://github.com/phelimb/bigsi)
+- [Fast Search of Thousands of Short-Read Sequencing Experiments](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4804353/)
+- [Ultra-fast search of all deposited bacterial and viral genomic data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6420049/)
 
 
 # Data Release Policy
