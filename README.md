@@ -1,5 +1,5 @@
 # serratus
-![Serratus Mountain in Squamish, BC. Canada](img/logo/splash.png)
+![Serratus Mountain in Squamish, BC. Canada](img/serratus_logo.png)
 
 *Serratus Mountain, Squamish,BC*
 
@@ -159,7 +159,9 @@ In your web browser, refresh the status page.  You should now see a list of acce
 
 ### 6) Launch cluster nodes (currently manual)
 
-With data loaded into the scheduler, manually set the number of `serratus-dl` nodes and `serratus-align` nodes to acquire/align the data.
+With data loaded into the scheduler, manually set the number of `serratus-dl` & `serratus-align` nodes to process the data.
+
+
 
 # Data Release Policy
 To achieve our objective of providing high quality CoV sequence data to the global research effort, Serratus ensures:
