@@ -1,9 +1,24 @@
 # Contributing to Serratus
 
+  * [Open Science Collaboration](#open-science-collaboration)
+    + [Contact the team](#contact-the-team)
+
   * [Bioinformatics pipeline](#bioinformatics-pipeline)
   * [AWS architecture](#aws-architecture)
-  * [Open Science Collaboration](#open-science-collaboration)
   * [Repository organization](#repository-organization)
+
+  * [Getting Started](#getting-started)
+    + [Finding a Task](#finding-a-task)
+    + [Creating a new Task](#creating-a-new-task)
+    + [Using git](#using-git)
+      - [Development is on Branches](#development-is-on-branches)
+      - [Pull Request](#pull-request)
+
+  * [Running an Experiment](#running-an-experiment)
+    + [Experiment organization](#experiment-organization)
+    + [Experiment Template](#experiment-template)
+    + [Depositing Data](#depositing-data)
+
   * [Serratus Data](#serratus-data)
     + [`~/notebook` : Experiment associated data](#---notebook----experiment-associated-data)
     + [`~/out` : Serratus alignment output](#---out----serratus-alignment-output)
@@ -11,28 +26,31 @@
     + [`~/sra` : SraRunInfo Tables (.csv.gz)](#---sra----sraruninfo-tables--csvgz-)
     + [`~/test-data` : example data for development](#---test-data----example-data-for-development)
     + [`~/var/` : Assorted nuts and bolts](#---var-----assorted-nuts-and-bolts)
+
   * [Production Containers and Code](#production-containers-and-code)
-      - [Building containers](#building-containers)
-      - [Uploading container images to AWS ECR](#uploading-container-images-to-aws-ecr)
-      - [Run interactive an serratus-dl](#run-interactive-an-serratus-dl)
-      - [Testing scheduler](#testing-scheduler)
-  * [Contributing](#contributing)
-    + [Using Git/Github](#using-git-github)
-    + [Finding an open Task](#finding-an-open-task)
-    + [Creating a new Task](#creating-a-new-task)
-    + [Running an experiment](#running-an-experiment)
-    + [Accessing Data](#accessing-data)
-    + [Depositing Data](#depositing-data)
-    + [Report a bug / Suggest Feature](#report-a-bug---suggest-feature)
+    + [Building containers](#building-containers)
+    + [Uploading container images to AWS ECR](#uploading-container-images-to-aws-ecr)
+    + [Run interactive an serratus-dl](#run-interactive-an-serratus-dl)
+    + [Testing scheduler](#testing-scheduler)
 
-## Bioinformatics pipeline
-< Placeholder for bioinformatics description >
+  * [Data Release Policy](#data-release-policy)
 
-## AWS architecture
-< Placeholder for architecture description >
 
 ## Open Science Collaboration
-< Placeholder to outline how data/experiments are shared >
+`Serratus` is an Open-Science project. Our aim is to create a 100% reproducible study with 100% transparent and freely available data.
+
+_We welcome all scientists and developers to contribute._
+
+### Contact the team
+Email (ababaian AT bccrc DOT ca) or join our [Slack (type `/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-dwdg5uw0-TTcfrFagariqKpOSU_d6wg)
+
+## Bioinformatics pipeline
+< Workflow is under active development. >
+
+## AWS architecture
+![serratus-overview](img/serratus_overview.png)
+
+The workhorse for `serratus` is currently the `C5.large` EC2 instance on AWS. Each node has 2 vCPU and 4 GB of memory. Every instance is a blank slate running `amazon linux 2` with `docker`. Workflow is encapsulated in a `container`. This allows for rapid and cheap scaling of the cluster.
 
 ---
 
@@ -48,6 +66,120 @@
 - `terraform/`: Cloud resource definitions for creating/running cluster.
 - `notebook/`: Shared electronic lab-notebook entries and associated data files.
 - `runs/`: Scripts for analyzing the summary outputs of `serratus`
+
+---
+
+
+## Getting Started
+
+Serratus requires [`git`](https://guides.github.com/introduction/git-handbook/) for version control and to manage contributions from many authors.
+
+To download or clone the `serratus` repository locally use:
+```
+git clone https://github.com/ababaian/serratus.git
+```
+
+### Finding a Task
+
+Development of `serratus` is ongoing. To find and solve an open development problem see our [Project Page](https://github.com/ababaian/serratus/projects/1). This is a prioritized list of "Open Tasks" that need to be done, "Tasks in Progress" which are currently being worked on by others, "Code Review" and "Completed Tasks".
+
+Also you can browse all tasks which are organized as ["Issues" on github](https://github.com/ababaian/serratus/issues?q=).
+
+Feel free to comment on any issue, even those you're not assigned to if you have a helpful suggestion.
+
+If you'd like to work on a given task, simply add a comment saying this to the issue and it will be "Assigned" to you.
+
+### Creating a new Task
+
+If you have an idea you'd like to develop, would like to run an experiment or require additional documentation, let the other developers know what you're doing by creating an "Issue" on github. The general template to include initially is:
+
+```
+### Problem / Objective
+< Briefly outline a problem you are solving / the research objectives and hypothesis you are testing >
+
+### Proposed Solution / Methods
+< How are you planning on solving the problem / experimental design to test the hypothesis >
+
+### Additional Resources
+< Outline any additional information you require to do this task or resources you'll need access to >
+
+```
+
+### Using git
+
+#### Development is on Branches
+In `git` there are independent working copies of the code-base called `branches`. Each contributor works on his/her own branch, and this does not interact with other branches.
+
+The main or `master-branch` is for production use. This is the operational code and completed experiments. You should not add your changes to `master` as this can break serratus.
+
+You should work on your own development branch. By convention name the branch `<feature_your_developing>-dev` or `<name>-dev`.
+
+```
+# Create a development branch called `sally-dev`
+git branch sally-dev
+# Move to your branch
+git checkout sally-dev
+```
+
+Now you can modify any of the files in your local `~/serratus/`, when you're ready to save your work (say I modified `serratus/docker/Dockerfile`)
+
+```
+# Stage your changes
+git add docker/Dockerfile
+
+# Check the status of what changes are staged and what is not staged
+git status
+
+# Commit your changes to version control
+git commit -m "Short description of what these changes accomplished"
+
+# End of the work-day, back-up your changes to the online github repository
+git pull # download others changes from the online repo
+git push # upload your changes to the online repo 
+```
+
+#### Pull Request
+
+When you've finished a larger unit of work, like completing a feature. Your `branch` changes can be combined with the `master` branch and into production code. This is called issuing a "Pull Request".
+
+---
+
+## Running an Experiment
+
+It's important that every experimental result in `serratus` be 100% reproducible and all the data is freely available amongst contributors.
+
+All results are documented in a shared electronic notebook: `serratus/notebook`
+
+To assist in this, we suggest using `Jupyter Notebook` to document all the code in running an experiment. Alternatively you can use `markdown` or other ways where code and output can be distinguished.
+
+### Experiment organization
+
+Notebook entries naming and file convention. (`YYMMDD` is start date)
+```
+# Notebook Entry
+serratus/notebook/YYMMDD_experiment_name.ipyb
+
+# Scripts, small data files (>250 kb) and plots from experiment
+serratus/notebook/YYMMDD/<filename>.Rscript
+serratus/notebook/YYMMDD/<filename>.png
+serratus/notebook/YYMMDD/<filename>.csv
+...
+
+# Large data files are stored on S3
+s3://serratus-public/notebook/YYMMDD/bam/aligned.bam
+s3://serratus-public/notebook/YYMMDD/large_data.Rdata
+...
+```
+
+### Experiment Template
+Copy the experiment template to start your experiment.
+```
+cp notebook/200401_template.ipynb notebook/200420_my_experiment_title.ipynb
+```
+
+### Depositing Data
+
+Please contact us to be granted permission to deposit data 
 
 ---
 
@@ -175,7 +307,7 @@ SRA Accession and Run Information master tables. Accessed via SRA website and th
 # serratus-prometheus
 ```
 
-#### Building containers
+### Building containers
 
 ```
 # Start docker service on amazon linux 2
@@ -197,7 +329,7 @@ sudo docker login # optional
 
 ```
 
-#### Uploading container images to AWS ECR
+### Uploading container images to AWS ECR
 Paste resulting command in terminal to authenticate (not implemented)
 
 ```
@@ -219,12 +351,12 @@ Paste resulting command in terminal to authenticate (not implemented)
 # sudo docker push 797308887321.dkr.ecr.us-east-1.amazonaws.com/serratus-merge
 ```
 
-#### Run interactive an serratus-dl
+### Run interactive an serratus-dl
 ```
 sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:latest
 ```
 
-#### Testing scheduler
+### Testing scheduler
 ```
 cd serratus/scheduler
 sudo docker build -t scheduler:0 .
@@ -234,19 +366,7 @@ curl -T /path/to/SraRunInfo.csv localhost:8000/add_sra_run_info
 
 ---
 
-## Contributing
-### Using Git/Github
-< Best practices for using `git` >
-
-### Finding an open Task
-
-### Creating a new Task
-
-### Running an experiment
-
-### Accessing Data
-
-### Depositing Data
-
-### Report a bug / Suggest Feature
-
+## Data Release Policy
+To achieve our objective of providing high quality CoV sequence data to the global research effort, Serratus ensures:
+- All software development is open-source and freely available (GPLv3)
+- All sequencing data generated, raw and processed, will be freely available in the public domain in accordance with the [Bermuda Principles](https://en.wikipedia.org/wiki/Bermuda_Principles) of the Human Genome Project.

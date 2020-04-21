@@ -13,20 +13,10 @@ We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to di
 ### Architecture
 ![serratus-overview](img/serratus_overview.png)
 
+### Contributing
+`Serratus` is an Open-Science project. We welcome all scientists to contribute. [See CONTRIBUTING.md](CONTRIBUTING.md)
 
-## Repository organization
-
-`data/README.md`: README.md outlining location/acquisition of serratus data
-
-`docker/`: Container make files and job scripts
-
-`img/`: Architecture/workflow diagrams
-
-`packer/`: Standardized node images (ami)
-
-`scheduler/`: Code for `serratus` head-node and sraRunInfo management
-
-`terraform/`: Cloud resources / pipeline management
+Email (ababaian AT bccrc DOT ca) or join  [Slack (type `/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-dwdg5uw0-TTcfrFagariqKpOSU_d6wg)
 
 
 ## Useful links
@@ -162,12 +152,7 @@ In your web browser, refresh the status page.  You should now see a list of acce
 With data loaded into the scheduler, manually set the number of `serratus-dl` & `serratus-align` nodes to process the data.
 
 
-
 # Data Release Policy
 To achieve our objective of providing high quality CoV sequence data to the global research effort, Serratus ensures:
 - All software development is open-source and freely available (GPLv3)
 - All sequencing data generated, raw and processed, will be freely available in the public domain in accordance with the [Bermuda Principles](https://en.wikipedia.org/wiki/Bermuda_Principles) of the Human Genome Project.
-
-# Contributing
-`Serratus` is an Open-Science project. We welcome all scientists to contribute.
-Email (ababaian AT bccrc DOT ca) or join [Slack](https://join.slack.com/t/hackseq-rna/shared_invite/zt-cs2f4dy8-QZ92T8E1O_Lwrse18yXWEA)
