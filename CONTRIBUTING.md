@@ -1,5 +1,30 @@
 # Contributing to Serratus
 
+  * [Bioinformatics pipeline](#bioinformatics-pipeline)
+  * [AWS architecture](#aws-architecture)
+  * [Open Science Collaboration](#open-science-collaboration)
+  * [Repository organization](#repository-organization)
+  * [Serratus Data](#serratus-data)
+    + [`~/notebook` : Experiment associated data](#---notebook----experiment-associated-data)
+    + [`~/out` : Serratus alignment output](#---out----serratus-alignment-output)
+    + [`~/seq` : Coronavirus pan-genomes](#---seq----coronavirus-pan-genomes)
+    + [`~/sra` : SraRunInfo Tables (.csv.gz)](#---sra----sraruninfo-tables--csvgz-)
+    + [`~/test-data` : example data for development](#---test-data----example-data-for-development)
+    + [`~/var/` : Assorted nuts and bolts](#---var-----assorted-nuts-and-bolts)
+  * [Production Containers and Code](#production-containers-and-code)
+      - [Building containers](#building-containers)
+      - [Uploading container images to AWS ECR](#uploading-container-images-to-aws-ecr)
+      - [Run interactive an serratus-dl](#run-interactive-an-serratus-dl)
+      - [Testing scheduler](#testing-scheduler)
+  * [Contributing](#contributing)
+    + [Using Git/Github](#using-git-github)
+    + [Finding an open Task](#finding-an-open-task)
+    + [Creating a new Task](#creating-a-new-task)
+    + [Running an experiment](#running-an-experiment)
+    + [Accessing Data](#accessing-data)
+    + [Depositing Data](#depositing-data)
+    + [Report a bug / Suggest Feature](#report-a-bug---suggest-feature)
+
 ## Bioinformatics pipeline
 < Placeholder for bioinformatics description >
 
