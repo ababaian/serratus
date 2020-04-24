@@ -121,9 +121,19 @@ This should respond with a short JSON indicating the number of rows inserted, an
 
 In your web browser, refresh the status page.  You should now see a list of accessions by state. If ASGs are online, they should start processing immediately.  In a few seconds, the first entry will switch to "splitting" state, which means it's working.
 
-### 6) Launch cluster nodes (currently manual)
+### 6) Launch cluster nodes
 
-With data loaded into the scheduler, manually set the number of `serratus-dl` & `serratus-align` nodes to process the data.
+With data loaded into the scheduler, manually set the number of `serratus-dl`, `serratus-align` and `serratus-merge`nodes to process the data. You can adjust the number of each node with these scripts.
+
+```
+terraform/main/dl_set_capacity.sh 10
+terraform/main/align_set_capacity.sh 10
+terraform/main/merge_set_capacity.sh 1
+```
+
+### Example
+- Example run template is here: [notebook/200401_Run_template.ipynb]
+- Example run with data is here: [notebook/200423_Run_cov2r_pilot_test_data.ipynb]
 
 ## Useful links
 
