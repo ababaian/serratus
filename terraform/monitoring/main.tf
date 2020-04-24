@@ -54,6 +54,7 @@ resource aws_instance "monitor" {
   iam_instance_profile                 = aws_iam_instance_profile.monitor.name
 
   tags = {
+    "Name": "serratus-monitor"
     "project": "serratus"
     "component": "serratus-monitor"
   }
