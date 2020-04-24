@@ -132,8 +132,8 @@ terraform/main/merge_set_capacity.sh 1
 ```
 
 ### Example
-- Example run template is here: [notebook/200401_Run_template.ipynb]
-- Example run with data is here: [notebook/200423_Run_cov2r_pilot_test_data.ipynb]
+- Example run template is here: [Run template](notebook/200401_Run_template.ipynb)
+- Example run with data is here: [cov2r test run](notebook/200423_Run_cov2r_pilot_test_data.ipynb)
 
 ## Useful links
 
