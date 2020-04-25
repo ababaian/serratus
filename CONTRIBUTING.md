@@ -58,14 +58,15 @@ The workhorse for `serratus` is currently the `C5.large` EC2 instance on AWS. Ea
 
 ```
 ./serratus/
+├── bin                     # Binaries and executable tools/modules         
 ├── containers              # Container make files and scripts for production
-├── data                    # For _local_ storage of data
-├── doc                     # Source files (alternatively `lib` or `app`)
+├── data                    # For _local_ storage of data (.gitignore)
+├── doc                     # Documentation files
 ├── img                     # Visual assets and workflow diagrams
-├── local                   # Tools and utilities
+├── local                   # For _local_ storage of files (.gitignore)
 ├── notebook                # Shared electronic lab-notebook and associated data files.
 ├── packer                  # Creating standardized node images (AMI)
-├── src                     # Modules/Tool source used in Serratus
+├── src                     # Source code for modules/tools used in Serratus
 ├── terraform               # Cloud resource definitions for cluster
 ├── CONTRIBUTING.md         
 ├── LICENSE
