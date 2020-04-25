@@ -2,7 +2,7 @@
 
 ## Usage
 
-python2 serratus_summarizer.py InputFileName SummaryFileName OutputFileName
+python3 serratus_summarizer.py InputFileName SummaryFileName OutputFileName
     
 ### Positional arguments:
     1. InputFileName      Input filename, SAM filename or /dev/stdin
@@ -13,18 +13,18 @@ python2 serratus_summarizer.py InputFileName SummaryFileName OutputFileName
     None.
     
 ### Dependecies
-    Modules: None (stand-alone python2).
-	Files: acc_len_taxid.txt and taxid_desc.txt.
+    Modules: None (stand-alone python3).
+    Files: acc_len_taxid.txt and taxid_desc.txt.
 
 ### Usage in pipeline
 
     $ bowtie2 <args> \
-        | python2 serratus_summarizer.py /dev/stdin summary.txt /dev/stdout \
+        | python3 serratus_summarizer.py /dev/stdin summary.txt /dev/stdout \
         | samtools <args>
 
 ### Stand-alone usage
 
-    $ python2 serratus_summarizer.py SRR1234.sam summary.txt - # notice trailing "-"
+    $ python3 serratus_summarizer.py SRR1234.sam summary.txt - # notice trailing "-"
 
 ## Description
 
