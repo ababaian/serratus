@@ -25,7 +25,7 @@ function usage {
   echo "          if merging SRR1337.001.bam, SRR1337.002.bam, ... , SRR1337.666.bam"
   echo "          then  [-b 'SRR1337*'] or  [-b 'SRR*'] will both work"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
-  echo "    -i    Flag. Do not generate bam.bai index file"
+  echo "    -i    Flag. Generate bam.bai index file"
   echo "    -f    Flag. Do not generate flagstat summary file"
   echo "    -r    Flag. Do not chromosome sort output"
   echo ""
@@ -54,7 +54,7 @@ SRA=''
 
 # Merge Options
 THREADS='1'
-INDEX='true'
+INDEX='false'
 FLAGSTAT='true'
 SORT='true'
 
@@ -79,7 +79,7 @@ while getopts b:s:nifrM:d:o:h FLAG; do
       THREADS=$OPTARG
       ;;
     i)
-      INDEX="false"
+      INDEX="true"
       ;;
     f)
       FLAGSTAT="false"
@@ -150,7 +150,7 @@ if [[ "$SORT" -eq 'true' ]]
 then
   # Sort + Reheader
   samtools view -h temporary.bam | \
-  tee >(awk '/^[^@]/ {count[$3]++} END {for (id in count) {print id, count[id]}}' > refCount) | \
+  python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout | \
   samtools sort -@ $THREADS - | \
   samtools reheader 0.header.sam - >\
   merged_sorted.bam
@@ -160,7 +160,7 @@ then
 else
   # Re-header only
   samtools view -h temporary.bam | \
-  tee >(awk '/^[^@]/ {count[$3]++} END {for (id in count) {print id, count[id]}}' > refCount) | \
+  python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout | \
   samtools reheader 0.header.sam - > \
   reheader.bam
 
@@ -184,7 +184,6 @@ fi
 if [[ "$FLAGSTAT" -eq 'true' ]]
 then
   samtools flagstat $OUTBAM > $SRA.flagstat
-  mv refCount $SRA.refCount
 
   echo "  Post Merge Flagstat"
   cat $SRA.flagstat
