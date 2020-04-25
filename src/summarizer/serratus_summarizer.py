@@ -161,7 +161,7 @@ for Line in fIn:
 			AccToSumBasesPctId[Acc] += L*PctId
 			AccToCoverageVec[Acc][TBin] += 1
 		except:
-			AccToHits[Acc] = 0
+			AccToHits[Acc] = 1
 			AccToSumBases[Acc] = L
 			AccToSumBasesPctId[Acc] = L*PctId
 			AccToCoverageVec[Acc] = [0]*COV_BINS
