@@ -56,12 +56,12 @@ ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 #==========================================================
 # Set working directory to /home/serratus
 # Create a serratus user fro use of FUSE / fusera
-COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
+COPY serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
 
 WORKDIR /home/serratus
-COPY docker/worker.sh ./
-COPY docker/serratus-dl/*sh ./
+COPY worker.sh ./
+COPY serratus-dl/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================

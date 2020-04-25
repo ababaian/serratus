@@ -29,8 +29,8 @@ LABEL tags="aws-cli, samtools"
 # Serratus Initialize =====================================
 #==========================================================
 WORKDIR /home/serratus
-COPY docker/worker.sh ./
-COPY docker/serratus-merge/*sh ./
+COPY worker.sh ./
+COPY serratus-merge/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================
