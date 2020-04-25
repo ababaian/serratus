@@ -1,7 +1,4 @@
-#!/usr/bin/python2
-
-# Author Robert C. Edgar
-# email robert@drive5.com
+#!/usr/bin/python3
 
 from __future__ import print_function
 import sys
@@ -36,6 +33,13 @@ AccToCoverageVec = {}
 d = {}
 Order = []
 Keys = []
+
+def CmpKey__(i):
+	global d, Keys
+	ki = Keys[i]
+	ni = d[ki]
+	return ni
+
 def Cmp__(i, j):
 	global d, Keys
 
@@ -58,14 +62,15 @@ def GetOrder(Dict):
 	Keys = d.keys()
 	N = len(Keys)
 	Order = range(0, N)
-	Order.sort(Cmp__)
+	Order.sort(key=CmpKey__)
+	# Order.sort(Cmp__)
 	return Order
 
 def MakeCartoon(v):
 	Max = max(v)
 	s = ""
 	for i in v:
-		k = (i*4)/Max
+		k = (i*4)//Max
 		s += "_.oO@"[k]
 	return s 
 
@@ -147,7 +152,7 @@ for Line in fIn:
 
 		try:
 			TL = AccToLen[Acc]
-			TBin = ((TPos-1)*COV_BINS)/TL
+			TBin = ((TPos-1)*COV_BINS)//TL
 			if TBin < 0:
 				TBin = 0
 			if TBin >= COV_BINS:
@@ -171,7 +176,7 @@ for Line in fIn:
 
 MappedReversePct = 0.0
 if Mapped > 0:
-	MeanL = SumL/Mapped
+	MeanL = SumL//Mapped
 	MappedReversePct = (MappedReverse*100.0)/Mapped
 else:
 	MeanL = 0
