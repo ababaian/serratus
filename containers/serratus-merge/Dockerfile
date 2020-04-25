@@ -32,8 +32,10 @@ WORKDIR /home/serratus
 COPY worker.sh ./
 COPY serratus-merge/*sh ./
 COPY serratus-merge/*py ./
-RUN wget https://serratus-public.s3.amazonaws.com/var/acc_len_taxid.txt ./ &&\
-  wget https://serratus-public.s3.amazonaws.com/var/taxid_desc.txt ./
+RUN curl https://serratus-public.s3.amazonaws.com/var/acc_len_taxid.txt > \
+  ./acc_len_taxid.txt
+RUN curl https://serratus-public.s3.amazonaws.com/var/taxid_desc.txt > \
+  ./taxid_desc.txt
 
 #==========================================================
 # ENTRYPOINT ==============================================
