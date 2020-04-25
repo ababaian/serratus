@@ -31,6 +31,7 @@ LABEL tags="aws-cli, samtools"
 WORKDIR /home/serratus
 COPY worker.sh ./
 COPY serratus-merge/*sh ./
+COPY serratus-merge/*py ./
 
 #==========================================================
 # ENTRYPOINT ==============================================
