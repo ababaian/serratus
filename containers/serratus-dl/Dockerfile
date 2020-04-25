@@ -46,10 +46,10 @@ RUN wget --quiet https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}
 ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 
 # GDC-CLIENT ===================================
- RUN wget --quiet https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
-    unzip gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
-    rm    gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
-    mv gdc-client /usr/local/bin/
+# RUN wget --quiet https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
+#    unzip gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
+#    rm    gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
+#    mv gdc-client /usr/local/bin/
 
 #==========================================================
 # Serratus Initialize =====================================
