@@ -42,13 +42,13 @@ RUN mv bowtie2-"$BOWTIEVERSION"*/bowtie2* /usr/local/bin/ &&\
   rm -rf bowtie2-"$BOWTIEVERSION"*
 
 # Magic-BLAST ===================================
-RUN wget --quiet ftp://ftp.ncbi.nlm.nih.gov/blast/executables/magicblast/"$MBVERSION"/ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz &&\
-  tar -xvf ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz &&\
-  rm ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz
-
+#RUN wget --quiet ftp://ftp.ncbi.nlm.nih.gov/blast/executables/magicblast/"$MBVERSION"/ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz &&\
+#  tar -xvf ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz &&\
+#  rm ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz
+#
 # magicblast; makeblatsdb
-RUN mv ncbi-magicblast-"$MBVERSION"/bin/* /usr/local/bin/ &&\
-  rm -rf ncbi-magicblast-*
+#RUN mv ncbi-magicblast-"$MBVERSION"/bin/* /usr/local/bin/ &&\
+#  rm -rf ncbi-magicblast-*
 
 # SeqKit ========================================
 RUN wget https://github.com/shenwei356/seqkit/releases/download/v0.12.0/seqkit_linux_amd64.tar.gz &&\
@@ -60,8 +60,8 @@ RUN wget https://github.com/shenwei356/seqkit/releases/download/v0.12.0/seqkit_l
 # Serratus Initialize =====================================
 #==========================================================
 WORKDIR /home/serratus
-COPY docker/worker.sh ./
-COPY docker/serratus-align/*sh ./
+COPY worker.sh ./
+COPY serratus-align/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================

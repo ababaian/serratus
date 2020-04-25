@@ -56,16 +56,22 @@ The workhorse for `serratus` is currently the `C5.large` EC2 instance on AWS. Ea
 
 ## Repository organization
 
-- `data/`: For _local_ storage of data.
-- `docker/`: Container make files and scripts for production `serratus`.
-(will be renamed to `containers`)
-- `img/`: Visual assets and workflow diagrams
-- `packer/`: Creating standardized node images (ami)
-- `scheduler/`: Code for `serratus` head-node and sraRunInfo management.
-(will be moved to `containers`)
-- `terraform/`: Cloud resource definitions for creating/running cluster.
-- `notebook/`: Shared electronic lab-notebook entries and associated data files.
-- `runs/`: Scripts for analyzing the summary outputs of `serratus`
+```
+./serratus/
+├── bin                     # Binaries and executable tools/modules         
+├── containers              # Container make files and scripts for production
+├── data                    # For _local_ storage of data (.gitignore)
+├── doc                     # Documentation files
+├── img                     # Visual assets and workflow diagrams
+├── local                   # For _local_ storage of files (.gitignore)
+├── notebook                # Shared electronic lab-notebook and associated data files.
+├── packer                  # Creating standardized node images (AMI)
+├── src                     # Source code for modules/tools used in Serratus
+├── terraform               # Cloud resource definitions for cluster
+├── CONTRIBUTING.md         
+├── LICENSE
+└── README.md
+```
 
 ---
 
@@ -318,14 +324,14 @@ sudo service docker start
 
 ```
 # Download latest serratus repo
-git clone https://github.com/ababaian/serratus.git; cd serratus
+git clone https://github.com/ababaian/serratus.git; cd serratus/containers
 
 # If you want to upload containers to your repository, include this.
 export DOCKERHUB_USER='serratusbio' # optional
 sudo docker login # optional
 
 # Build all containers and upload them docker hub repo (if available)
-./build.sh
+./build_containers.sh
 
 ```
 
