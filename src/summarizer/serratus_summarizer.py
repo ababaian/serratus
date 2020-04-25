@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from __future__ import print_function
 import sys
 import os
 
@@ -59,9 +58,9 @@ def GetOrder(Dict):
 	global d, Order, Keys
 
 	d = Dict
-	Keys = d.keys()
+	Keys = list(d.keys())
 	N = len(Keys)
-	Order = range(0, N)
+	Order = list(range(0, N))
 	Order.sort(key=CmpKey__)
 	# Order.sort(Cmp__)
 	return Order
@@ -181,7 +180,7 @@ if Mapped > 0:
 else:
 	MeanL = 0
 
-Accs = AccToHits.keys()
+Accs = list(AccToHits.keys())
 Order = GetOrder(AccToHits)
 
 print("unmapped=%d" % Unmapped, file=fSum)
