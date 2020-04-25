@@ -3,7 +3,7 @@ set -eu
 # Build and push container images in parallel.
 images=${@:-dl align merge scheduler grafana prometheus}
 
-DOCKERHUB_USER=${DOCKERHUB_USER:-}
+DOCKERHUB_USER=${DOCKERHUB_USER:-local}
 DOCKER_BUILD=${DOCKER_BUILD:-sudo docker}
 
 # Container Version
@@ -25,7 +25,7 @@ for img in $images; do
           -t $DOCKERHUB_USER/serratus-$img:$VERSION \
           -t $DOCKERHUB_USER/serratus-$img:latest .
 
-        if [ -z "$DOCKERHUB_USER" ]; then
+        if [ "$DOCKERHUB_USER" == "local" ]; then
           echo "No DOCKERHUB_USER set. Images are local only"
         else 
         # Push container images to repo
