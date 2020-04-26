@@ -4,7 +4,9 @@ local*
 *LOCAL*
 
 # Serratus Specific ======================================
+data/*
 data/sra/*
+
 
 # AWS gitignore ===========================================
 # local credentials file

@@ -12,7 +12,7 @@ ENV LANG=C.UTF-8
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /opt/
-ADD flask_app/ ./flask_app
+ADD serratus-scheduler/flask_app/ ./flask_app
 
 RUN flask init-db
 
