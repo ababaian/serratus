@@ -46,22 +46,22 @@ RUN wget --quiet https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}
 ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 
 # GDC-CLIENT ===================================
- RUN wget --quiet https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
-    unzip gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
-    rm    gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
-    mv gdc-client /usr/local/bin/
+# RUN wget --quiet https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
+#    unzip gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
+#    rm    gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
+#    mv gdc-client /usr/local/bin/
 
 #==========================================================
 # Serratus Initialize =====================================
 #==========================================================
 # Set working directory to /home/serratus
 # Create a serratus user fro use of FUSE / fusera
-COPY docker/serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
+COPY serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
 
 WORKDIR /home/serratus
-COPY docker/worker.sh ./
-COPY docker/serratus-dl/*sh ./
+COPY worker.sh ./
+COPY serratus-dl/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================

@@ -16,7 +16,7 @@ library("gridExtra")
 
 ```{r, include = FALSE}
 # Data Import and pre-processing
-SQLITE_INPUT <- 'example.sqlite'
+SQLITE_INPUT <- 'schedDump_cov0r.sqlite'
 
 # Connect to SQLite database
 con <- dbConnect(drv=RSQLite::SQLite(), dbname= SQLITE_INPUT)
@@ -105,7 +105,7 @@ runtime.plot <- ggplot(acc.runtime, aes(fq.blocks, split)) +
   geom_point(aes(fq.blocks, split), color = split.color ) +
   geom_point(aes(fq.blocks, align), color = align.color ) +
   geom_point(aes(fq.blocks, merge), color = merge.color ) +
-  theme_bw() + xlim(0, x_max) +
+  theme_bw() + xlim(0, x_max) + ylim(0,2000) +
   ylab('Runtime (s)') + xlab('fq-blocks per library')
 # runtime.plot
 
@@ -114,6 +114,7 @@ block.align.run <- data.frame(paired = 'unset',
                               align.runtime = as.numeric(BLOCKS$align_runtime))
 
 y_max <- ceiling( max( block.align.run$align.runtime) )
+
 block.align.plot <- ggplot(block.align.run, aes(paired, align.runtime)) +
   geom_boxplot() + geom_jitter() +
   theme_bw() + ylim(0, y_max*1.1)

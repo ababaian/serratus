@@ -4,7 +4,9 @@ local*
 *LOCAL*
 
 # Serratus Specific ======================================
+data/*
 data/sra/*
+
 
 # AWS gitignore ===========================================
 # local credentials file
@@ -28,6 +30,9 @@ __pycache__/
 
 # C extensions
 *.so
+
+# Emacs backup files
+*~
 
 # Distribution / packaging
 .Python

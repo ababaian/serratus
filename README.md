@@ -152,6 +152,7 @@ terraform/main/merge_set_capacity.sh 1
 - [SARS-CoV-2 UCSC Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=wuhCor1)
 - [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
 - [Virus detection from RNA-seq: proof of concept](https://www.ncbi.nlm.nih.gov/pubmed/21603639)
+- [Potential Host Range for SARS-CoV-2](https://www.biorxiv.org/content/10.1101/2020.04.22.046565v1)
 
 #### Bloom Filters
 - [Bigsi: Bloom filter indexing of SRA/ENA for organism search](https://github.com/phelimb/bigsi)
