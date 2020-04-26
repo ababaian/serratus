@@ -97,7 +97,7 @@ If you'd like to work on a given task, simply add a comment saying this to the i
 
 ### Creating a new Task
 
-If you have an idea you'd like to develop, would like to run an experiment or require additional documentation, let the other developers know what you're doing by creating an "Issue" on github. The general template to include initially is:
+If you have an idea you'd like to develop, would like to run an experiment or require additional documentation, let the other developers know what you're doing by [creating an "Issue" on Github](https://github.com/ababaian/serratus/issues/new). The general template to include initially is:
 
 ```
 ### Problem / Objective
