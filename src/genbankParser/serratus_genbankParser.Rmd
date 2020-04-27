@@ -14,7 +14,6 @@ BiocManager::install("genbankr", version = "devel")
 install.packages("taxize")
 install.packages("data.table")
 install.packages("rlist")
-
 ```
 
 ```{r}
@@ -29,8 +28,10 @@ library(taxize)
 ```
 
 ```{r}
-fileName <- "C:/Users/Gebruiker/Downloads/cov0.gb"
-fileNameDuplicates <- "C:/Users/Gebruiker/Downloads/cov0.duplicates"
+fileName <- "cov0.gb"
+fileNameDuplicates <- "cov0.duplicates"
+fileNameHomologues <- "cov0.id99.uc"
+writePath <- "parsedGenbankFile.csv"
 ```
 
 ### Functions
@@ -335,7 +336,7 @@ res <- lapply(recs2, FUN = function(entry){
 
 ### Cleaning
 
-Remove instances where no gb entry was returned
+Remove instances where no gb entry was returned, and fetch and map hostTaxonIds
 warning: its possible that user input is needed for fetching the taxIds.
 ```{r}
 CleanedEntries<- list.clean(res, function(x) length(x) == 0L, recursive = TRUE)
@@ -353,38 +354,85 @@ for (idx in 1:nrow(dt)) {
 }
 ```
 
-remove earlier identified duplicates: https://github.com/ababaian/serratus/blob/master/notebook/200420_cov2_pangenome.ipynb
+mark earlier identified duplicates: https://github.com/ababaian/serratus/blob/master/notebook/200420_cov2_pangenome.ipynb
+try and infer host taxon id for all duplicates if there is only a single taxonId for the whole cluster, we infer
 ```{r}
 duplicateTable <- fread(fileNameDuplicates)
 names(duplicateTable) <- c("n_duplicates", "accessions")
 
-duplicateTable[,groupRepresentative:=strsplit(accessions,", ")[[1]][1]]
-duplicates <- unlist(lapply(duplicateTable$accessions, function(x){
-  accessions <- strsplit(x[1], ", ")[[1]]
-  idxWithHostId <- 1
-  for (idx in 1:length(accessions)) {
-    if (!is.null(dt[accession== accessions[idx],])) {
-      print("not found")
-      print(accessions[idx])
-      next
-    }
-    if (!is.na(dt[accession == accessions[idx],hostTaxonId])) {
-      print("with host")
-      print(accessions[idx])
-      idxWithHostId <- idx
-      break
-    }
-  }
-  accessions[-idxWithHostId]
-}))
+dupMap <- c()
+inferredHostMap <- c()
 
-noDup <- dt[accession %in% duplicates,]
+for (idx in 1:nrow(duplicateTable)) {
+  accessions <- strsplit(duplicateTable[idx,accessions], ", ")[[1]]
+  hostIds <- c()
+  leaderToAssign = accessions[1]
+  dupsToAssign = accessions[-1]
+  
+  dups <- dt[accession %in% accessions,]
+  localInferredHostTaxonId <- unique(dups[!is.na(hostTaxonId),hostTaxonId])
+  if (length(localInferredHostTaxonId) == 1) {
+      duplicateTable[idx, InferredHostTaxonId := localInferredHostTaxonId]
+  }
+  else{
+    localInferredHostTaxonId <- NA
+  }
+  
+  duplicateTable[idx, leader:=leaderToAssign]
+  duplicateTable[idx, duplicates:=paste(dupsToAssign, collapse = ";")]
+  localValues <- rep(leaderToAssign, length(dupsToAssign))
+  localInferredHostTaxonIds <- rep(localInferredHostTaxonId, length(dupsToAssign))
+  names(localValues) <- dupsToAssign
+  names(localInferredHostTaxonIds) <- dupsToAssign
+  assign("dupMap", c(localValues, dupMap), envir=globalenv())
+  assign("hostMap", c(localInferredHostTaxonIds, hostMap), envir=globalenv())
+}
+
+dt[,isDuplicated:=dupMap[accession]]
+dt[,InferredHostTaxonId:=hostMap[accession]]
 ```
 
+mark earlier identified extreme homologues: https://serratus-public.s3.amazonaws.com/seq/cov2r/cov0.id99.uc
+try and infer host taxon id for all homologues. if there is only a single taxonId for the whole cluster, we infer.
+
+Warning: data table acts a little funky here. 
+```{r}
+homologueTableRead <- fread(fileNameHomologues)
+homologueTable <- homologueTableRead[,c(1,2,4,9,10)]
+names(homologueTable) <- c("isHomologue", "ClustId", "Homology", "FastaHeader", "LeaderFastaHeader")
+homologueTable[, Accession := gsub(" .*", "", FastaHeader)]
+homologueTable[, LeaderAccession := gsub(" .*", "", LeaderFastaHeader)]
+
+uniqueClustIds<-unique(homologueTable$ClustId)
+homologueMap<-c()
+homologueHostMap<-c()
+for (id in uniqueClustIds) {
+  cluster <- homologueTable[ClustId == id & isHomologue == "H",]
+  homAccessions <- cluster$Accession
+  
+  homologues <- dt[accession %in% homAccessions,]
+  localInferredHostTaxonId <- unique(homologues[!is.na(hostTaxonId),hostTaxonId])
+  if (length(localInferredHostTaxonId) == 1) {
+      homologueTable[ClustId == id, InferredHostTaxonId := localInferredHostTaxonId]
+  }
+  else{
+    localInferredHostTaxonId <- NA
+  }
+  
+  localInferredHostTaxonIds <- rep(localInferredHostTaxonId, nrow(cluster))
+  localValues <- cluster$LeaderAccession
+  names(localValues) <- cluster$Accession
+  names(localInferredHostTaxonIds) <- cluster$Accession
+  assign("homologueMap", c(localValues, homologueMap), envir=globalenv())
+  assign("homologueHostMap", c(localInferredHostTaxonIds, homologueHostMap), envir=globalenv())
+}
+
+dt[,hasHomologue:=homologueMap[accession]]
+dt[,HomologueInferredHostTaxonId:=homologueHostMap[accession]]
+```
 
 ### Writing
 
 ```{r}
-write.table(row.names = FALSE, noDup, "test3.csv", sep = ",")
-getwd()
+write.table(row.names = FALSE, dt, writePath, sep = ",")
 ```
