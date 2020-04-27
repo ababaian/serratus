@@ -45,12 +45,12 @@ _We welcome all scientists and developers to contribute._
 Email (ababaian AT bccrc DOT ca) or join our [Slack (type `/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-dwdg5uw0-TTcfrFagariqKpOSU_d6wg)
 
 ## Bioinformatics pipeline
-< Workflow is under active development. >
 
-## AWS architecture
-![serratus-overview](img/serratus_overview.png)
+![serratus-pipeline](img/serratus_pipeline.png)
 
-The workhorse for `serratus` is currently the `C5.large` EC2 instance on AWS. Each node has 2 vCPU and 4 GB of memory. Every instance is a blank slate running `amazon linux 2` with `docker`. Workflow is encapsulated in a `container`. This allows for rapid and cheap scaling of the cluster.
+The workhorse for `serratus` is currently the `C5.large` EC2 instance on AWS. Each node has 2 vCPU and 4 GB of memory. Every instance is a blank EC2 running `amazon linux 2` with `docker`. Workflow is encapsulated in a `container`. This allows for rapid and cheap scaling of the cluster.
+
+The `serratus-scheduler` coordinates the job load across the cluster and `serratus-monitor` provides real-time tracking of performance.
 
 ---
 
@@ -113,10 +113,12 @@ If you have an idea you'd like to develop, would like to run an experiment or re
 
 ### Using git
 
+This project is managed by the [GitFlow](https://nvie.com/posts/a-successful-git-branching-model/) pattern of git-branching. The only difference is that `master/origin` is for development and there is a seperate `production` branch for tagged versions being deployed.
+
 #### Development is on Branches
 In `git` there are independent working copies of the code-base called `branches`. Each contributor works on his/her own branch, and this does not interact with other branches.
 
-The main or `master-branch` is for production use. This is the operational code and completed experiments. You should not add your changes to `master` as this can break serratus.
+The main or `master` branch is the development backbone. This is the operational code and completed experiments. You should not "push" directly to `master` but instead issue a "pull request" to merge your work
 
 You should work on your own development branch. By convention name the branch `<feature_your_developing>-dev` or `<name>-dev`.
 
