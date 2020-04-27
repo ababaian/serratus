@@ -1,0 +1,390 @@
+---
+title: "Cleanup of the CoVid pan-genome"
+output: html_notebook
+---
+### Setup
+
+we need the devel version of r and bioconductor because: https://github.com/gmbecker/genbankr/issues/3
+
+```{r}
+if (!requireNamespace("BiocManager", quietly=TRUE))
+  install.packages("BiocManager")
+BiocManager::install(version="devel")
+BiocManager::install("genbankr", version = "devel")
+install.packages("taxize")
+install.packages("data.table")
+install.packages("rlist")
+
+```
+
+```{r}
+library(rlist)
+library(devtools)
+library(genbankr)
+library(GenomicRanges)
+library(Biostrings)
+library(tidyverse)
+library(data.table)
+library(taxize)
+```
+
+```{r}
+fileName <- "C:/Users/Gebruiker/Downloads/cov0.gb"
+fileNameDuplicates <- "C:/Users/Gebruiker/Downloads/cov0.duplicates"
+```
+
+### Functions
+
+```{r, include = FALSE}
+CleanHostName <- function(x){
+  NoSemiColon <- strsplit(x, ";")[[1]][1]
+  NoComma <- strsplit(NoSemiColon, ",")[[1]][1]
+  NoDot <- strsplit(NoComma, "\\.")[[1]][1]
+  NoParenth <- strsplit(NoDot, "\\(")[[1]][1]
+  
+  strsplit(NoParenth, "\\(")[[1]][1]
+  if (grepl(fixed = FALSE, "chick", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "breeder", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "chikc", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "poultry", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "layer", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "laying", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "gallus", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "broiler", NoParenth, ignore.case = T)) {
+    return("gallus gallus domesticus")  
+  }
+  else if (grepl(fixed = FALSE, "calf", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "cow", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "bos taurus", NoParenth, ignore.case = T)) {
+    return("cow")  
+  }
+  else if (NoParenth == "antelope") {
+    return("antilope")  
+  }
+  else if (grepl(fixed = FALSE, "canine", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "canis lupus", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "canis lupus", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "dog", NoParenth, ignore.case = T)) {
+    return("dog")  
+  }
+  else if (grepl(fixed = FALSE, "large pig roundworm", NoParenth, ignore.case = T)) {
+    return("Ascaris suum")  
+  }
+  else if (grepl(fixed = FALSE, "pigeon", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Columba livia", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "wigeon", NoParenth, ignore.case = T)) {
+    return("Columbidae")  
+  }
+  else if (grepl(fixed = FALSE, "buffalo", NoParenth, ignore.case = T)) {
+    return("Bubalus bubalis")  
+  }
+  else if (grepl(fixed = FALSE, "pig", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Sus scrofa domesticus L", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "porcine", NoParenth, ignore.case = T) | NoParenth == "sow") {
+    return("Sus scrofa domesticus")  
+  }
+  else if (grepl(fixed = FALSE, "boar", NoParenth, ignore.case = T)) {
+    return("Sus scrofa")  
+  }
+  else if (grepl(fixed = FALSE, "Chaerephon plicata", NoParenth, ignore.case = T)) {
+    return("Chaerephon plicatus")  
+  }
+  else if ((grepl(fixed = FALSE, "bat", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Ozimops", NoParenth, ignore.case = T) | NoParenth == "Vespadelus baverstocki") & NoParenth != "Rhinolophus lobatus" ) {
+    return("bats")  
+  }
+  else if (grepl(fixed = FALSE, "apodemus spp", NoParenth, ignore.case = T)) {
+    return("apodemus")  
+  }
+  else if (grepl(fixed = FALSE, "camel", NoParenth, ignore.case = T)) {
+    return("Camelus dromedarius")  
+  }
+  else if (grepl(fixed = FALSE, "bottlenose dolphin", NoParenth, ignore.case = T)) {
+    return("Tursiops")  
+  }
+  else if (grepl(fixed = FALSE, "crocidura sp", NoParenth, ignore.case = T)) {
+    return("crocidura")  
+  }
+  else if (grepl(fixed = FALSE, "Cynopterus brachyotis large intestine", NoParenth, ignore.case = T)) {
+    return("Cynopterus brachyotis")  
+  }
+  else if (grepl(fixed = FALSE, "domestic donkey", NoParenth, ignore.case = T)) {
+    return("donkey")  
+  }
+  else if (grepl(fixed = FALSE, "Egretta picata", NoParenth, ignore.case = T)) {
+    return("Egretta")  
+  }
+  else if (grepl(fixed = FALSE, "Epomophorus sp", NoParenth, ignore.case = T)) {
+    return("Epomophorus")  
+  }
+  else if (grepl(fixed = FALSE, "Eptesicus sp", NoParenth, ignore.case = T)) {
+    return("Eptesicus")  
+  }
+  else if (grepl(fixed = FALSE, "equus caballus", NoParenth, ignore.case = T)) {
+    return("equus caballus")  
+  }
+  else if (grepl(fixed = FALSE, "equus caballus", NoParenth, ignore.case = T)) {
+    return("equus caballus")  
+  }
+  else if (grepl(fixed = FALSE, "falco sp", NoParenth, ignore.case = T)) {
+    return("falco")  
+  }
+  else if (grepl(fixed = FALSE, "feline", NoParenth, ignore.case = T)) {
+    return("cat")  
+  }
+  else if (grepl(fixed = FALSE, "fox", NoParenth, ignore.case = T)) {
+    return("canidae")  
+  }
+  else if (grepl(fixed = FALSE, "Glossophaginae sp", NoParenth, ignore.case = T)) {
+    return("Glossophaginae")  
+  }
+  else if (grepl(fixed = FALSE, "Guinea fowl", NoParenth, ignore.case = T)) {
+    return("Numididae ")  
+  }
+  else if (grepl(fixed = FALSE, "hering gull", NoParenth, ignore.case = T)) {
+    return("gull")  
+  }
+  else if (grepl(fixed = FALSE, "Hipposideros cf", NoParenth, ignore.case = T)) {
+    return("Hipposideros caffer")  
+  }
+  else if (grepl(fixed = FALSE, "Hipposideros sp", NoParenth, ignore.case = T)) {
+    return("Hipposideros")  
+  }
+  else if (grepl(fixed = FALSE, "hering gull", NoParenth, ignore.case = T)) {
+    return("gull")  
+  }
+  else if (grepl(fixed = FALSE, "Macroglossus sp", NoParenth, ignore.case = T)) {
+    return("Macroglossus")  
+  }
+  else if (grepl(fixed = FALSE, "Miniopterus cf", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Miniopterus sp", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Miniopterus fuliginosus, feces", NoParenth, ignore.case = T)) {
+    return("Miniopterus")  
+  }
+  else if (grepl(fixed = FALSE, "mops cf", NoParenth, ignore.case = T)) {
+    return("Mops cf. nanulus DMR-2017")  
+  }
+  else if (grepl(fixed = FALSE, "Mormopterus sp", NoParenth, ignore.case = T)) {
+    return("Mormopterus sp. BBvV-2008")  
+  }
+  else if (grepl(fixed = FALSE, "Neoromicia cf", NoParenth, ignore.case = T)) {
+    return("Neoromicia")  
+  }
+  else if (grepl(fixed = FALSE, "night-heron", NoParenth, ignore.case = T)) {
+    return("night herons")  
+  }
+  else if (grepl(fixed = FALSE, "homo sapiensc", NoParenth, ignore.case = T)) {
+    return("homo sapiens")  
+  }
+  else if (grepl(fixed = FALSE, "Nycteris sp", NoParenth, ignore.case = T)) {
+    return("Nycteris")  
+  }
+  else if (grepl(fixed = FALSE, "palm civet", NoParenth, ignore.case = T) | NoParenth == "civet") {
+    return("Paguma larvata")  
+  }
+  else if (grepl(fixed = FALSE, "peafowl", NoParenth, ignore.case = T)) {
+    return("pavo")  
+  }
+  else if (grepl(fixed = FALSE, "pheasant", NoParenth, ignore.case = T)) {
+    return("Phasianinae")  
+  }
+  else if (grepl(fixed = FALSE, "Pipistrellus cf", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Pipistrellus inexspectatus", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Pipistrellus sp", NoParenth, ignore.case = T)) {
+    return("Pipistrellus")  
+  }
+  else if (grepl(fixed = FALSE, "Quail", NoParenth, ignore.case = T)) {
+    return("coturnix")  
+  }
+  else if (grepl(fixed = FALSE, "Red-necked Avocet", NoParenth, ignore.case = T)) {
+    return("Recurvirostra novaehollandiae")  
+  }
+  else if (grepl(fixed = FALSE, "Rhinolophus sp", NoParenth, ignore.case = T)) {
+    return("unclassified Rhinolophus")  
+  }
+  else if (grepl(fixed = FALSE, "Scotoecus sp", NoParenth, ignore.case = T)) {
+    return("unclassified Scotoecus")  
+  }
+  else if (grepl(fixed = FALSE, "Scotomannes kuhlii", NoParenth, ignore.case = T) | grepl(fixed = FALSE, "Scotphilus kuhli large intestine", NoParenth, ignore.case = T)) {
+    return("Scotophilus kuhlii")  
+  }
+  else if (grepl(fixed = FALSE, "shorebird", NoParenth, ignore.case = T)) {
+    return("unclassified Scotoecus")  
+  }
+  else if (grepl(fixed = FALSE, "Sigmodon sp", NoParenth, ignore.case = T)) {
+    return("Sigmodon")  
+  }
+  else if (grepl(fixed = FALSE, "sparrow", NoParenth, ignore.case = T)) {
+    return("Melospiza")  
+  }
+  else if (grepl(fixed = FALSE, "swan", NoParenth, ignore.case = T)) {
+    return("Cygnus")  
+  }
+  else if (grepl(fixed = FALSE, "Scotoecus sp", NoParenth, ignore.case = T)) {
+    return("unclassified Scotoecus")  
+  }
+  else if (grepl(fixed = FALSE, "Tadarida sp", NoParenth, ignore.case = T)) {
+    return("unclassified Tadarida")  
+  }
+  else if (grepl(fixed = FALSE, "teal", NoParenth, ignore.case = T)) {
+    return("anas")  
+  }
+  else if (grepl(fixed = FALSE, "wild bird", NoParenth, ignore.case = T)) {
+    return("Aves")  
+  }
+  else if (grepl(fixed = FALSE, "rat", NoParenth, ignore.case = T)) {
+    return("rattus")  
+  }
+  else if (grepl(fixed = FALSE, "mouse", NoParenth, ignore.case = T)) {
+    return("mus musculus")  
+  }
+  else if (grepl(fixed = FALSE, "Chaerephon sp", NoParenth, ignore.case = T)) {
+    return("unclassified Chaerephon")  
+  }
+  else if (grepl(fixed = FALSE, "chinese bulbul", NoParenth, ignore.case = T)) {
+    return("Pycnonotus sinensis")  
+  }
+  else if (grepl(fixed = FALSE, "Vespadelus baverstocki", NoParenth, ignore.case = T)) {
+    return("unclassified Scotoecus")  
+  }
+  else if (grepl(fixed = FALSE, "Chiroptera sp", NoParenth, ignore.case = T)) {
+    return("unclassified Chiroptera")  
+  }
+  else if (grepl(fixed = FALSE, "magpie-robin", NoParenth, ignore.case = T)) {
+    return("Copsychus saularis")  
+  }
+  else if (grepl(fixed = FALSE, "Liomys sp", NoParenth, ignore.case = T)) {
+    return("Liomys")  
+  }
+  else if (grepl(fixed = FALSE, "Amazona virdigenalis", NoParenth, ignore.case = T)) {
+    return("Amazona viridigenalis")  
+  }
+  else if (grepl(fixed = FALSE, "Neoromicia sp", NoParenth, ignore.case = T)) {
+    return("unclassified Neoromicia")  
+  }
+  else if (grepl(fixed = FALSE, "Columbia livia", NoParenth, ignore.case = T)) {
+    return("Amazona viridigenalis")  
+  }
+  else if (grepl(fixed = FALSE, "mink", NoParenth, ignore.case = T)) {
+    return("Mustela vison")  
+  }
+  else if (grepl(fixed = FALSE, "snow goose", NoParenth, ignore.case = T)) {
+    return("Anser caerulescens")  
+  }
+  else {
+    return(NoParenth)
+  }
+}
+
+GetSampleTypeFromDefinition <- function(x){
+  noSemiColon <- strsplit(x, ";")[[1]][1]
+  noDot <- gsub("\\.", "", noSemiColon)
+  if (noDot %in% c("partial cds", "complete cds", "partial genome", "complete genome", "partial sequence", "complete sequence")) {
+    return(noDot)
+  }
+  else
+  {
+    return(NA)
+  }
+}
+
+blackList<- list("KC786228", "AX191447", "AX191449", "FB764528", "HV449436", "CS382036")
+
+InBlackList <- function(x, blacklist){
+  return(toupper(x) %in% blacklist)
+}
+```
+
+
+### Parsing
+
+Split into strings for individual records
+
+```{r}
+txt <- readChar(fileName, file.info(fileName)$size)
+
+txt.split <- txt %>%
+  str_split("\n//\n\n") %>%
+  unlist
+
+txt.split <- txt.split[txt.split != ""]
+```
+
+Get a list of GenBankRecord objects for each record. Long runtime!
+
+```{r}
+recs2 <- txt.split %>%
+ map(possibly(~genbankr::readGenBank(NULL, text = .), otherwise = NA))
+recs2[[1]]
+
+```
+
+### Selecting
+
+```{r}
+res <- lapply(recs2, FUN = function(entry){
+  #only cotinue if an entry was retrieved
+  if (typeof(entry) != typeof(NA)) 
+  {
+    
+    sources <- mcols(sources(entry))
+    taxon <- gsub( "taxon:", "", unlist(sources$db_xref)[[1]])
+    orfs<-mcols(genes(entry))[["gene_id"]]
+    
+    colNames <-c("accession", 
+                 "virus", 
+                 "virusTaxonId",
+                 "seq_type",
+                 "orf",
+                 "blacklisted",
+                 "n_deleted",
+                 "host")
+    accession <- strsplit(vers(entry), " ")[[1]][1]
+    fields <- list(accession, 
+                   ifelse(!is.null(sources$strain), sources$strain, NA), 
+                   taxon,
+                   GetSampleTypeFromDefinition(strsplit(definition(entry), ", ")[[1]][2]),
+                   paste(orfs, collapse = ","),
+                   InBlackList(accession, blackList),
+                   alphabetFrequency(getSeq(entry))[[15]],
+                   ifelse(!is.null(sources$host), CleanHostName(sources$host), NA))
+    names(fields) <- colNames
+    fields
+  }
+})
+```
+
+### Cleaning
+
+Remove instances where no gb entry was returned
+warning: its possible that user input is needed for fetching the taxIds.
+```{r}
+CleanedEntries<- list.clean(res, function(x) length(x) == 0L, recursive = TRUE)
+dt <- rbindlist(CleanedEntries)
+uniqueHosts <- unique(dt[!is.na(host),host])
+
+taxIdMap <-unlist(lapply(uniqueHosts, function(x){taxId = get_uid(x)
+names(taxId) <- c(x)
+taxId}))
+for (idx in 1:nrow(dt)) {
+  hostName = dt[idx,]$host
+  if (!is.na(hostName)) {
+    dt[idx, hostTaxonId := taxIdMap[hostName]]
+  }
+}
+```
+
+remove earlier identified duplicates: https://github.com/ababaian/serratus/blob/master/notebook/200420_cov2_pangenome.ipynb
+```{r}
+duplicateTable <- fread(fileNameDuplicates)
+names(duplicateTable) <- c("n_duplicates", "accessions")
+
+duplicateTable[,groupRepresentative:=strsplit(accessions,", ")[[1]][1]]
+duplicates <- unlist(lapply(duplicateTable$accessions, function(x){
+  accessions <- strsplit(x[1], ", ")[[1]]
+  idxWithHostId <- 1
+  for (idx in 1:length(accessions)) {
+    if (!is.null(dt[accession== accessions[idx],])) {
+      print("not found")
+      print(accessions[idx])
+      next
+    }
+    if (!is.na(dt[accession == accessions[idx],hostTaxonId])) {
+      print("with host")
+      print(accessions[idx])
+      idxWithHostId <- idx
+      break
+    }
+  }
+  accessions[-idxWithHostId]
+}))
+
+noDup <- dt[accession %in% duplicates,]
+```
+
+
+### Writing
+
+```{r}
+write.table(row.names = FALSE, noDup, "test3.csv", sep = ",")
+getwd()
+```
