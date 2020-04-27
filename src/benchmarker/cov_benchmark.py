@@ -1,6 +1,7 @@
 import argparse
 import os
 import subprocess
+import sys
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -33,6 +34,14 @@ parser.add_argument('--art_illumina_params', metavar='STR',
                     help='Additional parameters to pass to the art_illumina command.')
 parser.add_argument('--bowtie2_params', metavar='STR',
                     help='Additional parameters to pass to the bowtie2 command.')
+parser.add_argument('-v', action='store_true',
+                    help='Additional parameters to pass to the bowtie2 command.')
+args = parser.parse_args()
+
+
+def printv(msg):
+    if args.v:
+        print(msg, file=sys.stderr)
 
 
 def write_reverse_fasta(record, fa_out):
@@ -87,21 +96,21 @@ def get_alignments(target_index, fq_sim_prefix):
     return set(filter(None, out_awk.decode().split('\n')))
 
 
-def get_alignment_stats(args, tmp_dir):
+def get_alignment_stats(tmp_dir):
 
     # get input SeqRecord
     record = next(SeqIO.parse(args.input_seq, "fasta"))
 
     reverse_written = False
 
-
-    # simulate positive read set
-
     if not args.pos_reads:
+        printv('Simulating positive read set...')
 
         if not args.pos_seq:
+            printv('pos_seq not specified - using input_seq.')
             args.pos_seq = args.input_seq
         if not args.prop_pos:
+            printv('prop_pos not specified - using 0.05.')
             args.prop_pos = 0.05
 
         pos_len = sum(len(r.seq) for r in SeqIO.parse(args.pos_seq, "fasta"))
@@ -112,21 +121,25 @@ def get_alignment_stats(args, tmp_dir):
 
         args.pos_reads = os.path.join(tmp_dir, 'sim_pos_')
         call_art_illumina(fa_sim_pos, args.pos_reads)
-    elif any(args.pos_seq, args.prop_pos):
-        pass
-        # TODO: STDERR print('pos_seq/prop_pos will be ignored.')
+    else:
+        printv(f'Using positive read set files {args.pos_reads}(1,2).fq.')
+        if args.pos_seq:
+            printv(f'WARNING: pos_reads already specified - pos_seq={args.pos_seq} will be ignored.')
+        if args.prop_pos:
+            printv(f'WARNING: pos_reads already specified - prop_pos={args.prop_pos} will be ignored.')
 
-
-    # simulate negative read set
 
     if not args.neg_reads:
+        printv('Simulating negative read set...')
 
         if not args.neg_seq:
+            printv('neg_seq not specified - using reverse non-complement of input_seq.')
             # write reverse FASTA
             args.neg_seq = os.path.join(tmp_dir, 'neg_seq.fa')
             write_reverse_fasta(record, args.neg_seq)
             reverse_written = True
         if not args.prop_neg:
+            printv('prop_neg not specified - using 0.05.')
             args.prop_neg = 0.05
 
         neg_len = sum(len(r.seq) for r in SeqIO.parse(args.neg_seq, "fasta"))
@@ -137,37 +150,43 @@ def get_alignment_stats(args, tmp_dir):
 
         args.neg_reads = os.path.join(tmp_dir, 'sim_neg_')
         call_art_illumina(fa_sim_neg, args.neg_reads)
-    elif any(args.neg_seq, args.prop_neg):
-        pass
-        # TODO: STDERR print('neg_seq/prop_neg will be ignored.')
+    else:
+        printv(f'Using negative read set files {args.neg_reads}(1,2).fq.')
+        if args.neg_seq:
+            printv(f'WARNING: neg_reads already specified - neg_seq={args.neg_seq} will be ignored.')
+        if args.prop_neg:
+            printv(f'WARNING: neg_reads already specified - prop_neg={args.prop_neg} will be ignored.')
 
-
-    # get alignment FASTA
 
     if not args.pos_align_seq:
+        printv('pos_align_seq not specified - using input_seq.')
         args.pos_align_seq = args.input_seq
+    else:
+        printv(f'Using pos_align_seq={args.pos_align_seq}.')
     if not args.neg_align_seq:
+        printv('neg_align_seq not specified - using reverse non-complement of input_seq.')
         if reverse_written:
             args.neg_align_seq = args.neg_seq
         else:
             args.neg_align_seq = os.path.join(tmp_dir, 'neg_align_seq.fa')
             write_reverse_fasta(record, args.neg_align_seq)
+    else:
+        printv(f'Using neg_align_seq={args.neg_align_seq}.')
+
+    printv('Aligning read sets...')
 
     # build FASTA indexes
-
     index_pos = os.path.join(tmp_dir, 'pos.index')
     subprocess.check_output(['bowtie2-build', args.pos_align_seq, index_pos], stderr=subprocess.DEVNULL)
     index_neg = os.path.join(tmp_dir, 'neg.index')
     subprocess.check_output(['bowtie2-build', args.neg_align_seq, index_neg], stderr=subprocess.DEVNULL)
 
-
+    # calculate statistics
 
     with open(f'{args.pos_reads}1.fq') as fq:
         n_reads_pos = sum(1 for r in FastqGeneralIterator(fq))
     with open(f'{args.neg_reads}1.fq') as fq:
         n_reads_neg = sum(1 for r in FastqGeneralIterator(fq))
-
-    # align reads
 
     aligned_sim_pos_cov = get_alignments(index_pos, args.pos_reads)
     aligned_sim_neg_cov = get_alignments(index_pos, args.neg_reads)
@@ -181,12 +200,11 @@ def get_alignment_stats(args, tmp_dir):
 
     return (tp, fn, fp, tn)
 
+
 if __name__ == '__main__':
-    args = parser.parse_args()
-
     # create temp dir
-    tmp_dir = 'tmp_fasta_index'
-    os.mkdir(tmp_dir)
+    tmp_dir = 'tmp'
+    os.makedirs(tmp_dir, exist_ok=True)
 
-    tp, fn, fp, tn = get_alignment_stats(args, tmp_dir)
+    tp, fn, fp, tn = get_alignment_stats(tmp_dir)
     print(f'{tp},{fn},{fp},{tn}')
