@@ -52,6 +52,7 @@ download-mash-test-data:
 	fasterq-dump --split-files SRR9658384
 	cat SRR9658384*.fastq > SRR9658384.fastq
 	aws s3 cp s3://serratus-public/seq/cov2r/cov2.fa.gz .
+	aws s3 sync s3://serratus-public/notebook/200411/fq fq
 
 test-mash:
 	cd test
@@ -61,3 +62,15 @@ test-mash:
 	time mash screen -p 2 cov2.fa.gz.msh SRR9658384.fastq
 	@echo "Testing cov2 vs. SRR11454614 reads (should be large):"
 	time mash screen -p 2 cov2.fa.gz.msh SRR11454614.fastq
+
+
+test-mash-sensitivity:
+	cd test
+	mash sketch -k 15 -s 4000 cov2.fa.gz
+	for sim in 0 30 300 1500 3000 4500 6000 7500 9000 10500 12000
+	do
+		echo Simulation $$sim
+		zcat fq/sim.cov.$${sim}_1.fq fq/sim.cov.$${sim}_2.fq.gz \
+			> sim.cov.$${sim}.fq
+		time mash screen -p 2 cov2.fa.gz.msh sim.cov.$${sim}.fq 
+	done

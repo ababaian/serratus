@@ -18,6 +18,8 @@ data/sra/*
 # temporary files
 *scratch*
 *tmp*
+third-party
+test
 
 # R Project files
 *.Rproj
