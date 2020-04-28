@@ -25,7 +25,7 @@ function usage {
   echo "          if merging SRR1337.001.bam, SRR1337.002.bam, ... , SRR1337.666.bam"
   echo "          then  [-b 'SRR1337*'] or  [-b 'SRR*'] will both work"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
-  echo "    -i    Flag. Generate bam.bai index file"
+  echo "    -i    Flag. Do not generate bam.bai index file"
   echo "    -f    Flag. Do not generate flagstat summary file"
   echo "    -r    Flag. Do not chromosome sort output"
   echo ""
@@ -54,7 +54,7 @@ SRA=''
 
 # Merge Options
 THREADS='1'
-INDEX='false'
+INDEX='true'
 FLAGSTAT='true'
 SORT='true'
 
@@ -79,7 +79,7 @@ while getopts b:s:nifrM:d:o:h FLAG; do
       THREADS=$OPTARG
       ;;
     i)
-      INDEX="true"
+      INDEX="false"
       ;;
     f)
       FLAGSTAT="false"

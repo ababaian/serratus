@@ -67,9 +67,6 @@ function usage {
 }
 
 # PARSE INPUT =============================================
-# Generate random alpha-numeric for run-id
-RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-
 # Scheduler / Container Parameters
 S3_BUCKET=${S3_BUCKET:-'serratus-public'}
 
@@ -203,6 +200,7 @@ mkdir -p $WORKDIR; cd $WORKDIR
 cp *.txt $WORKDIR # copy accession tables into runid
 
 S3_BAM=s3://$S3_BUCKET/bam-blocks/$SRA
+S3_FQ=s3://$S3_BUCKET/fq-blocks/$SRA
 
 echo "============================"
 echo "  serratus-merge Pipeline   "
@@ -242,7 +240,7 @@ aws s3 cp --recursive $S3_BAM ./
 # RUN MERGE ===============================================
 echo "  Running -- run_merge.sh --"
 echo ""
-bash $BASEDIR/run_merge.sh -s $SRA -b "*bam" 
+bash $BASEDIR/run_merge.sh -i -s $SRA -b "*bam" 
 
 
 # RUN UPLOAD ==============================================
@@ -283,8 +281,9 @@ curl -X POST -s "$SCHEDULER/jobs/merge/$ACC_ID?state=merge_done"
 
 cd $BASEDIR; rm -rf $WORKDIR/*
 
-# Free up bam-blocks from s3
+# Free up fq-blocks and bam-blocks from s3
 aws s3 rm --recursive $S3_BAM
+aws s3 rm --recursive $S3_FQ
 
 echo "============================"
 echo "======= RUN COMPLETE ======="
