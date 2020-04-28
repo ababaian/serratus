@@ -46,7 +46,7 @@ function usage {
 
 # PARSE INPUT =============================================
 # Generate random alpha-numeric for run-id
-RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
+#RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Run Parameters
 BAMREGEX='*.bam'
