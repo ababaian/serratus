@@ -39,6 +39,24 @@ parser.add_argument('-v', action='store_true',
 args = parser.parse_args()
 
 
+# create temp dir
+tmp_dir = 'tmp'
+os.makedirs(tmp_dir, exist_ok=True)
+
+
+class Command(object):
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args
+
+    def run(self, quiet=True, pipe=False):
+        args_list = [self.name]
+        args_list.extend([str(val) for pair in self.args.items()
+                          for val in pair if val is not None])
+        subprocess.check_output(args_list, stderr=(subprocess.DEVNULL if quiet else None))
+        # TODO: implement pipe
+
+
 def printv(msg):
     if args.v:
         print(msg, file=sys.stderr)
@@ -56,32 +74,6 @@ def write_reverse_fasta(record, fa_out):
         f.write(record_rev.format('fasta'))
 
 
-def call_msbar(count, sequence, outseq):
-    """Call msbar to create divergent sequences. Parameters pre-set."""
-    subprocess.check_output(['msbar',
-                             '-point', '4',
-                             '-block', '0',
-                             '-codon', '0',
-                             '-count', str(count),
-                             '-sequence', sequence,
-                             '-outseq', outseq], stderr=subprocess.DEVNULL)
-
-
-def call_art_illumina(in_seq, out_seq):
-    """Call art_illumina to simulate reads. Parameters pre-set."""
-    subprocess.check_output(['art_illumina',
-                             '--seqSys', 'HS20',
-                             '--paired',
-                             '--in', in_seq,
-                             '--len', '100',
-                             '--mflen', '300',
-                             '--sdev', '1',
-                             '--fcov', '50',
-                             '--rndSeed', '666',
-                             '--out', out_seq,
-                             '--noALN'], stderr=subprocess.DEVNULL)
-
-
 def get_alignments(target_index, fq_sim_prefix):
     """Call bowtie2 for alignment. Return set of aligned reads."""
     call_bt2 = subprocess.Popen(['bowtie2',
@@ -94,6 +86,38 @@ def get_alignments(target_index, fq_sim_prefix):
     call_samtools = subprocess.Popen(['samtools', 'view', '-G', '12', '-'], stdin=call_bt2.stdout, stdout=subprocess.PIPE)
     out_awk = subprocess.check_output(['awk', '!seen[$1]++ {print $1}'], stdin=call_samtools.stdout)
     return set(filter(None, out_awk.decode().split('\n')))
+
+
+def simulate_read_set(seq, prop, reads_prefix):
+    """Simulate read set given sequence, mutation proportion, and prefix for output reads."""
+    seq_len = sum(len(r.seq) for r in SeqIO.parse(seq, "fasta"))
+    sim_fa = os.path.join(tmp_dir, 'sim.fa')
+    n_mutations = int(prop * seq_len)
+    args_msbar = {
+        '-point': 4,
+        '-block': 0,
+        '-codon': 0,
+        '-count': n_mutations,
+        '-sequence': seq,
+        '-outseq': sim_fa
+    }
+    cmd_msbar = Command('msbar', args_msbar)
+    cmd_msbar.run()
+    args_art_illumina = {
+        '--seqSys': 'HS20',
+        '--paired': None,
+        '--in': sim_fa,
+        '--len': 100,
+        '--mflen': 300,
+        '--sdev': 1,
+        '--fcov': 50,
+        '--rndSeed': 666,
+        '--out': reads_prefix,
+        '--noALN': None
+    }
+    cmd_art_illumina = Command('art_illumina', args_art_illumina)
+    cmd_art_illumina.run()
+    os.remove(sim_fa)
 
 
 def get_alignment_stats(tmp_dir):
@@ -113,14 +137,8 @@ def get_alignment_stats(tmp_dir):
             printv('prop_pos not specified - using 0.05.')
             args.prop_pos = 0.05
 
-        pos_len = sum(len(r.seq) for r in SeqIO.parse(args.pos_seq, "fasta"))
-
-        fa_sim_pos = os.path.join(tmp_dir, 'sim_pos.fa')
-        n_mutations_pos = int(args.prop_pos * pos_len)
-        call_msbar(n_mutations_pos, args.pos_seq, fa_sim_pos)
-
         args.pos_reads = os.path.join(tmp_dir, 'sim_pos_')
-        call_art_illumina(fa_sim_pos, args.pos_reads)
+        simulate_read_set(args.pos_seq, args.prop_pos, args.pos_reads)
     else:
         printv(f'Using positive read set files {args.pos_reads}(1,2).fq.')
         if args.pos_seq:
@@ -142,14 +160,8 @@ def get_alignment_stats(tmp_dir):
             printv('prop_neg not specified - using 0.05.')
             args.prop_neg = 0.05
 
-        neg_len = sum(len(r.seq) for r in SeqIO.parse(args.neg_seq, "fasta"))
-
-        fa_sim_neg = os.path.join(tmp_dir, 'sim_neg.fa')
-        n_mutations_neg = int(args.prop_neg * neg_len)
-        call_msbar(n_mutations_neg, args.neg_seq, fa_sim_neg)
-
         args.neg_reads = os.path.join(tmp_dir, 'sim_neg_')
-        call_art_illumina(fa_sim_neg, args.neg_reads)
+        simulate_read_set(args.neg_seq, args.prop_neg, args.neg_reads)
     else:
         printv(f'Using negative read set files {args.neg_reads}(1,2).fq.')
         if args.neg_seq:
@@ -202,9 +214,5 @@ def get_alignment_stats(tmp_dir):
 
 
 if __name__ == '__main__':
-    # create temp dir
-    tmp_dir = 'tmp'
-    os.makedirs(tmp_dir, exist_ok=True)
-
     tp, fn, fp, tn = get_alignment_stats(tmp_dir)
     print(f'{tp},{fn},{fp},{tn}')
