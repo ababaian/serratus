@@ -200,6 +200,7 @@ MERGE_ARGS=$(echo $JOB_JSON | jq -r .merge_args)
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
+cp *.txt $WORKDIR # copy accession tables into runid
 
 S3_BAM=s3://$S3_BUCKET/bam-blocks/$SRA
 
