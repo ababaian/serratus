@@ -287,6 +287,11 @@ SRA Accession and Run Information master tables. Accessed via SRA website and th
 - **HCT116 RNAseq**
 	- For testing; ca. 1000 entries of human HCT116 cell line
 
+- **CoV Positive Control (known CoV)**
+	- `"platform illumina"[Properties] OR "platform bgiseq"[Properties]  AND txid694002[Organism:exp]`
+	- Date Accessed: 2020/04/27
+	- Results: 862 samples
+
 ### `~/test-data` : example data for development
 
 **Sequence Files**
@@ -361,7 +366,7 @@ Paste resulting command in terminal to authenticate (not implemented)
 
 ### Run interactive an serratus-dl
 ```
-sudo docker run --rm --entrypoint /bin/bash -it serratus-dl:latest
+sudo docker run --rm --entrypoint /bin/bash -it serratus-merge:latest
 ```
 
 ### Testing scheduler
