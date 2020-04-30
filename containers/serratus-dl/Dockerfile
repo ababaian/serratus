@@ -53,7 +53,7 @@ ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 #    mv gdc-client /usr/local/bin/
 
 # BVFILTER =====================================
-COPY ../bin/bvfilter /usr/local/bin/
+COPY bin/bvfilter /usr/local/bin/
 
 #==========================================================
 # Serratus Initialize =====================================
