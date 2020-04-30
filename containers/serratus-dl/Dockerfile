@@ -5,12 +5,13 @@ FROM serratus-base:latest AS build_base
 #==========================================================
 # Container Information
 ARG TYPE='downloader'
-ARG VERSION='0.1.2'
+ARG VERSION='0.1.3'
 
 # Software Information
 # ENV SAMTOOLSVERSION='1.10'  # from serratus-base
 ENV SRATOOLKITVERSION='2.10.4'
 ENV GDCVERSION='1.5.0'
+ENV BVVERSION='0.1'
 #ENV PICARDVERSION='2.22.0'
 
 # Additional Metadata
@@ -18,7 +19,7 @@ LABEL container.type=${TYPE}
 LABEL container.version=${VERSION}
 LABEL container.description="serratus: downloader and fq-splitter"
 LABEL software.license="GPLv3"
-LABEL tags="aws-cli, samtools, sra-toolkit, gdc-client"
+LABEL tags="aws-cli, samtools, sra-toolkit, bvfilter"
 
 #==========================================================
 # Dependencies ============================================
@@ -50,6 +51,9 @@ ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 #    unzip gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
 #    rm    gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
 #    mv gdc-client /usr/local/bin/
+
+# BVFILTER =====================================
+COPY ../bin/bvfilter /usr/local/bin/
 
 #==========================================================
 # Serratus Initialize =====================================
