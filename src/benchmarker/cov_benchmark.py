@@ -44,17 +44,40 @@ tmp_dir = 'tmp'
 os.makedirs(tmp_dir, exist_ok=True)
 
 
+def parse_paramstring(paramstring):
+    """Return parameter dict dict from argument string.
+    Assume each argument key starts with '-' and has one or no values following it.
+    Does not work with values that have whitespace within."""
+    items = paramstring.split(' ')
+    args_dict = {}
+    i = 0
+    while i < len(items):
+        if items[i].startswith('-'):
+            if i != len(items) - 1 and not items[i + 1].startswith('-'):
+                args_dict[items[i]] = items[i + 1]
+                i += 2
+            else:
+                args_dict[items[i]] = None
+                i += 1
+
+
 class Command(object):
-    def __init__(self, name, args):
+    def __init__(self, name, params):
         self.name = name
-        self.args = args
+        self.params = params
 
     def run(self, quiet=True, pipe=False):
-        args_list = [self.name]
-        args_list.extend([str(val) for pair in self.args.items()
+        params_list = [self.name]
+        params_list.extend([str(val) for pair in self.params.items()
                           for val in pair if val is not None])
-        subprocess.check_output(args_list, stderr=(subprocess.DEVNULL if quiet else None))
+        subprocess.check_output(params_list, stderr=(subprocess.DEVNULL if quiet else None))
         # TODO: implement pipe
+
+    def update_params(self, paramstring):
+        if not paramstring:
+            return
+        new_params = parse_paramstring(paramstring)
+        self.params.update(new_params)
 
 
 def printv(msg):
@@ -93,7 +116,7 @@ def simulate_read_set(seq, prop, reads_prefix):
     seq_len = sum(len(r.seq) for r in SeqIO.parse(seq, "fasta"))
     sim_fa = os.path.join(tmp_dir, 'sim.fa')
     n_mutations = int(prop * seq_len)
-    args_msbar = {
+    msbar_params_default = {
         '-point': 4,
         '-block': 0,
         '-codon': 0,
@@ -101,29 +124,34 @@ def simulate_read_set(seq, prop, reads_prefix):
         '-sequence': seq,
         '-outseq': sim_fa
     }
-    cmd_msbar = Command('msbar', args_msbar)
+    cmd_msbar = Command('msbar', msbar_params_default)
+    cmd_msbar.update_params(args.msbar_params)
     cmd_msbar.run()
-    args_art_illumina = {
+    art_illumina_params_default = {
+        '--in': sim_fa,
+        '--out': reads_prefix,
         '--seqSys': 'HS20',
         '--paired': None,
-        '--in': sim_fa,
         '--len': 100,
         '--mflen': 300,
         '--sdev': 1,
         '--fcov': 50,
         '--rndSeed': 666,
-        '--out': reads_prefix,
         '--noALN': None
     }
-    cmd_art_illumina = Command('art_illumina', args_art_illumina)
+    cmd_art_illumina = Command('art_illumina', art_illumina_params_default)
+    cmd_art_illumina.update_params(args.art_illumina_params)
     cmd_art_illumina.run()
     os.remove(sim_fa)
 
 
-def get_alignment_stats(tmp_dir):
+def get_alignment_stats():
 
     # get input SeqRecord
-    record = next(SeqIO.parse(args.input_seq, "fasta"))
+    record_iter = SeqIO.parse(args.input_seq, "fasta")
+    record = next(record_iter)
+    if next(record_iter, None) is not None:
+        raise ValueError('Input sequence has more than one record. Exiting.')
 
     reverse_written = False
 
@@ -214,5 +242,5 @@ def get_alignment_stats(tmp_dir):
 
 
 if __name__ == '__main__':
-    tp, fn, fp, tn = get_alignment_stats(tmp_dir)
+    tp, fn, fp, tn = get_alignment_stats()
     print(f'{tp},{fn},{fp},{tn}')
