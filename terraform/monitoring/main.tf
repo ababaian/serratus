@@ -41,8 +41,7 @@ data "aws_ami" "ecs" {
 
 # Give our instance the set of permissions required to act as an ECS node.
 
-
-resource "aws_iam_role_policy" "role" {
+resource "aws_iam_role" "ecsInstanceRole" {
   name = "ecsInstanceRole"
 
   assume_role_policy = <<EOF
@@ -74,7 +73,6 @@ resource "aws_iam_role_policy" "role" {
 }
 EOF
 }
-
 
 resource "aws_iam_instance_profile" "monitor" {
   name = "profile-serratus-monitor"
