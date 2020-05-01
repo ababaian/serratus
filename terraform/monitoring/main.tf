@@ -40,6 +40,42 @@ data "aws_ami" "ecs" {
 // RESOURCES ==============================================
 
 # Give our instance the set of permissions required to act as an ECS node.
+
+
+resource "aws_iam_role_policy" "role" {
+  name = "ecsInstanceRole"
+
+  assume_role_policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeTags",
+                "ecs:CreateCluster",
+                "ecs:DeregisterContainerInstance",
+                "ecs:DiscoverPollEndpoint",
+                "ecs:Poll",
+                "ecs:RegisterContainerInstance",
+                "ecs:StartTelemetrySession",
+                "ecs:UpdateContainerInstancesState",
+                "ecs:Submit*",
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+}
+
+
 resource "aws_iam_instance_profile" "monitor" {
   name = "profile-serratus-monitor"
   role = "ecsInstanceRole"
