@@ -958,7 +958,7 @@
           }
         ],
         "executionErrorState": "alerting",
-        "for": "0m",
+        "for": "5m",
         "frequency": "1m",
         "handler": 1,
         "name": "Disk Used Percent alert",
