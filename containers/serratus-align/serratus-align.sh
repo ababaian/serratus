@@ -37,8 +37,8 @@ function usage {
   echo "    -k    S3 bucket path for bam-blocks [s3://serratus-public/bam-blocks]"
   echo ""
   echo "    Alignment Parameters"
-  echo "    -a    Alignment software ['bowtie2']"
-  echo "          or ['magicblast']"
+  echo "    -a    Alignment software ['bowtie2'] (default)"
+  echo "          or ['bwa']"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
   echo ""
   echo "    Manual overwrites"
@@ -76,7 +76,7 @@ RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 S3_BUCKET=${S3_BUCKET:-'serratus-public'}
 
 # Aligner
-ALIGNER='bowtie2'
+ALIGNER=${ALIGNER:-'bowtie2'}
 THREADS='1'
 
 # Inputs (manual overwrite)
@@ -321,34 +321,34 @@ then
       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   fi
 
-#elif [ "$ALIGNER" = "magicblast" ]; then
-# magicblast not implemented. Untested functions be here.
-elif [ "$ALIGNER" = "TOMATO" ]; then
-
-  echo "  Running -- run_mblast.sh --"
+elif [ "$ALIGNER" = "bwa" ];
+  echo "  Running -- run_bwa.sh --"
 
   if [[ "$PAIRED" = true ]]
   then
-    echo "  bash $BASEDIR/run_mblast.sh " &&\
+    # Paired-end read alignment -----------------
+    echo "  bash $BASEDIR/run_bwa.sh " &&\
     echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
-    echo "    -o $SRA.$BL_N -p $THREADS" &&\
+    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
     echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
-    bash $BASEDIR/run_mblast.sh \
+    bash $BASEDIR/run_bwa.sh \
       -1 $FQ1 -2 $FQ2 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS \
-      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   else
-    echo "  bash $BASEDIR/run_mblast.sh " &&\
-    echo "    -3 $FQ3 -x $GENOME" &&\
-    echo "    -o $SRA.$BL_N -p $THREADS" &&\
+    # Single-end read alignment -----------------
+    echo "  bash $BASEDIR/run_bwa.sh " &&\
+    echo "    -0 $FQ3 -x $GENOME" &&\
+    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
     echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
 
-    bash $BASEDIR/run_mblast.sh \
+    bash $BASEDIR/run_bwa.sh \
       -3 $FQ3 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS \
-      -L $RGLB -I $RGID -S $RGSM -P $RGPO
+      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   fi
+
 else
   echo "Unknown aligner $ALIGNER"
   false # Call the error handler and exit

@@ -11,7 +11,8 @@ ARG VERSION='0.1.2'
 # ENV SAMTOOLSVERSION='1.10' # from serratus-base
 ENV BOWTIEVERSION='2.4.1'
 ENV GATKVERSION='4.1.5.0'
-ENV MBVERSION='1.5.0'
+ENV BWAVERSION='0.7.17'
+#ENV MBVERSION='1.5.0'
 
 # Additional Metadata
 LABEL container.type=${TYPE}
@@ -49,6 +50,12 @@ RUN mv bowtie2-"$BOWTIEVERSION"*/bowtie2* /usr/local/bin/ &&\
 # magicblast; makeblatsdb
 #RUN mv ncbi-magicblast-"$MBVERSION"/bin/* /usr/local/bin/ &&\
 #  rm -rf ncbi-magicblast-*
+
+# BWA ===========================================
+RUN wget https://github.com/lh3/bwa/releases/download/v"$BWAVERSION"/bwa-"$BWAVERSION".tar.bz2 &&\
+  tar -xvf bwa-* && cd bwa-"$BWAVERSION" &&\
+  make && mv bwa /usr/local/bin/ &&\
+  rm -rf bwa*
 
 # SeqKit ========================================
 RUN wget https://github.com/shenwei356/seqkit/releases/download/v0.12.0/seqkit_linux_amd64.tar.gz &&\

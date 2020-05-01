@@ -21,9 +21,9 @@ set -eux
 # single-end reads and not interleaved or mixed paire-end reads.
 # Adapt script to deal with these edge cases
 #
-PIPE_VERSION="0.1"
+PIPE_VERSION="0.1.3"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
-CONTAINER_VERSION='serratus-dl:0.1'
+CONTAINER_VERSION='serratus-dl:0.1.3'
 
 # Usage
 function usage {
@@ -163,6 +163,14 @@ fi
 RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
+
+# Generate a unique downloader ID
+DLID="$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )-\
+$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1 )-\
+$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1 )-\
+$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1 )-\
+$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 12 | head -n 1 )"
+sed -i "s/52e8a8fe-0cac-4bf2-983a-3617cdba7df5/$DLID/g" /root/.ncbi/user-settings.mkfg
 
 # Cleanup on exit, regardless of whether we encounter an error
 function cleanup {
