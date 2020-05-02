@@ -34,8 +34,10 @@ parser.add_argument('--art_illumina_params', metavar='STR',
                     help='Additional parameters to pass to the art_illumina command.')
 parser.add_argument('--bowtie2_params', metavar='STR',
                     help='Additional parameters to pass to the bowtie2 command.')
+parser.add_argument('--output_proportions', action='store_true',
+                    help='Output proportions relative to number of reads in set, opposed to counts')
 parser.add_argument('-v', action='store_true',
-                    help='Additional parameters to pass to the bowtie2 command.')
+                    help='Enable verbose logging.')
 args = parser.parse_args()
 
 
@@ -265,4 +267,13 @@ def get_alignment_stats():
 
 if __name__ == '__main__':
     tp, fn, fp, tn = get_alignment_stats()
-    print(f'{tp},{fn},{fp},{tn}')
+    if args.output_proportions:
+        n_reads_pos = tp + fn
+        n_reads_neg = fp + tn
+        tp /= n_reads_pos
+        fn /= n_reads_pos
+        fp /= n_reads_neg
+        tn /= n_reads_neg
+        print(f'{tp:.4f},{fn:.4f},{fp:.4f},{tn:.4f}')
+    else:
+        print(f'{tp},{fn},{fp},{tn}')
