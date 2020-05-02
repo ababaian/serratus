@@ -15,6 +15,11 @@ scrape_configs:
       - refresh_interval: 60s
         region: us-east-1
         port: 9100
+    relabel_configs:
+      - source_labels: [__meta_ec2_instance_id]
+        target_label: instance
+      - source_labels: [__meta_ec2_tag_component]
+        target_label: autoscaling_group
 
   - job_name: 'scheduler'
     scrape_interval: 15s
