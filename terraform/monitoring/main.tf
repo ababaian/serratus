@@ -42,7 +42,7 @@ data "aws_ami" "ecs" {
 # Give our instance the set of permissions required to act as an ECS node.
 resource "aws_iam_instance_profile" "monitor" {
   name = "profile-serratus-monitor"
-  role = "ecsInstanceRole"
+  role = aws_iam_role.instance_role.name
 }
 
 resource aws_instance "monitor" {
@@ -54,6 +54,7 @@ resource aws_instance "monitor" {
   iam_instance_profile                 = aws_iam_instance_profile.monitor.name
 
   tags = {
+    "Name": "serratus-monitor"
     "project": "serratus"
     "component": "serratus-monitor"
   }
@@ -87,6 +88,32 @@ resource "aws_eip" "monitor" {
 
 resource aws_ecs_cluster "monitor" {
   name = "serratus-monitor"
+}
+
+resource "aws_iam_role" "instance_role" {
+  name = "SerratusEcsInstanceRole"
+
+  assume_role_policy = <<-EOF
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Principal": {
+            "Service": "ec2.amazonaws.com"
+          },
+          "Effect": "Allow",
+          "Sid": ""
+        }
+      ]
+    }
+  EOF
+}
+
+# Allows this EC2 instance to act as an ECS agent
+resource "aws_iam_role_policy_attachment" "instance_attachment" {
+  role       = aws_iam_role.instance_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
 
 resource "aws_iam_role" "task_role" {

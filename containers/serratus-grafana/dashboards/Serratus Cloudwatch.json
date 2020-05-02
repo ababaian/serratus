@@ -16,8 +16,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 3,
-  "iteration": 1586374716536,
+  "id": 2,
+  "iteration": 1586486581025,
   "links": [],
   "panels": [
     {
@@ -258,8 +258,8 @@
           }
         ],
         "executionErrorState": "alerting",
-        "for": "0",
-        "frequency": "1m",
+        "for": "10m",
+        "frequency": "5m",
         "handler": 1,
         "name": "CPU Credits alert",
         "noDataState": "no_data",
@@ -400,7 +400,7 @@
       }
     }
   ],
-  "refresh": "1m",
+  "refresh": false,
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -452,8 +452,8 @@
     ]
   },
   "time": {
-    "from": "now-1h",
-    "to": "now"
+    "from": "2020-04-10T00:37:44.392Z",
+    "to": "2020-04-10T02:43:07.151Z"
   },
   "timepicker": {
     "refresh_intervals": [

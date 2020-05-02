@@ -159,7 +159,7 @@ EOF
 }
 
 resource "aws_launch_configuration" "worker" {
-  name_prefix          = "tf-${var.image_name}-"
+  name_prefix          = "${var.image_name}-"
   image_id             = data.aws_ami.amazon_linux_2.id
   instance_type        = var.instance_type
   security_groups      = var.security_group_ids
@@ -195,8 +195,7 @@ resource "aws_launch_configuration" "worker" {
 }
 
 resource "aws_autoscaling_group" "worker" {
-  # Forces a change in launch configuration to create a new ASG.
-  name = "tf-asg-${aws_launch_configuration.worker.name}"
+  name = aws_launch_configuration.worker.name
 
   launch_configuration = aws_launch_configuration.worker.id
   availability_zones   = data.aws_availability_zones.all.names
@@ -221,6 +220,12 @@ resource "aws_autoscaling_group" "worker" {
   tag {
     key                 = "component"
     value               = var.image_name
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "${var.image_name}-instance"
     propagate_at_launch = true
   }
 }

@@ -86,6 +86,7 @@ resource "aws_instance" "scheduler" {
               EOF
 
   tags = {
+    "Name": "serratus-scheduler"
     "project": "serratus"
     "component": "serratus-scheduler"
   }
