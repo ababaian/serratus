@@ -30,7 +30,7 @@ export DOCKERHUB_USER='serratusbio' # optional
 sudo docker login # optional
 
 # Build all containers and upload them docker hub repo (if available)
-./build.sh
+./build_containers.sh   # run this in the folder 'repository-root]/containers'
 
 ```
 
