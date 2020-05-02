@@ -59,6 +59,7 @@ def parse_paramstring(paramstring):
             else:
                 args_dict[items[i]] = None
                 i += 1
+    return args_dict
 
 
 class Command(object):
