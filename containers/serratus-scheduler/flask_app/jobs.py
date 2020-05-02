@@ -1,9 +1,77 @@
-from flask import Blueprint, jsonify, request, abort, render_template
-from sqlalchemy import func
 from datetime import datetime
+
+import boto3
+from flask import Blueprint, jsonify, request, abort, render_template, current_app
+from sqlalchemy import func
+
 from . import db
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
+
+def get_running_instances():
+    """Get a list of all EC2 instance IDs currently running"""
+    ec2 = boto3.client('ec2', region_name=current_app.config["AWS_REGION"])
+    for r in ec2.describe_instances()["Reservations"]:
+        for instance in r["Instances"]:
+            if instance["State"]["Name"] == "running":
+                yield instance["InstanceId"]
+
+
+def worker_to_instance_id(worker_id):
+    # XXX: Some IDIOT decided to mush together the instance ID and thread
+    # ID into a single string, so now we'll have to take them apart.  I
+    # wonder who that could've been...
+    # Example worker_id: "i-0a9a0d75781577180-7"
+    # Desired instance id: "i-0a9a0d75781577180"
+    return "-".join(worker_id.split("-")[:-1])
+
+
+def check_and_clear(instances, table, active_state, new_state, name):
+    """Check and reset jobs of a given type."""
+    session = db.get_session()
+    missing_instances = list()
+
+    accessions = session.query(table)\
+        .filter(table.state == active_state)\
+        .all()
+
+    count = 0
+    for accession in accessions:
+        instance_id = worker_to_instance_id(accession.split_worker)
+        if instance_id not in instances:
+            accession.state = new_state
+            missing_instances.append(instance_id)
+            count += 1
+
+
+    if missing_instances:
+        print("Reset jobs on {} {} instances, which were terminated:"
+              .format(len(missing_instances), name))
+        for instance in missing_instances:
+            print("   {}".format(instance))
+
+    if count:
+        session.commit()
+
+    return count
+
+
+@bp.route('/clear_terminated', methods=['PUT'])
+def clear_terminated_jobs():
+    """Reset all jobs (dl, align, merge) which is in the running state but
+    where the instance no longer exists.
+
+    This should run inside of a session context, since the current DB doesn't
+    handle transactions well.  What we should do is implement a global DB lock
+    but I would need to test how that impacts performance."""
+    instances = set(get_running_instances())
+
+    dl = check_and_clear(instances, db.Accession, 'splitting', 'new', "DL")
+    merge = check_and_clear(instances, db.Accession, 'merging', 'merge_wait', "Merge")
+    align = check_and_clear(instances, db.Block, 'aligning', 'new', "Align")
+
+    return jsonify({"dl": dl, "merge": merge, "align": align})
+
 
 @bp.route('/add_sra_run_info/<filename>', methods=['POST'])
 def add_sra_runinfo(filename):
@@ -50,7 +118,7 @@ def start_split_job():
     session.commit()
 
     response['action'] = 'process'
-    response['split_args'] = ""
+    response['split_args'] = current_app.config["ARGS_DL"]
 
     # Send the response as JSON
     return jsonify(response)
@@ -168,8 +236,8 @@ def start_align_job():
     session.commit()
 
     # TODO Move these into the database
-    response['align_args'] = "--very-sensitive-local"
-    response['genome'] = "cov1r"
+    response['align_args'] = current_app.config["ARGS_ALIGN"]
+    response['genome'] = current_app.config["GENOME"]
     response['action'] = "process"
 
     # Send the response as JSON
@@ -247,7 +315,7 @@ def start_merge_job():
     session.commit()
     response['action'] = 'process'
 
-    response['merge_args'] = ""
+    response['merge_args'] = current_app.config["ARGS_MERGE"]
 
     # Send the response as JSON
     return jsonify(response)
