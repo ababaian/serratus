@@ -44,7 +44,7 @@ tmp_dir = 'tmp'
 os.makedirs(tmp_dir, exist_ok=True)
 
 
-def parse_paramstring(paramstring):
+def parse_flag_param_string(paramstring):
     """Return parameter dict dict from argument string.
     Assume each argument key starts with '-' and has one or no values following it.
     Does not work with values that have whitespace within."""
@@ -63,22 +63,33 @@ def parse_paramstring(paramstring):
 
 
 class Command(object):
-    def __init__(self, name, params):
+    def __init__(self, name, positional_params=None, flag_params=None):
         self.name = name
-        self.params = params
+        self.positional_params = positional_params
+        self.flag_params = flag_params
 
-    def run(self, quiet=True, pipe=False):
+    def run(self, quiet=True, pipe_in=None, pipe_out=False):
         params_list = [self.name]
-        params_list.extend([str(val) for pair in self.params.items()
-                          for val in pair if val is not None])
-        subprocess.check_output(params_list, stderr=(subprocess.DEVNULL if quiet else None))
-        # TODO: implement pipe
+        if self.positional_params:
+            params_list.extend([str(val) for val in self.positional_params])
+        if self.flag_params:
+            params_list.extend([str(val) for pair in self.flag_params.items()
+                              for val in pair if val is not None])
+        if pipe_out:
+            return subprocess.Popen(params_list,
+                                    stdin=pipe_in,
+                                    stdout=subprocess.PIPE,
+                                    stderr=(subprocess.DEVNULL if quiet else None))
+        else:
+            return subprocess.check_output(params_list,
+                                           stdin=pipe_in,
+                                           stderr=(subprocess.DEVNULL if quiet else None))
 
-    def update_params(self, paramstring):
+    def update_flag_params(self, paramstring):
         if not paramstring:
             return
-        new_params = parse_paramstring(paramstring)
-        self.params.update(new_params)
+        new_params = parse_flag_param_string(paramstring)
+        self.flag_params.update(new_params)
 
 
 def printv(msg):
@@ -100,15 +111,25 @@ def write_reverse_fasta(record, fa_out):
 
 def get_alignments(target_index, fq_sim_prefix):
     """Call bowtie2 for alignment. Return set of aligned reads."""
-    call_bt2 = subprocess.Popen(['bowtie2',
-                                 '--very-sensitive-local',
-                                 '-x', target_index,
-                                 '-1', f'{fq_sim_prefix}1.fq',
-                                 '-2', f'{fq_sim_prefix}2.fq'],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.DEVNULL)
-    call_samtools = subprocess.Popen(['samtools', 'view', '-G', '12', '-'], stdin=call_bt2.stdout, stdout=subprocess.PIPE)
-    out_awk = subprocess.check_output(['awk', '!seen[$1]++ {print $1}'], stdin=call_samtools.stdout)
+    bt2_params_default = {
+        '-x': target_index,
+        '-1': f'{fq_sim_prefix}1.fq',
+        '-2': f'{fq_sim_prefix}2.fq'
+    }
+    cmd_bt2 = Command('bowtie2', flag_params=bt2_params_default)
+    cmd_bt2.update_flag_params(args.bowtie2_params)
+    call_bt2 = cmd_bt2.run(pipe_out=True)
+
+    samtools_params = {
+        '-G': 12,
+        '-': None
+    }
+    cmd_samtools = Command('samtools', positional_params=['view'], flag_params=samtools_params)
+    call_samtools = cmd_samtools.run(pipe_in=call_bt2.stdout, pipe_out=True)
+
+    cmd_awk = Command('awk', positional_params=['!seen[$1]++ {print $1}'])
+    out_awk = cmd_awk.run(pipe_in=call_samtools.stdout)
+
     return set(filter(None, out_awk.decode().split('\n')))
 
 
@@ -125,8 +146,8 @@ def simulate_read_set(seq, prop, reads_prefix):
         '-sequence': seq,
         '-outseq': sim_fa
     }
-    cmd_msbar = Command('msbar', msbar_params_default)
-    cmd_msbar.update_params(args.msbar_params)
+    cmd_msbar = Command('msbar', flag_params=msbar_params_default)
+    cmd_msbar.update_flag_params(args.msbar_params)
     cmd_msbar.run()
     art_illumina_params_default = {
         '--in': sim_fa,
@@ -140,8 +161,8 @@ def simulate_read_set(seq, prop, reads_prefix):
         '--rndSeed': 666,
         '--noALN': None
     }
-    cmd_art_illumina = Command('art_illumina', art_illumina_params_default)
-    cmd_art_illumina.update_params(args.art_illumina_params)
+    cmd_art_illumina = Command('art_illumina', flag_params=art_illumina_params_default)
+    cmd_art_illumina.update_flag_params(args.art_illumina_params)
     cmd_art_illumina.run()
     os.remove(sim_fa)
 
