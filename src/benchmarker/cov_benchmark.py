@@ -79,15 +79,16 @@ class Command(object):
         self.positional_params = positional_params
         self.flag_params = flag_params
 
-    def run(self, quiet=True, pipe_in=None, pipe_out=False):
+    def run(self, quiet=True, pipe_in=None, pipe_out=False, printv_cmd=False):
         params_list = [self.name]
         if self.positional_params:
             params_list.extend([str(val) for val in self.positional_params])
         if self.flag_params:
             params_list.extend([str(val) for pair in self.flag_params.items()
                               for val in pair if val is not None])
-        cmd = ' '.join(params_list)
-        printv(f'Running: {cmd}')
+        if printv_cmd:
+            cmd = ' '.join(params_list)
+            printv(f'Running: {cmd}')
         if pipe_out:
             return subprocess.Popen(params_list,
                                     stdin=pipe_in,
@@ -144,7 +145,7 @@ def write_mutated_seq(seq, prop, outseq):
     }
     cmd_msbar = Command('msbar', flag_params=msbar_params_default)
     cmd_msbar.update_flag_params(args.msbar_params)
-    cmd_msbar.run()
+    cmd_msbar.run(printv_cmd=True)
 
 
 def write_simulated_reads(reads_src, reads_prefix):
@@ -161,7 +162,7 @@ def write_simulated_reads(reads_src, reads_prefix):
     }
     cmd_art_illumina = Command('art_illumina', flag_params=art_illumina_params_default)
     cmd_art_illumina.update_flag_params(args.art_illumina_params)
-    cmd_art_illumina.run()
+    cmd_art_illumina.run(printv_cmd=True)
 
 
 def simulate_read_set(reads_prefix, label):
@@ -183,15 +184,11 @@ def simulate_read_set(reads_prefix, label):
                 write_reverse_fasta(record, seq)
         prop = getattr(args, args_attr_prop)
         if not prop:
-            printv(f'{args_attr_prop} not specified - using 0.05.')
             prop = 0.05
 
         printv(f'{args_attr_reads_src} not specified - using {seq} with prop={prop} divergence.')
         reads_src = os.path.join(tmp_dir, f'{args_attr_reads_src}.fa')
         write_mutated_seq(seq, prop, reads_src)
-    else:
-        pass
-        # TODO: warnings for ignored parameters
 
     write_simulated_reads(reads_src, reads_prefix)
 
@@ -205,7 +202,7 @@ def get_alignments(target_index, fq_sim_prefix):
     }
     cmd_bt2 = Command('bowtie2', flag_params=bt2_params_default)
     cmd_bt2.update_flag_params(args.bowtie2_params)
-    call_bt2 = cmd_bt2.run(pipe_out=True)
+    call_bt2 = cmd_bt2.run(pipe_out=True, printv_cmd=True)
 
     samtools_params = {
         '-G': 12,
@@ -225,42 +222,22 @@ def get_alignment_stats():
         printv('Simulating positive read set...')
         args.pos_reads = os.path.join(tmp_dir, 'sim_pos_')
         simulate_read_set(args.pos_reads, 'pos')
-    else:
-        printv(f'Using positive read set files {args.pos_reads}(1,2).fq.')
-        if args.pos_seq:
-            printv(f'WARNING: pos_reads already specified - pos_seq={args.pos_seq} will be ignored.')
-        if args.prop_pos:
-            printv(f'WARNING: pos_reads already specified - prop_pos={args.prop_pos} will be ignored.')
-        if args.pos_reads_src:
-            printv(f'WARNING: pos_reads already specified - pos_reads_src={args.pos_reads_src} will be ignored.')
 
     if not args.neg_reads:
         printv('Simulating negative read set...')
         args.neg_reads = os.path.join(tmp_dir, 'sim_neg_')
         simulate_read_set(args.neg_reads, 'neg')
-    else:
-        printv(f'Using negative read set files {args.neg_reads}(1,2).fq.')
-        if args.neg_seq:
-            printv(f'WARNING: neg_reads already specified - neg_seq={args.neg_seq} will be ignored.')
-        if args.prop_neg:
-            printv(f'WARNING: neg_reads already specified - prop_neg={args.prop_neg} will be ignored.')
-        if args.neg_reads_src:
-            printv(f'WARNING: neg_reads already specified - neg_reads_src={args.neg_reads_src} will be ignored.')
 
 
     if not args.pos_align_seq:
-        printv('pos_align_seq not specified - using input_seq.')
+        printv(f'pos_align_seq not specified - using {args.input_seq}.')
         args.pos_align_seq = args.input_seq
-    else:
-        printv(f'Using pos_align_seq={args.pos_align_seq}.')
 
     if not args.neg_align_seq:
-        printv('neg_align_seq not specified - using reverse non-complement of input_seq.')
+        printv(f'neg_align_seq not specified - using reverse non-complement of {args.input_seq}.')
         args.neg_align_seq = os.path.join(tmp_dir, 'neg_align_seq.fa')
         record = get_input_record()
         write_reverse_fasta(record, args.neg_align_seq)
-    else:
-        printv(f'Using neg_align_seq={args.neg_align_seq}.')
 
     printv('Aligning read sets...')
 
