@@ -82,6 +82,8 @@ class Command(object):
         if self.flag_params:
             params_list.extend([str(val) for pair in self.flag_params.items()
                               for val in pair if val is not None])
+        cmd = ' '.join(params_list)
+        printv(f'Running: {cmd}')
         if pipe_out:
             return subprocess.Popen(params_list,
                                     stdin=pipe_in,
