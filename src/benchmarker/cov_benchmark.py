@@ -160,7 +160,6 @@ def simulate_read_set(seq, prop, reads_prefix):
         '--mflen': 300,
         '--sdev': 1,
         '--fcov': 50,
-        '--rndSeed': 666,
         '--noALN': None
     }
     cmd_art_illumina = Command('art_illumina', flag_params=art_illumina_params_default)
