@@ -50,4 +50,21 @@ Use this API to view the Prometheus metrics.  This is mainly used by our Grafana
 
 ### Start and End jobs
 
-We use POST to start jobs, and PUT to end jobs.  You can also use these APIs to manually override behaviours in the scheduler.  The general idea is to use `POST /jobs/<type>/` to start a job (ID is returned as part of the job and automatically marked as running), and `PUT /jobs/<type>/<id>` to change its state.
+We use POST to start jobs, and PUT to end jobs.  You can also use these APIs to manually override behaviours in the scheduler.  The general idea is to use `POST /jobs/<type>/` to start a job (ID is returned as part of the job and automatically marked as running), and `PUT /jobs/<type>/<id>` to change its state. For example
+
+#### Reset accession download
+This will reset the accession 54 to the "new" state.
+```
+curl -X POST "localhost:8000/jobs/split/54?state=new&N_paired=0&N_unpaired=0"
+```
+#### Reset a range of align blocks
+This will reset blocks 205-230 to the new state.
+```
+for BLOCK_ID in $(seq 205 230)
+do
+  curl -X POST -s "localhost:8000/jobs/align/$BLOCK_ID?state=new"
+done
+```
+
+
+
