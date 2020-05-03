@@ -11,7 +11,7 @@ if [ ! -x "$2" ]; then
 fi
 TYPE="$1"; shift
 
-if [ "$TYPE" -eq "merge" ]; then
+if [ "$TYPE" = "merge" ]; then
     # protect from termination
     touch running.merge
 fi
@@ -203,10 +203,7 @@ function kill_workers {
     for i in $(seq 1 "$WORKERS"); do
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
-
-    aws terminate-instances \
-      --instance-ids $INSTANCE_ID
-
+    
     exit 0
 }
 
