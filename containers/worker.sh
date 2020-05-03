@@ -135,29 +135,32 @@ function main_loop {
             (
                 flock 200
 
-                if [ -f "scale.in.pro" ]; then
+                if [ -f scale.in.pro ]; then
                     rm -f scale.in.pro
                 fi
 
                 ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
                   --region us-east-1 | \
                   jq --arg ASG_NAME "$ASG_NAME" \
-                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
+                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity') & wait
 
-                ((ASG_CAP=$ASG_CAP-1))
+                ((ASG_CAP=$ASG_CAP-1)) & wait
+
+                export ASG_CAP
 
                 echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
 
                 aws autoscaling set-desired-capacity \
                   --region us-east-1 \
                   --auto-scaling-group-name $ASG_NAME \
-                  --desired-capacity $ASG_CAP
+                  --desired-capacity $ASG_CAP & wait
 
                 echo "  Shutting down instance"
 
                 aws terminate-instances \
-                 --instance-ids $INSTANCE_ID
+                 --instance-ids $INSTANCE_ID & wait
 
+                sleep 5
                 exit 0
 
             ) 200> "$BASEDIR/.shutdown-lock"
@@ -192,7 +195,6 @@ function kill_workers {
     for i in $(seq 1 "$WORKERS"); do
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
-
 
     aws terminate-instances \
       --instance-ids $INSTANCE_ID
