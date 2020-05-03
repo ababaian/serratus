@@ -57,6 +57,21 @@ class Block(Base, Dicter):
     align_end_time = Column(DateTime)
     align_worker = Column(String)
 
+CONFIG_DEFAULT = dict(
+    CLEAR_INTERVAL=300,
+    GENOME="cov2r",
+    ARGS_DL="",
+    ARGS_ALIGN="--very-sensitive-local",
+    ARGS_MERGE="",
+    AWS_REGION="us-east-1",
+)
+
+class Config(Base):
+    __tablename__ = "config"
+
+    key = Column(String, primary_key=True)
+    value = Column(JSON)
+
 def get_engine(echo=False, engine=[]):
     if not engine:
         path = 'sqlite:///' + current_app.config['DATABASE']
@@ -64,10 +79,14 @@ def get_engine(echo=False, engine=[]):
 
     return engine[0]
 
-def get_session():
-    if 'session' not in g:
-        g.session = sessionmaker(bind=get_engine())()
-    return g.session
+def get_session(use_app_context=True):
+    if use_app_context:
+        if 'session' not in g:
+            g.session = sessionmaker(bind=get_engine())()
+        return g.session
+    else:
+        return sessionmaker(bind=get_engine())()
+
 
 def teardown_session(e=None):
     session = g.pop('session', None)
@@ -75,11 +94,34 @@ def teardown_session(e=None):
     if session is not None:
         session.close()
 
+
+def update_config(data, create=True):
+    session = get_session()
+    for key, value in data.items():
+        row = session.query(Config).filter_by(key=key).one_or_none()
+        if row is None:
+            if create:
+                row = Config(key=key)
+            else:
+                raise ValueError("Invalid key: {}".format(key))
+        row.value = value
+        session.add(row)
+    session.commit()
+
+
+def get_config(use_app_context=True):
+    session = get_session(use_app_context)
+    rows = session.query(Config).all()
+    for row in rows:
+        yield row.key, row.value
+
+
 def init_db():
     """Clear the existing data and create new tables."""
     engine = get_engine(echo=False)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+    update_config(CONFIG_DEFAULT, create=True)
 
 @bp.route('', methods=['GET'])
 def dump_db_sqlite():
