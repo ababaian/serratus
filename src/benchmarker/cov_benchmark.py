@@ -20,6 +20,10 @@ parser.add_argument('--prop_pos', metavar='PROP', type=float,
                     help='Proportion of pos_seq to mutate for simulation of positive read set.\nDefault: 0.05 (5%% divergence).')
 parser.add_argument('--prop_neg', metavar='PROP', type=float,
                     help='Proportion of neg_seq to mutate for simulation of negative read set.\nDefault: 0.05 (5%% divergence).')
+parser.add_argument('--pos_reads_src', metavar='FASTA',
+                    help='FASTA sequences used for simulation of positive read set.\nDefault: pos_seq mutated with divergence defined by prop_pos.')
+parser.add_argument('--neg_reads_src', metavar='FASTA',
+                    help='FASTA sequences used for simulation of negative read set.\nDefault: neg_seq mutated with divergence defined by prop_neg.')
 parser.add_argument('--pos_reads', metavar='FQ_PREFIX',
                     help='Positive read set. Paired-end files are {{FQ_PREFIX}}1.fq and {{FQ_PREFIX}}2.fq.\nIf specified, ignores pos_seq and prop_pos.\nDefault: reads derived from pos_seq with prop_pos applied.')
 parser.add_argument('--neg_reads', metavar='FQ_PREFIX',
@@ -119,6 +123,76 @@ def write_reverse_fasta(record, fa_out):
         f.write(record_rev.format('fasta'))
 
 
+def get_input_record():
+    record_iter = SeqIO.parse(args.input_seq, "fasta")
+    record = next(record_iter)
+    if next(record_iter, None) is not None:
+        raise ValueError('Input sequence has more than one record. Exiting.')
+    return record
+
+
+def write_mutated_seq(seq, prop, outseq):
+    seq_len = sum(len(r.seq) for r in SeqIO.parse(seq, "fasta"))
+    n_mutations = int(prop * seq_len)
+    msbar_params_default = {
+        '-point': 4,  # substitutions only
+        '-block': 0,  # no block mutations
+        '-codon': 0,  # no codon mutations
+        '-count': n_mutations,
+        '-sequence': seq,
+        '-outseq': outseq
+    }
+    cmd_msbar = Command('msbar', flag_params=msbar_params_default)
+    cmd_msbar.update_flag_params(args.msbar_params)
+    cmd_msbar.run()
+
+
+def write_simulated_reads(reads_src, reads_prefix):
+    art_illumina_params_default = {
+        '--in': reads_src,
+        '--out': reads_prefix,
+        '--paired': None,       # paired-end simulation
+        '--seqSys': 'HS20',     # HiSeq 2000
+        '--len': 100,
+        '--mflen': 300,         # fragment length mean
+        '--sdev': 1,            # fragment length standard deviation
+        '--fcov': 50,           # fold coverage
+        '--noALN': None         # do not output ALN alignment file
+    }
+    cmd_art_illumina = Command('art_illumina', flag_params=art_illumina_params_default)
+    cmd_art_illumina.update_flag_params(args.art_illumina_params)
+    cmd_art_illumina.run()
+
+
+def simulate_read_set(reads_prefix, label):
+    """Simulate read set."""
+    record = get_input_record()
+
+    args_attr_reads_src = f'{label}_reads_src'
+    args_attr_seq = f'{label}_seq'
+    args_attr_prop = f'prop_{label}'
+
+    reads_src = getattr(args, args_attr_reads_src)
+    if not reads_src:
+        seq = getattr(args, args_attr_seq)
+        if not seq:
+            if label == 'pos':
+                seq = args.input_seq
+            elif label == 'neg':
+                seq = os.path.join(tmp_dir, 'neg_seq.fa')
+                write_reverse_fasta(record, seq)
+        prop = getattr(args, args_attr_prop)
+        if not prop:
+            printv(f'{args_attr_prop} not specified - using 0.05.')
+            prop = 0.05
+
+        printv(f'{args_attr_reads_src} not specified - using {seq} with prop={prop} divergence.')
+        reads_src = os.path.join(tmp_dir, f'{args_attr_reads_src}.fa')
+        write_mutated_seq(seq, prop, reads_src)
+
+    write_simulated_reads(reads_src, reads_prefix)
+
+
 def get_alignments(target_index, fq_sim_prefix):
     """Call bowtie2 for alignment. Return set of aligned reads."""
     bt2_params_default = {
@@ -143,90 +217,39 @@ def get_alignments(target_index, fq_sim_prefix):
     return set(filter(None, out_awk.decode().split('\n')))
 
 
-def simulate_read_set(seq, prop, reads_prefix):
-    """Simulate read set given sequence, mutation proportion, and prefix for output reads."""
-    seq_len = sum(len(r.seq) for r in SeqIO.parse(seq, "fasta"))
-    sim_fa = os.path.join(tmp_dir, 'sim.fa')
-    n_mutations = int(prop * seq_len)
-    msbar_params_default = {
-        '-point': 4,  # substitutions only
-        '-block': 0,  # no block mutations
-        '-codon': 0,  # no codon mutations
-        '-count': n_mutations,
-        '-sequence': seq,
-        '-outseq': sim_fa
-    }
-    cmd_msbar = Command('msbar', flag_params=msbar_params_default)
-    cmd_msbar.update_flag_params(args.msbar_params)
-    cmd_msbar.run()
-    art_illumina_params_default = {
-        '--in': sim_fa,
-        '--out': reads_prefix,
-        '--paired': None,       # paired-end simulation
-        '--seqSys': 'HS20',     # HiSeq 2000
-        '--len': 100,           
-        '--mflen': 300,         # fragment length mean
-        '--sdev': 1,            # fragment length standard deviation
-        '--fcov': 50,           # fold coverage
-        '--noALN': None         # do not output ALN alignment file
-    }
-    cmd_art_illumina = Command('art_illumina', flag_params=art_illumina_params_default)
-    cmd_art_illumina.update_flag_params(args.art_illumina_params)
-    cmd_art_illumina.run()
-    os.remove(sim_fa)
-
-
 def get_alignment_stats():
 
     # get input SeqRecord
-    record_iter = SeqIO.parse(args.input_seq, "fasta")
-    record = next(record_iter)
-    if next(record_iter, None) is not None:
-        raise ValueError('Input sequence has more than one record. Exiting.')
+    record = get_input_record()
 
     reverse_written = False
 
     if not args.pos_reads:
         printv('Simulating positive read set...')
-
-        if not args.pos_seq:
-            printv('pos_seq not specified - using input_seq.')
-            args.pos_seq = args.input_seq
-        if not args.prop_pos:
-            printv('prop_pos not specified - using 0.05.')
-            args.prop_pos = 0.05
-
         args.pos_reads = os.path.join(tmp_dir, 'sim_pos_')
-        simulate_read_set(args.pos_seq, args.prop_pos, args.pos_reads)
+        simulate_read_set(args.pos_reads, 'pos')
     else:
         printv(f'Using positive read set files {args.pos_reads}(1,2).fq.')
         if args.pos_seq:
             printv(f'WARNING: pos_reads already specified - pos_seq={args.pos_seq} will be ignored.')
         if args.prop_pos:
             printv(f'WARNING: pos_reads already specified - prop_pos={args.prop_pos} will be ignored.')
+        if args.pos_reads_src:
+            printv(f'WARNING: pos_reads already specified - pos_reads_src={args.pos_reads_src} will be ignored.')
 
 
     if not args.neg_reads:
         printv('Simulating negative read set...')
-
-        if not args.neg_seq:
-            printv('neg_seq not specified - using reverse non-complement of input_seq.')
-            # write reverse FASTA
-            args.neg_seq = os.path.join(tmp_dir, 'neg_seq.fa')
-            write_reverse_fasta(record, args.neg_seq)
-            reverse_written = True
-        if not args.prop_neg:
-            printv('prop_neg not specified - using 0.05.')
-            args.prop_neg = 0.05
-
         args.neg_reads = os.path.join(tmp_dir, 'sim_neg_')
-        simulate_read_set(args.neg_seq, args.prop_neg, args.neg_reads)
+        simulate_read_set(args.neg_reads, 'neg')
     else:
         printv(f'Using negative read set files {args.neg_reads}(1,2).fq.')
         if args.neg_seq:
             printv(f'WARNING: neg_reads already specified - neg_seq={args.neg_seq} will be ignored.')
         if args.prop_neg:
             printv(f'WARNING: neg_reads already specified - prop_neg={args.prop_neg} will be ignored.')
+        if args.neg_reads_src:
+            printv(f'WARNING: neg_reads already specified - neg_reads_src={args.neg_reads_src} will be ignored.')
 
 
     if not args.pos_align_seq:
