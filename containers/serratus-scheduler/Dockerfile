@@ -14,7 +14,9 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /opt/
 ADD serratus-scheduler/flask_app/ ./flask_app
 
-RUN flask init-db
+# If something fails, `flask init-db` prints a usage message, not the error.
+# So run "flask --help" in that case which does print the error
+RUN flask init-db || (flask --help; false)
 
 # Do NOT enable multithreading here, as the underlying app is
 # thread-unsafe.
