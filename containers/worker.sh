@@ -144,7 +144,7 @@ function main_loop {
                 ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
                   --region us-east-1 | \
                   jq --arg ASG_NAME "$ASG_NAME" \
-                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity') & wait
+                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
 
                 ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
 
@@ -159,7 +159,6 @@ function main_loop {
                   --desired-capacity $ASG_CAP & wait
 
                 echo "  Shutting down instance"
-
                 aws ec2 terminate-instances \
                  --region us-east-1 \
                  --instance-ids $INSTANCE_ID & wait
