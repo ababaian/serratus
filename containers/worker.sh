@@ -141,16 +141,12 @@ function main_loop {
 
                 echo $ASG_NAME
 
-                aws autoscaling describe-auto-scaling-groups \
+                ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
                   --region us-east-1 | \
                   jq --arg ASG_NAME "$ASG_NAME" \
-                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity'
+                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity') & wait
 
-
-                ((ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
-                  --region us-east-1 | \
-                  jq --arg ASG_NAME "$ASG_NAME" \
-                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')-1)) & wait
+                ((ASG_CAP=$ASG_CAP-1)) || true
 
                 echo $ASG_CAP
                 export ASG_CAP
