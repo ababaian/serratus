@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-set -eux
+set -eu
 
 # Wrapper script to serratus-{dl,align-merge}.  This script provides looping,
 # multi-threading and also checks for spot termination.  If nodes are
@@ -218,17 +218,17 @@ trap kill_workers TERM
 # spot-termination signal and shutdown in the last 10
 # seconds to maximize chance the job finishes.
 
-# METADATA=http://169.254.169.254/latest/meta-data
-# while true; do
-#     # Note: this URL returns an HTML 404 page when there is no action.  Use
-#     # "curl -f" to mitigate that.
-#     INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
-#     if [ "$INSTANCE_ACTION" == "terminate" ]; then
-#         echo "SPOT TERMINATION SIGNAL RECEIEVED."
-#         echo "Initiating shutdown procedures for all workers"
+METADATA=http://169.254.169.254/latest/meta-data
+while true; do
+    # Note: this URL returns an HTML 404 page when there is no action.  Use
+    # "curl -f" to mitigate that.
+    INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
+    if [ "$INSTANCE_ACTION" == "terminate" ]; then
+        echo "SPOT TERMINATION SIGNAL RECEIEVED."
+        echo "Initiating shutdown procedures for all workers"
 
-#         kill_workers
-#     fi
+        kill_workers
+    fi
 
-#     sleep 5
-# done
+    sleep 5
+done
