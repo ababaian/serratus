@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-set -eu
+set -eux
 
 # Wrapper script to serratus-{dl,align-merge}.  This script provides looping,
 # multi-threading and also checks for spot termination.  If nodes are
@@ -103,7 +103,7 @@ function main_loop {
             
                 ## Other worker is not checked out
                 retry_count=0
-            elif [ -f scale.in.pro ]
+            elif [ -f "scale.in.pro" ]
             then
                 echo "  Removing SCALE-IN protection"
                 # Turn off scale-in protection
@@ -146,7 +146,7 @@ function main_loop {
             (
                 flock 200
 
-                if [ -f scale.in.pro ]; then
+                if [ -f "scale.in.pro" ]; then
                     rm -f scale.in.pro
                 fi
 
@@ -170,7 +170,7 @@ function main_loop {
                  --instance-ids $INSTANCE_ID
 
                 exit 0
-                
+
             ) 200> "$BASEDIR/.shutdown-lock"
            
             ;;
@@ -191,7 +191,7 @@ cd $BASEDIR
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 ASG_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region us-east-1 | jq -r '.Tags[] | select(.["Key"] | contains("aws:autoscaling:groupName")) | .Value')
-
+export INSTANCE_ID ASG_NAME
 
 # Fire up main loop (SRA downloader)
 echo "Creating $WORKERS worker processes"
