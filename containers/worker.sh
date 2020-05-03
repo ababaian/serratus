@@ -56,7 +56,7 @@ function main_loop {
         fi
 
         # Maximum number of retry attempts reached
-        if [ $retry_count -gt 10 ]
+        if [ $retry_count -gt 3 ]
         then
             ACTION=shutdown
         fi
@@ -144,6 +144,8 @@ function main_loop {
                   jq --arg ASG_NAME "$ASG_NAME" \
                   '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity') & wait
 
+                echo $ASG_CAP $ASG_NAME
+
                 ((ASG_CAP=$ASG_CAP-1)) & wait
 
                 export ASG_CAP
@@ -192,7 +194,9 @@ for i in $(seq 1 "$WORKERS"); do
 done
 
 function kill_workers {
-    for i in $(seq 1 "$WORKERS"); do
+    #for i in $(seq 1 "$WORKERS"); do
+    for i in $(seq 1 1); do
+
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
 
