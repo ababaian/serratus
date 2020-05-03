@@ -146,7 +146,7 @@ function main_loop {
                   jq --arg ASG_NAME "$ASG_NAME" \
                   '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity') & wait
 
-                ((ASG_CAP=$ASG_CAP-1)) || true
+                ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
 
                 echo $ASG_CAP
                 export ASG_CAP
@@ -191,14 +191,14 @@ export INSTANCE_ID ASG_NAME
 
 # Fire up main loop (SRA downloader)
 echo "Creating $WORKERS worker processes"
-for i in $(seq 1 "$WORKERS"); do
+#for i in $(seq 1 "$WORKERS"); do
+for i in $(seq 1 1); do
+
     main_loop "$i" "$@" & worker[i]=$!
 done
 
 function kill_workers {
-    #for i in $(seq 1 "$WORKERS"); do
-    for i in $(seq 1 1); do
-
+    for i in $(seq 1 "$WORKERS"); do
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
 
@@ -220,17 +220,17 @@ trap kill_workers TERM
 # spot-termination signal and shutdown in the last 10
 # seconds to maximize chance the job finishes.
 
-METADATA=http://169.254.169.254/latest/meta-data
-while true; do
-    # Note: this URL returns an HTML 404 page when there is no action.  Use
-    # "curl -f" to mitigate that.
-    INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
-    if [ "$INSTANCE_ACTION" == "terminate" ]; then
-        echo "SPOT TERMINATION SIGNAL RECEIEVED."
-        echo "Initiating shutdown procedures for all workers"
+# METADATA=http://169.254.169.254/latest/meta-data
+# while true; do
+#     # Note: this URL returns an HTML 404 page when there is no action.  Use
+#     # "curl -f" to mitigate that.
+#     INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
+#     if [ "$INSTANCE_ACTION" == "terminate" ]; then
+#         echo "SPOT TERMINATION SIGNAL RECEIEVED."
+#         echo "Initiating shutdown procedures for all workers"
 
-        kill_workers
-    fi
+#         kill_workers
+#     fi
 
-    sleep 5
-done
+#     sleep 5
+# done
