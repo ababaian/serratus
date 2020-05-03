@@ -47,10 +47,12 @@ os.makedirs(tmp_dir, exist_ok=True)
 
 
 def parse_flag_param_string(paramstring):
-    """Return parameter dict from argument string.
+    """
+    Return parameter dict from argument string.
     Assume each argument key starts with '-' and has one or no values following it.
     Does not work with values that have whitespace within."""
     # TODO: check for invalid parameter strings (might need to be command-specific)
+    paramstring = paramstring.strip('"')
     items = paramstring.split(' ')
     args_dict = {}
     i = 0
@@ -62,6 +64,8 @@ def parse_flag_param_string(paramstring):
             else:
                 args_dict[items[i]] = None
                 i += 1
+        else:
+            raise ValueError('Invalid parameter string: {paramstring}')
     return args_dict
 
 
