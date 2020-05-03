@@ -1,9 +1,14 @@
 #!/usr/bin/python3
 
+# Author: Robert C. Edgar
+# email robert@drive5.com
+
 import sys
 import os
 
-COV_BINS = 16
+COV_BINS = 32
+MIN_COMPLETE_LEN = 25000
+PAN_GENOME = "pan_genome"
 
 InputFileName = sys.argv[1]
 SummaryFileName = sys.argv[2]
@@ -29,48 +34,45 @@ AccToSumBases = {}
 AccToSumBasesPctId = {}
 AccToCoverageVec = {}
 
+AccToCoverageVec[PAN_GENOME] = [0]*COV_BINS
+AccToLen[PAN_GENOME] = 30000
+
 d = {}
 Order = []
 Keys = []
 
 def CmpKey__(i):
 	global d, Keys
+
 	ki = Keys[i]
 	ni = d[ki]
 	return ni
 
-def Cmp__(i, j):
-	global d, Keys
-
-	ki = Keys[i]
-	kj = Keys[j]
-
-	ni = d[ki]
-	nj = d[kj]
-
-	if ni < nj:
-		return 1
-	elif ni > nj:
-		return -1
-	return 0
-
 def GetOrder(Dict):
-	global d, Order, Keys
+	global d, Keys
 
 	d = Dict
 	Keys = list(d.keys())
 	N = len(Keys)
 	Order = list(range(0, N))
 	Order.sort(key=CmpKey__)
-	# Order.sort(Cmp__)
+	Order.reverse()
 	return Order
 
 def MakeCartoon(v):
 	Max = max(v)
+	if Max < 4:
+		Max = 4
 	s = ""
 	for i in v:
-		k = (i*4)//Max
-		s += "_.oO@"[k]
+		if i == 0:
+			s += '_'
+		elif i <= Max/4:
+			s += '.'
+		elif i <= Max/2:
+			s += 'o'
+		else:
+			s += 'O'
 	return s 
 
 for Line in open(AccLenTaxFileName):
@@ -89,6 +91,19 @@ for Line in open(TaxDescFileName):
 		TaxToDesc[Tax] = Desc
 
 AccToHits = {}
+
+def AddHit(Acc, TBin, L, PctId):
+	try:
+		AccToHits[Acc] += 1
+		AccToSumBases[Acc] += L
+		AccToSumBasesPctId[Acc] += L*PctId
+		AccToCoverageVec[Acc][TBin] += 1
+	except:
+		AccToHits[Acc] = 1
+		AccToSumBases[Acc] = L
+		AccToSumBasesPctId[Acc] = L*PctId
+		AccToCoverageVec[Acc] = [0]*COV_BINS
+		AccToCoverageVec[Acc][TBin] += 1
 
 Mapped = 0
 MappedReverse = 0
@@ -159,17 +174,10 @@ for Line in fIn:
 		except:
 			TBin = 0
 
-		try:
-			AccToHits[Acc] += 1
-			AccToSumBases[Acc] += L
-			AccToSumBasesPctId[Acc] += L*PctId
-			AccToCoverageVec[Acc][TBin] += 1
-		except:
-			AccToHits[Acc] = 1
-			AccToSumBases[Acc] = L
-			AccToSumBasesPctId[Acc] = L*PctId
-			AccToCoverageVec[Acc] = [0]*COV_BINS
-			AccToCoverageVec[Acc][TBin] += 1
+		AddHit(Acc, TBin, L, PctId)
+		if TL >= MIN_COMPLETE_LEN:
+			AddHit(PAN_GENOME, TBin, L, PctId)
+
 	except:
 		pass
 
@@ -180,15 +188,30 @@ if Mapped > 0:
 else:
 	MeanL = 0
 
+try:
+	PanCov = AccToCoverageVec[PAN_GENOME]
+except:
+	PanCov = COV_BINS*[0]
+
+n = 0
+for x in PanCov:
+	if x > 0:
+		n += 1
+Score = (n*100)/COV_BINS
+
 Accs = list(AccToHits.keys())
 Order = GetOrder(AccToHits)
 
-print("unmapped=%d" % Unmapped, file=fSum)
-print("mapped=%d" % Mapped, file=fSum)
-print("mapped_reverse=%d" % MappedReverse, file=fSum)
-print("mapped_reverse_pct=%.2f" % MappedReversePct, file=fSum)
-print("mean_aln_length=%d" % MeanL, file=fSum)
-print("max_aln_length=%d" % MaxL, file=fSum)
+print("score=%.0f;" % Score, file=fSum)
+print("unmapped=%d;" % Unmapped, file=fSum)
+print("mapped=%d;" % Mapped, file=fSum)
+print("mapped_reverse=%d;" % MappedReverse, file=fSum)
+print("mapped_reverse_pct=%.2f;" % MappedReversePct, file=fSum)
+print("mean_aln_length=%d;" % MeanL, file=fSum)
+print("max_aln_length=%d;" % MaxL, file=fSum)
+
+# Cartoon = MakeCartoon(AccToCoverageVec[PAN_GENOME])
+# print("pan_genome_coverage=" + Cartoon + ";", file=fSum)
 
 for i in Order:
 	Acc = Accs[i]
@@ -205,6 +228,13 @@ for i in Order:
 		Len = AccToLen[Acc]
 	except:
 		Len = None
+	try:
+		IsComplete = AccToComplete[Acc]
+	except:
+		IsComplete = False
+
+	if Acc == PAN_GENOME:
+		Desc = "Pan-genome"
 
 	SumBases = AccToSumBases[Acc]
 	SumBasesPctId = AccToSumBasesPctId[Acc]
