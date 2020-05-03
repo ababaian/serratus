@@ -72,18 +72,7 @@ function main_loop {
             # offset by worker # seconds to not collide dl queries
             if [ ! -f "running.$1" ]; then
                 touch running.$1
-                sleep $1 & wait
-            fi
-
-            if [ ! -f scale.in.pro ]; then
-                echo "  Initiating SCALE-IN protection"
-                # Turn on scale-in protection
-                aws autoscaling set-instance-protection \
-                  --instance-ids $INSTANCE_ID \
-                  --auto-scaling-group-name $ASG_NAME \
-                  --protected-from-scale-in & wait
-
-                touch scale.in.pro
+                #sleep $1 & wait
             fi
 
             # Run the target script.
@@ -155,14 +144,14 @@ function main_loop {
                   jq --arg ASG_NAME "$ASG_NAME" \
                   '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
 
-                ((NEW_CAP=$ASG_CAP-1))
+                ((ASG_CAP=$ASG_CAP-1))
 
-                echo "  Scaling-in $ASG_NAME to size $NEW_CAP"
+                echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
 
                 aws autoscaling set-desired-capacity \
                   --region us-east-1 \
                   --auto-scaling-group-name $ASG_NAME \
-                  --desired-capacity $NEW_CAP
+                  --desired-capacity $ASG_CAP
 
                 echo "  Shutting down instance"
 
@@ -203,6 +192,11 @@ function kill_workers {
     for i in $(seq 1 "$WORKERS"); do
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
+
+
+    aws terminate-instances \
+      --instance-ids $INSTANCE_ID
+
     exit 0
 }
 
