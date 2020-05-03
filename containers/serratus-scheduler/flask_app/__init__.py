@@ -21,7 +21,7 @@ def create_app(test_config=None):
     app.config.from_mapping(
         DATABASE=os.path.join(app.instance_path, 'scheduler.sqlite'),
         CLEAR_INTERVAL=300,
-        GENOME="cov1r",
+        GENOME="cov2r",
         ARGS_DL="",
         ARGS_ALIGN="--very-sensitive-local",
         ARGS_MERGE="",
