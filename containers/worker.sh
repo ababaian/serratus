@@ -11,6 +11,11 @@ if [ ! -x "$2" ]; then
 fi
 TYPE="$1"; shift
 
+if [ "$TYPE" = "merge" ]; then
+    # protect from termination
+    touch running.merge
+fi
+
 if [ -z "$SCHEDULER" ]; then
     echo Please set SCHEDULER environment variable.
     exit 1
@@ -20,6 +25,7 @@ fi
 # by running 2*nproc, at the expense of disk space...  which is a bit
 # limiting at the moment.
 WORKERS=${WORKERS:-$(nproc)}
+retry_count=0
 
 function terminate_handler {
     echo "    $JOB_ID was terminated without completing. Reset status."
@@ -54,27 +60,119 @@ function main_loop {
             ACTION=retry
         fi
 
+        # Maximum number of retry attempts reached
+        if [ $retry_count -gt 3 ]
+        then
+            ACTION=shutdown
+        fi
+
         case "$ACTION" in
           process)
             echo "  $WORKER_ID - Process State received.  Running $@"
+            retry_count=0 # reset retry counter
+
             export JOB_JSON WORKER_ID
+
+            # Worker punch-in
+            # offset by worker # seconds to not collide dl queries
+            if [ ! -f "running.$1" ]; then
+                touch running.$1
+                #sleep $1 & wait
+            fi
 
             # Run the target script.
             "$@" & wait
+
+            # Unset job ID to prevent terminations
+            unset JOB_ID
             ;;
           wait)
             echo "  $WORKER_ID - Wait State received."
+
+            # Worker punch-out
+            if [ -f "running.$1" ]; then
+                rm -f running.$1
+            fi
+
+            # When all worker's are punched-out, scale-in pro
+            if ls running* 1> /dev/null 2>&1
+            then
+            
+                ## Other worker is not checked out
+                retry_count=0
+            elif [ -f "scale.in.pro" ]
+            then
+                echo "  Removing SCALE-IN protection"
+                # Turn off scale-in protection
+                aws autoscaling set-instance-protection \
+                  --region us-east-1 \
+                  --instance-ids $INSTANCE_ID \
+                  --auto-scaling-group-name $ASG_NAME \
+                  --no-protected-from-scale-in & wait
+
+                rm -f scale.in.pro
+            fi
+
+            # Add to retry counter
+            ((retry_count=retry_count+1))
+
+            # wait cycle
             sleep 10 & wait
+
             continue
             ;;
           retry)
             echo "  $WORKER_ID - Scheduler not reached.  Waiting"
+
+            if ls running* 1> /dev/null 2>&1; then
+                ## Other worker is not checked out
+                retry_count=0
+            else
+                # Add to retry counter
+                ((retry_count=retry_count+1))
+            fi
+
             sleep 10 & wait
             continue
             ;;
           shutdown)
             echo "  $WORKER_ID - Shutdown State received."
-            exit 0
+
+            # This is not threadsafe!  For now let's just put it in a critical section.
+            # Using a recipe from "man flock" which appears to work.
+            (
+                flock 200
+
+                if [ -f scale.in.pro ]; then
+                    rm -f scale.in.pro
+                fi
+
+                echo $ASG_NAME
+
+                ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
+                  --region us-east-1 | \
+                  jq --arg ASG_NAME "$ASG_NAME" \
+                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
+
+                ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
+
+                echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
+
+                aws autoscaling set-desired-capacity \
+                  --region us-east-1 \
+                  --auto-scaling-group-name $ASG_NAME \
+                  --desired-capacity $ASG_CAP
+
+                echo "  Shutting down instance"
+                aws ec2 terminate-instances \
+                 --region us-east-1 \
+                 --instance-ids $INSTANCE_ID
+
+                sleep 300
+                exit 0
+
+            ) 200> "$BASEDIR/.shutdown-lock"
+           
             ;;
           *)        echo "  $WORKER_ID - ERROR: Unknown State received."
             echo "  $WORKER_ID - ERROR: Unknown State received."
@@ -84,7 +182,7 @@ function main_loop {
 }
 
 echo "=========================================="
-echo "                SERRATUS                  "
+echo "              SERRATUS  INIT              "
 echo "=========================================="
 cd $BASEDIR
 
@@ -92,6 +190,9 @@ cd $BASEDIR
 #aws s3api head-object --bucket $S3_BUCKET --key aws-test-token.jpg
 
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+ASG_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region us-east-1 | jq -r '.Tags[] | select(.["Key"] | contains("aws:autoscaling:groupName")) | .Value')
+export INSTANCE_ID ASG_NAME
+
 # Fire up main loop (SRA downloader)
 echo "Creating $WORKERS worker processes"
 for i in $(seq 1 "$WORKERS"); do
@@ -102,6 +203,7 @@ function kill_workers {
     for i in $(seq 1 "$WORKERS"); do
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
+    
     exit 0
 }
 
