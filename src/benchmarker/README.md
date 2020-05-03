@@ -169,3 +169,39 @@ $ python cov_benchmark.py NC_045512v2r.fa -v \
 cd test/benchmarker
 pytest -s
 ```
+
+# pangenome_cov_benchmark.py
+
+## Usage
+
+```
+$ python pangenome_cov_benchmark.py -h
+usage: pangenome_cov_benchmark.py [-h] pangenome out
+
+Run cov_benchmark.py for each genome sequence in a pangenome using defaults and --output_proportions.
+
+positional arguments:
+  pangenome   FASTA file containing one record per genome sequence.
+  out         Output CSV file.
+```
+
+### Example
+
+```
+$ python pangenome_cov_benchmark.py cov1.fa out.csv
+Running: python cov_benchmark.py X81024.1.fa --output_proportions
+Running: python cov_benchmark.py KX092228.1.fa --output_proportions
+Running: python cov_benchmark.py KX092227.1.fa --output_proportions
+Running: python cov_benchmark.py KX092226.1.fa --output_proportions
+Running: python cov_benchmark.py KX092225.1.fa --output_proportions
+...
+
+$ cat out.csv
+GENOME,TP,FN,FP,TN
+X81024.1,0.9429,0.0571,0.0000,1.0000
+KX092228.1,0.7600,0.2400,0.0000,1.0000
+KX092227.1,1.0000,0.0000,0.0000,1.0000
+KX092226.1,0.8400,0.1600,0.0000,1.0000
+KX092225.1,0.9000,0.1000,0.0000,1.0000
+...
+```
