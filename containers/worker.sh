@@ -98,10 +98,13 @@ function main_loop {
             fi
 
             # When all worker's are punched-out, scale-in pro
-            if ls running* 1> /dev/null 2>&1; then
+            if ls running* 1> /dev/null 2>&1
+            then
+            
                 ## Other worker is not checked out
                 retry_count=0
             elif [ -f scale.in.pro ]
+            then
                 echo "  Removing SCALE-IN protection"
                 # Turn off scale-in protection
                 aws autoscaling set-instance-protection \
