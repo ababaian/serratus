@@ -189,6 +189,9 @@ def simulate_read_set(reads_prefix, label):
         printv(f'{args_attr_reads_src} not specified - using {seq} with prop={prop} divergence.')
         reads_src = os.path.join(tmp_dir, f'{args_attr_reads_src}.fa')
         write_mutated_seq(seq, prop, reads_src)
+    else:
+        pass
+        # TODO: warnings for ignored parameters
 
     write_simulated_reads(reads_src, reads_prefix)
 
@@ -218,12 +221,6 @@ def get_alignments(target_index, fq_sim_prefix):
 
 
 def get_alignment_stats():
-
-    # get input SeqRecord
-    record = get_input_record()
-
-    reverse_written = False
-
     if not args.pos_reads:
         printv('Simulating positive read set...')
         args.pos_reads = os.path.join(tmp_dir, 'sim_pos_')
@@ -236,7 +233,6 @@ def get_alignment_stats():
             printv(f'WARNING: pos_reads already specified - prop_pos={args.prop_pos} will be ignored.')
         if args.pos_reads_src:
             printv(f'WARNING: pos_reads already specified - pos_reads_src={args.pos_reads_src} will be ignored.')
-
 
     if not args.neg_reads:
         printv('Simulating negative read set...')
@@ -257,13 +253,12 @@ def get_alignment_stats():
         args.pos_align_seq = args.input_seq
     else:
         printv(f'Using pos_align_seq={args.pos_align_seq}.')
+
     if not args.neg_align_seq:
         printv('neg_align_seq not specified - using reverse non-complement of input_seq.')
-        if reverse_written:
-            args.neg_align_seq = args.neg_seq
-        else:
-            args.neg_align_seq = os.path.join(tmp_dir, 'neg_align_seq.fa')
-            write_reverse_fasta(record, args.neg_align_seq)
+        args.neg_align_seq = os.path.join(tmp_dir, 'neg_align_seq.fa')
+        record = get_input_record()
+        write_reverse_fasta(record, args.neg_align_seq)
     else:
         printv(f'Using neg_align_seq={args.neg_align_seq}.')
 
