@@ -168,7 +168,7 @@ module "merge" {
   // TODO: the credentials are not properly set-up to
   //       upload to serratus-public, requires a *Object policy
   //       on the bucket.
-  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/tmp"
+  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200427_CoV_positve_ctrl"
 }
 
 // RESOURCES ##############################

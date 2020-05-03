@@ -1,3 +1,11 @@
+///////////////////////////////////////////////////////////
+// Worker Node
+///////////////////////////////////////////////////////////
+//
+//
+
+// VARIABLES ==============================================
+
 variable "instance_type" {
   description = "Type of node to use for the workers"
   type        = string
@@ -107,6 +115,8 @@ data "aws_availability_zones" "all" {}
 
 data "aws_region" "current" {}
 
+// RESOURCES ==============================================
+
 resource "aws_cloudwatch_log_group" "g" {
   name = var.image_name
 }
@@ -115,6 +125,47 @@ module "iam_role" {
   source      = "../iam_role"
   name        = var.image_name
   policy_arns = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+}
+
+
+resource "aws_iam_role_policy" "ec2Describe" {
+  name = "DescribeEC2Instances-${var.image_name}"
+  role = module.iam_role.role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "ec2:Describe*"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "AdjustAutoScaling" {
+  name = "AdjustAutoScaling-${var.image_name}"
+  role = module.iam_role.role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "autoscaling:*"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
 }
 
 resource "aws_iam_role_policy" "s3_write" {
@@ -180,6 +231,7 @@ resource "aws_launch_configuration" "worker" {
 
   user_data = <<-EOF
               #!/bin/bash
+              export 
               instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               hostname ${var.image_name}-$instance_id
               docker run -d \
@@ -192,6 +244,16 @@ resource "aws_launch_configuration" "worker" {
                 ${var.dockerhub_account}/${var.image_name} \
                 ${var.options}
               EOF
+}
+
+
+// TODO: COOLDOWN POLICY NOT ATTACHED TO GROUP
+resource "aws_autoscaling_policy" "worker" {
+  name = aws_launch_configuration.worker.name
+  autoscaling_group_name = aws_autoscaling_group.worker.name
+  scaling_adjustment     = 5
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 30
 }
 
 resource "aws_autoscaling_group" "worker" {
