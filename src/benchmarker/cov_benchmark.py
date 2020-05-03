@@ -13,9 +13,9 @@ parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
 parser.add_argument('input_seq',
                     help='Single-record FASTA containing input sequence. Used for pos/neg read sets and read alignment, unless other parameters specified.')
 parser.add_argument('--pos_seq', metavar='FASTA',
-                    help='FASTA sequences used for simulation of positive read set.\nDefault: input sequence.')
+                    help='FASTA sequences used for divergence and simulation of positive read set.\nDefault: input sequence.')
 parser.add_argument('--neg_seq', metavar='FASTA',
-                    help='FASTA sequences used for simulation of negative read set.\nDefault: reverse non-complement of input sequence.')
+                    help='FASTA sequences used for divergence and simulation of negative read set.\nDefault: reverse non-complement of input sequence.')
 parser.add_argument('--prop_pos', metavar='PROP', type=float,
                     help='Proportion of pos_seq to mutate for simulation of positive read set.\nDefault: 0.05 (5%% divergence).')
 parser.add_argument('--prop_neg', metavar='PROP', type=float,
@@ -47,9 +47,10 @@ os.makedirs(tmp_dir, exist_ok=True)
 
 
 def parse_flag_param_string(paramstring):
-    """Return parameter dict dict from argument string.
+    """Return parameter dict from argument string.
     Assume each argument key starts with '-' and has one or no values following it.
     Does not work with values that have whitespace within."""
+    # TODO: check for invalid parameter strings (might need to be command-specific)
     items = paramstring.split(' ')
     args_dict = {}
     i = 0
@@ -95,6 +96,7 @@ class Command(object):
 
 
 def printv(msg):
+    """Print to STDERR if verbose mode is enabled."""
     if args.v:
         print(msg, file=sys.stderr)
 
@@ -141,9 +143,9 @@ def simulate_read_set(seq, prop, reads_prefix):
     sim_fa = os.path.join(tmp_dir, 'sim.fa')
     n_mutations = int(prop * seq_len)
     msbar_params_default = {
-        '-point': 4,
-        '-block': 0,
-        '-codon': 0,
+        '-point': 4,  # substitutions only
+        '-block': 0,  # no block mutations
+        '-codon': 0,  # no codon mutations
         '-count': n_mutations,
         '-sequence': seq,
         '-outseq': sim_fa
@@ -154,13 +156,13 @@ def simulate_read_set(seq, prop, reads_prefix):
     art_illumina_params_default = {
         '--in': sim_fa,
         '--out': reads_prefix,
-        '--seqSys': 'HS20',
-        '--paired': None,
-        '--len': 100,
-        '--mflen': 300,
-        '--sdev': 1,
-        '--fcov': 50,
-        '--noALN': None
+        '--paired': None,       # paired-end simulation
+        '--seqSys': 'HS20',     # HiSeq 2000
+        '--len': 100,           
+        '--mflen': 300,         # fragment length mean
+        '--sdev': 1,            # fragment length standard deviation
+        '--fcov': 50,           # fold coverage
+        '--noALN': None         # do not output ALN alignment file
     }
     cmd_art_illumina = Command('art_illumina', flag_params=art_illumina_params_default)
     cmd_art_illumina.update_flag_params(args.art_illumina_params)
