@@ -140,7 +140,7 @@ function main_loop {
             ;;
           shutdown)
             echo "  $WORKER_ID - Shutdown State received."
-            rm -f scale.in.pro
+            rm -f scale.in.pro || true
 
             ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
               --region us-east-1 | \
@@ -149,10 +149,14 @@ function main_loop {
 
             ((NEW_CAP=$ASG_CAP-1))
 
+            echo "  Scaling-in $ASG_NAME to size $NEW_CAP"
+
             aws autoscaling set-desired-capacity \
               --region us-east-1 \
               --auto-scaling-group-name $ASG_NAME \
               --desired-capacity $NEW_CAP
+
+            echo "  Shutting down instance"
 
             aws terminate-instances \
              --instance-ids $INSTANCE_ID
