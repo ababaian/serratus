@@ -139,15 +139,20 @@ function main_loop {
                     rm -f scale.in.pro
                 fi
 
-                ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
+                echo $ASG_NAME
+
+                aws autoscaling describe-auto-scaling-groups \
                   --region us-east-1 | \
                   jq --arg ASG_NAME "$ASG_NAME" \
-                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity') & wait
+                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity'
 
-                echo $ASG_CAP $ASG_NAME
 
-                ((ASG_CAP=$ASG_CAP-1)) & wait
+                ((ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
+                  --region us-east-1 | \
+                  jq --arg ASG_NAME "$ASG_NAME" \
+                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')-1)) & wait
 
+                echo $ASG_CAP
                 export ASG_CAP
 
                 echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
@@ -159,7 +164,8 @@ function main_loop {
 
                 echo "  Shutting down instance"
 
-                aws terminate-instances \
+                aws ec2 terminate-instances \
+                 --region us-east-1 \
                  --instance-ids $INSTANCE_ID & wait
 
                 sleep 5

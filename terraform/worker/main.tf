@@ -148,6 +148,26 @@ resource "aws_iam_role_policy" "ec2Describe" {
 EOF
 }
 
+resource "aws_iam_role_policy" "ec2Terminate" {
+  name = "TerminateEC2Instances-${var.image_name}"
+  role = module.iam_role.role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "ec2:Terminate*"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
 resource "aws_iam_role_policy" "AdjustAutoScaling" {
   name = "AdjustAutoScaling-${var.image_name}"
   role = module.iam_role.role.id
