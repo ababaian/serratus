@@ -152,8 +152,10 @@ function main_loop {
             aws autoscaling set-desired-capacity \
               --region us-east-1 \
               --auto-scaling-group-name $ASG_NAME \
-              --desired-capacity $NEW_CAP \
-              --honor-cooldown & wait
+              --desired-capacity $NEW_CAP
+
+            aws terminate-instances \
+             --instance-ids $INSTANCE_ID
 
             exit 0
             ;;
