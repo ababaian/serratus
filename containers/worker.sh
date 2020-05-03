@@ -11,6 +11,11 @@ if [ ! -x "$2" ]; then
 fi
 TYPE="$1"; shift
 
+if [ "$TYPE" -eq "merge" ]; then
+    # protect from termination
+    touch running.merge
+fi
+
 if [ -z "$SCHEDULER" ]; then
     echo Please set SCHEDULER environment variable.
     exit 1
@@ -77,6 +82,9 @@ function main_loop {
 
             # Run the target script.
             "$@" & wait
+
+            # Unset job ID to prevent terminations
+            unset JOB_ID
             ;;
           wait)
             echo "  $WORKER_ID - Wait State received."
@@ -148,22 +156,19 @@ function main_loop {
 
                 ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
 
-                echo $ASG_CAP
-                export ASG_CAP
-
                 echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
 
                 aws autoscaling set-desired-capacity \
                   --region us-east-1 \
                   --auto-scaling-group-name $ASG_NAME \
-                  --desired-capacity $ASG_CAP & wait
+                  --desired-capacity $ASG_CAP
 
                 echo "  Shutting down instance"
                 aws ec2 terminate-instances \
                  --region us-east-1 \
-                 --instance-ids $INSTANCE_ID & wait
+                 --instance-ids $INSTANCE_ID
 
-                sleep 5
+                sleep 300
                 exit 0
 
             ) 200> "$BASEDIR/.shutdown-lock"
