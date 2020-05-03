@@ -140,28 +140,39 @@ function main_loop {
             ;;
           shutdown)
             echo "  $WORKER_ID - Shutdown State received."
-            rm -f scale.in.pro || true
 
-            ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
-              --region us-east-1 | \
-              jq --arg ASG_NAME "$ASG_NAME" \
-              '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
+            # This is not threadsafe!  For now let's just put it in a critical section.
+            # Using a recipe from "man flock" which appears to work.
+            (
+                flock 200
 
-            ((NEW_CAP=$ASG_CAP-1))
+                if [ -f scale.in.pro ]; then
+                    rm -f scale.in.pro
+                fi
 
-            echo "  Scaling-in $ASG_NAME to size $NEW_CAP"
+                ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
+                  --region us-east-1 | \
+                  jq --arg ASG_NAME "$ASG_NAME" \
+                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
 
-            aws autoscaling set-desired-capacity \
-              --region us-east-1 \
-              --auto-scaling-group-name $ASG_NAME \
-              --desired-capacity $NEW_CAP
+                ((NEW_CAP=$ASG_CAP-1))
 
-            echo "  Shutting down instance"
+                echo "  Scaling-in $ASG_NAME to size $NEW_CAP"
 
-            aws terminate-instances \
-             --instance-ids $INSTANCE_ID
+                aws autoscaling set-desired-capacity \
+                  --region us-east-1 \
+                  --auto-scaling-group-name $ASG_NAME \
+                  --desired-capacity $NEW_CAP
 
-            exit 0
+                echo "  Shutting down instance"
+
+                aws terminate-instances \
+                 --instance-ids $INSTANCE_ID
+
+                exit 0
+                
+            ) 200> "$BASEDIR/.shutdown-lock"
+           
             ;;
           *)        echo "  $WORKER_ID - ERROR: Unknown State received."
             echo "  $WORKER_ID - ERROR: Unknown State received."
