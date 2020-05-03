@@ -42,6 +42,7 @@ function main_loop {
     # the command will recieve the same trap (killing it), and then run our
     # trap handler, which tells the server our job failed.
     WORKER_ID="$INSTANCE_ID-$1"
+    NWORKER="$1"
     shift
 
     while true; do
@@ -75,9 +76,9 @@ function main_loop {
 
             # Worker punch-in
             # offset by worker # seconds to not collide dl queries
-            if [ ! -f "running.$1" ]; then
-                touch running.$1
-                #sleep $1 & wait
+            if [ ! -f "running.$NWORKER" ]; then
+                touch running.$NWORKER
+                #sleep $NWORKER & wait
             fi
 
             # Run the target script.
@@ -90,8 +91,8 @@ function main_loop {
             echo "  $WORKER_ID - Wait State received."
 
             # Worker punch-out
-            if [ -f "running.$1" ]; then
-                rm -f running.$1
+            if [ -f "running.$NWORKER" ]; then
+                rm -f running.$NWORKER
             fi
 
             # When all worker's are punched-out, scale-in pro
