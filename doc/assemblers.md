@@ -2,8 +2,7 @@
 
 List of assemblers which might be useful for serratus.
 
-Please update this list if you have ideas, corrections, comments. If you don't have commit rights to this repository, 
-send me an email (robert@drive5.com). For each assembler, provide:
+Please update this list if you have ideas, corrections, comments. If you don't have commit rights to this repository, add a comment to Issue #71 or send me an email (robert@drive5.com). For each assembler, provide:
 
 1. Name
 2. Type (e.g. reference or de-novo)
