@@ -322,6 +322,7 @@ then
   fi
 
 elif [ "$ALIGNER" = "bwa" ];
+then
   echo "  Running -- run_bwa.sh --"
 
   if [[ "$PAIRED" = true ]]
