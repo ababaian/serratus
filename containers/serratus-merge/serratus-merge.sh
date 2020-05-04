@@ -21,9 +21,9 @@ set -eu
 # single-end reads and not interleaved or mixed paire-end reads.
 # Adapt script to deal with these edge cases
 #
-PIPE_VERSION="0.1"
+PIPE_VERSION="0.1.4"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
-CONTAINER_VERSION='serratus-merge:0.1'
+CONTAINER_VERSION='serratus-merge:0.1.4'
 
 # Usage
 function usage {
@@ -37,8 +37,9 @@ function usage {
   echo "    -k    S3 bucket path for /bam, /bai, /flagstat [s3://serratus-public/out]"
   echo ""
   echo "    Merge Parameters"
-  echo "    -i    Flag. Do not generate bam.bai index file"
-  echo "    -f    Flag. Do not generate flagstat summary file"
+  echo "    -i    Flag. Generate bam.bai index file"
+  echo "    -f    Flag. Generate flagstat summary file"
+  echo "    -r    Flag. Sort final bam output (requires double disk usage)"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
   echo ""
   echo "    Manual overwrites"
@@ -72,8 +73,9 @@ S3_BUCKET=${S3_BUCKET:-'serratus-public'}
 
 # Merge Options
 THREADS='1'
-INDEX='true'
-FLAGSTAT='true'
+INDEX='false'
+FLAGSTAT='false'
+SORT='false'
 
 # Inputs (manual overwrite)
 SRA=''
@@ -90,7 +92,7 @@ MERGE_ARGS=''
 BASEDIR="/home/serratus"
 OUTNAME="$SRA"
 
-while getopts u:k:n:s:b:g:M:d:o:whif FLAG; do
+while getopts u:k:n:s:b:g:M:d:o:whifr FLAG; do
   case $FLAG in
     # Scheduler Options -----
     u)
@@ -104,10 +106,13 @@ while getopts u:k:n:s:b:g:M:d:o:whif FLAG; do
       THREADS=$OPTARG
       ;;
     i)
-      INDEX="false"
+      INDEX="true"
       ;;
     f)
-      FLAGSTAT="false"
+      FLAGSTAT="true"
+      ;;
+    r)
+      SORT="true"
       ;;
     # Manual Overwrite ------
     s)
