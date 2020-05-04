@@ -28,11 +28,13 @@ WORKERS=${WORKERS:-$(nproc)}
 retry_count=0
 
 function terminate_handler {
+    # Tell server to reset this job to a "new" state,
+    # since we couldn't finish processing it.
+    curl -s -X POST "$SCHEDULER/jobs/$TYPE/$JOB_ID&state=new"
+    
     echo "    $JOB_ID was terminated without completing. Reset status."
     echo "    In trap $(date -In)"
-    # Tell server to reset this job to a "new" state, since we couldn't
-    # finish processing it.
-    curl -s -X POST "$SCHEDULER/jobs/$TYPE/$JOB_ID&state=terminated"
+
 }
 
 function main_loop {
@@ -61,7 +63,8 @@ function main_loop {
             ACTION=retry
         fi
 
-        # Maximum number of retry attempts reached
+        # Maximum failed retries before
+        # self-termination is initiated
         if [ $retry_count -gt 3 ]
         then
             ACTION=shutdown
@@ -81,10 +84,23 @@ function main_loop {
                 #sleep $NWORKER & wait
             fi
 
+            echo "  Enable SCALE-IN protection"
+            # Turn off scale-in protection
+            aws autoscaling set-instance-protection \
+              --region us-east-1 \
+              --instance-ids $INSTANCE_ID \
+              --auto-scaling-group-name $ASG_NAME \
+              --protected-from-scale-in & wait
+
             # Run the target script.
             "$@" & wait
 
-            # Unset job ID to prevent terminations
+            # Worker punch-out (work is complete)
+            if [ -f "running.$NWORKER" ]; then
+                rm running.$NWORKER
+            fi
+
+            # Unset job ID to prevent incorrect terminations
             unset JOB_ID
             ;;
           wait)
@@ -95,10 +111,10 @@ function main_loop {
                 rm -f running.$NWORKER
             fi
 
-            # When all worker's are punched-out, scale-in pro
+            # When all worker's are punched-out
+            # remove scale-in protection
             if ls running* 1> /dev/null 2>&1
             then
-            
                 ## Other worker is not checked out
                 retry_count=0
             elif [ -f "scale.in.pro" ]
@@ -143,10 +159,6 @@ function main_loop {
             # Using a recipe from "man flock" which appears to work.
             (
                 flock 200
-
-                if [ -f scale.in.pro ]; then
-                    rm -f scale.in.pro
-                fi
 
                 echo $ASG_NAME
 
