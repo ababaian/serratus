@@ -154,6 +154,7 @@ $ python cov_benchmark.py NC_045512v2r.fa -v \
 ### Python Packages
 
 - `biopython`
+- `awscli` (for downloading test files)
 
 ### Command-line Tools
 
@@ -165,9 +166,16 @@ $ python cov_benchmark.py NC_045512v2r.fa -v \
 
 ## Testing
 
+`pytest` is used to test the functionality of the script. Some files will need to be downloaded from the s3 bucket using `setup.sh`.
+
+Usage:
+
 ```
-cd test/benchmarker
+cd test/
+bash setup.sh
+cd benchmarker/
 pytest -s
+bash teardown.sh
 ```
 
 # pangenome_cov_benchmark.py

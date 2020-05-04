@@ -21,10 +21,10 @@ def test_prop_params():
 
 def test_read_set_params():
     params = [
-        "NC_045512v2r.fa",
+        "local/NC_045512v2r.fa",
         "-v",
-        "--pos_reads", "sim_pos_",
-        "--neg_reads", "sim_neg_",
+        "--pos_reads", "local/sim_pos_",
+        "--neg_reads", "local/sim_neg_",
     ]
     output = run_benchmarker(params)
     output = output.decode()
@@ -33,10 +33,10 @@ def test_read_set_params():
 
 def test_bowtie2_very_sensitive_local():
     params = [
-        "NC_045512v2r.fa",
+        "local/NC_045512v2r.fa",
         "-v",
-        "--pos_reads", "sim_pos_",
-        "--neg_reads", "sim_neg_",
+        "--pos_reads", "local/sim_pos_",
+        "--neg_reads", "local/sim_neg_",
         "--bowtie2_params=--very-sensitive-local",
     ]
     output = run_benchmarker(params)
@@ -46,10 +46,10 @@ def test_bowtie2_very_sensitive_local():
 
 def test_reads_src_params():
     params = [
-        "NC_045512v2r.fa",
+        "local/NC_045512v2r.fa",
         "-v",
-        "--pos_reads_src", "pos_reads_src.fa",
-        "--neg_reads_src", "neg_reads_src.fa",
+        "--pos_reads_src", "local/pos_reads_src.fa",
+        "--neg_reads_src", "local/neg_reads_src.fa",
         "--bowtie2_params=--very-sensitive-local",
         '--art_illumina_params="--rndSeed 666"',
     ]
