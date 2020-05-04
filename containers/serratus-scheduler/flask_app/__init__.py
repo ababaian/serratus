@@ -5,7 +5,7 @@ import json
 
 from flask import Flask, jsonify, request, current_app, redirect, url_for
 
-from . import db, jobs, metrics
+from . import db, jobs, metrics, cron
 
 def create_app(test_config=None):
     """Main entrypoint.  Run this program using:
@@ -19,6 +19,7 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         DATABASE=os.path.join(app.instance_path, 'scheduler.sqlite'),
+        AWS_REGION="us-east-1",
     )
 
     if test_config is None:
@@ -49,5 +50,7 @@ def create_app(test_config=None):
     app.register_blueprint(jobs.bp)
     app.register_blueprint(metrics.bp)
     db.init_app(app)
+
+    cron.register(app)
 
     return app

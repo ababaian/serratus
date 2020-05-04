@@ -58,12 +58,21 @@ class Block(Base, Dicter):
     align_worker = Column(String)
 
 CONFIG_DEFAULT = dict(
-    CLEAR_INTERVAL=300,
     GENOME="cov2r",
-    ARGS_DL="",
-    ARGS_ALIGN="--very-sensitive-local",
-    ARGS_MERGE="",
-    AWS_REGION="us-east-1",
+    CLEAR_INTERVAL=10,
+    SCALING_INTERVAL=30,
+    DL_ARGS="",
+    DL_SCALING_ENABLE=True,
+    DL_SCALING_CONSTANT=(1 / 1000),
+    DL_SCALING_MAX=10,
+    ALIGN_ARGS="--very-sensitive-local",
+    ALIGN_SCALING_ENABLE=True,
+    ALIGN_SCALING_CONSTANT=(1 / 1000),
+    ALIGN_SCALING_MAX=20,
+    MERGE_ARGS="",
+    MERGE_SCALING_ENABLE=True,
+    MERGE_SCALING_CONSTANT=(1 / 1000),
+    MERGE_SCALING_MAX=2,
 )
 
 class Config(Base):
@@ -79,13 +88,10 @@ def get_engine(echo=False, engine=[]):
 
     return engine[0]
 
-def get_session(use_app_context=True):
-    if use_app_context:
-        if 'session' not in g:
-            g.session = sessionmaker(bind=get_engine())()
-        return g.session
-    else:
-        return sessionmaker(bind=get_engine())()
+def get_session():
+    if 'session' not in g:
+        g.session = sessionmaker(bind=get_engine())()
+    return g.session
 
 
 def teardown_session(e=None):
@@ -109,11 +115,16 @@ def update_config(data, create=True):
     session.commit()
 
 
-def get_config(use_app_context=True):
-    session = get_session(use_app_context)
+def get_config():
+    session = get_session()
     rows = session.query(Config).all()
     for row in rows:
         yield row.key, row.value
+
+def get_config_val(key):
+    session = get_session()
+    row = session.query(Config).filter_by(key=key).one()
+    return row.value
 
 
 def init_db():

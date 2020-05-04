@@ -55,7 +55,9 @@ resource "aws_iam_role_policy" "scheduler" {
 	"Statement": [
 		{
 			"Action": [
-        "ec2:DescribeInstances"
+        "ec2:DescribeInstances",
+        "autoscaling:SetDesiredCapacity",
+        "autoscaling:DescribeAutoScalingGroups"
 			],
 			"Effect": "Allow",
 			"Resource": "*"
