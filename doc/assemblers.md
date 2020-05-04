@@ -16,16 +16,16 @@ Use "??" as a placeholder if not known.
 Type: Targetted De-novo  
 Code: https://github.com/bcgsc/kollector  
 Paper: doi: 10.1093/bioinformatics/btx078  
-Comments: Orignally tested for genomic DNA assembly, may need refinement to work with transcriptome data.
+Comments: Orignally tested for genomic DNA assembly, may need refinement to work with transcriptome data.  
 
 **ABySS**  
-Type: De-novo Genomic
-Code: https://github.com/bcgsc/abyss
-Paper: doi: 10.1101/gr.214346.116
-Comments: ??
+Type: De-novo Genomic  
+Code: https://github.com/bcgsc/abyss  
+Paper: doi: 10.1101/gr.214346.116  
+Comments: ??  
 
 **RNA-Bloom**  
-Type: De-novo Transcriptomic
-Code: https://github.com/bcgsc/RNA-Bloom
-Paper: doi: https://doi.org/10.1101/701607 
-Comments: Isoform assembly maybe an unnecessary feature, but our datasets are expected to be transciptomic.
+Type: De-novo Transcriptomic  
+Code: https://github.com/bcgsc/RNA-Bloom  
+Paper: doi: https://doi.org/10.1101/701607  
+Comments: Isoform assembly maybe an unnecessary feature, but our datasets are expected to be transciptomic.  
