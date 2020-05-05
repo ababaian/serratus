@@ -10,19 +10,41 @@ For local development, I recommend running it locally on your laptop, with the d
 
 This will run the development server using port 5000 on the local system.  `-v` tells podman to map your local development directory on top of the scheduler's files, so the development server will reload whenever you make a change to your local files.  You can check it's working by watching `podman logs -f scheduler` while making a change to any of the Python files under `serratus-scheduler/flask_app`.
 
-## API Calls
+## API Calls (normal use)
 
 ### Scheduler Configuration
 
 Get the current server config:
 
-    GET /config
+    curl localhost:8000/config > serratus-config.json
 
-Update configuratation values, from JSON input.
+This will output a configuration JSON file, like the following:
 
-    PUT /config
+    {
+      "ALIGN_SCALING_CONSTANT": 0.001,
+      "ALIGN_SCALING_ENABLE": false,
+      "ALIGN_SCALING_MAX": 20,
+      "CLEAR_INTERVAL": 300,
+      "DL_SCALING_CONSTANT": 0.001,
+      "DL_SCALING_ENABLE": false,
+      "DL_SCALING_MAX": 10,
+      "GENOME": "cov2r",
+      "MERGE_SCALING_CONSTANT": 0.001,
+      "MERGE_SCALING_ENABLE": false,
+      "MERGE_SCALING_MAX": 2,
+      "SCALING_INTERVAL": 30
+    }
 
-For example `curl -T <(echo '{"GENOME": "cov1"}') localhost:8000/config` will update the genome name.
+Change these values to what you want, and then update the configuration with another `curl` call:
+
+    curl -T serratus-config.json localhost:8000/config
+
+Notes
+
+ * If you delete keys, they will keep their old values.
+ * There should be a comma on every line except the last one.
+ * Be careful with types.  true/false fields in particular must *not* be quoted.  In Python, non-null
+   strings like "false", "no", and "disabled" will all be converted to True.
 
 ### Add SraRunInfo.csv
 
@@ -36,11 +58,15 @@ This page shows a table view of all the jobs currently known to the scheduler.
 
     GET /jobs/
 
+## API Calls (development / debugging)
+
 ### Trigger scheduler to check the instance list
 
 This trigger uses Ec2DescribeInstances and checks the instance list against all jobs that are currently in a running state.  If the instance is missing (probably due to being terminated or shut down), it resets the job to its prior state.
 
     PUT /jobs/clear_terminated
+
+This will now happen automatically, and this request should no longer be needed.
 
 ### Get metrics
 

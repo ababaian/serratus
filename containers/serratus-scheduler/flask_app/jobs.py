@@ -118,7 +118,7 @@ def start_split_job():
     session.commit()
 
     response['action'] = 'process'
-    response['split_args'] = current_app.config["ARGS_DL"]
+    response['split_args'] = db.get_config_val("DL_ARGS")
 
     # Send the response as JSON
     return jsonify(response)
@@ -236,8 +236,8 @@ def start_align_job():
     session.commit()
 
     # TODO Move these into the database
-    response['align_args'] = current_app.config["ARGS_ALIGN"]
-    response['genome'] = current_app.config["GENOME"]
+    response['align_args'] = db.get_config_val("ALIGN_ARGS")
+    response['genome'] = db.get_config_val("GENOME")
     response['action'] = "process"
 
     # Send the response as JSON
@@ -315,7 +315,7 @@ def start_merge_job():
     session.commit()
     response['action'] = 'process'
 
-    response['merge_args'] = current_app.config["ARGS_MERGE"]
+    response['merge_args'] = db.get_config_val("MERGE_ARGS")
 
     # Send the response as JSON
     return jsonify(response)
