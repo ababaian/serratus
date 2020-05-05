@@ -160,21 +160,22 @@ function main_loop {
             (
                 flock 200
 
-                echo $ASG_NAME
-
-                ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
-                  --region us-east-1 | \
-                  jq --arg ASG_NAME "$ASG_NAME" \
-                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
-
-                ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
-
-                echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
-
-                aws autoscaling set-desired-capacity \
-                  --region us-east-1 \
-                  --auto-scaling-group-name $ASG_NAME \
-                  --desired-capacity $ASG_CAP
+                # ASG adjustments have been moved to scheduler
+                # echo $ASG_NAME
+                #
+                #ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
+                #  --region us-east-1 | \
+                #  jq --arg ASG_NAME "$ASG_NAME" \
+                #  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
+                #
+                #ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
+                #
+                #echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
+                #
+                #aws autoscaling set-desired-capacity \
+                #  --region us-east-1 \
+                #  --auto-scaling-group-name $ASG_NAME \
+                #  --desired-capacity $ASG_CAP
 
                 echo "  Shutting down instance"
                 aws ec2 terminate-instances \
@@ -182,6 +183,7 @@ function main_loop {
                  --instance-ids $INSTANCE_ID
 
                 sleep 300
+                false
                 exit 0
 
             ) 200> "$BASEDIR/.shutdown-lock"
