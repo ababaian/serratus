@@ -64,7 +64,7 @@ function usage {
   echo "          <output_prefix>.bam ... <output_prefix>.fq.yyyy"
   echo ""
   echo "ex: docker exec serratus-dl -u localhost:8000"
-  exit 1
+  exit 0
 }
 
 # PARSE INPUT =============================================
@@ -154,7 +154,8 @@ shift $((OPTIND-1))
 
 if [ -z "$SCHEDULER" ]; then
     echo Please set SCHEDULER environment variable or use -k flag.
-    exit 1
+    false
+    exit 0
 fi
 
 # SCRIPT CORE ===================================
@@ -236,6 +237,7 @@ if [[ "$BLOCKS" != "$BL_COUNT" ]]
    echo "  aws s3 ls $S3_BAM/"
    echo ""
    aws s3 ls $S3_BAM/
+   false
    exit 1
  fi
 
