@@ -49,6 +49,14 @@ function main_loop {
 
     while true; do
         echo "$WORKER_ID - Requesting job from Scheduler..."
+
+        if [ -f "$BASEDIR/.shutdown-lock" ]
+        then
+            # Shutdown on another worker/thread is initiated.
+            # Do not request work. Shutdown imminent
+            sleep 300s
+        fi
+
         JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/?worker_id=$WORKER_ID" || true)
 
         if [ "$TYPE" = align ]; then
@@ -65,7 +73,7 @@ function main_loop {
 
         # Maximum failed retries before
         # self-termination is initiated
-        if [ $retry_count -gt 3 ]
+        if [ $retry_count -gt 5 ]
         then
             ACTION=shutdown
         fi

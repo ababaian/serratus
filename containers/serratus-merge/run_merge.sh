@@ -56,9 +56,9 @@ SRA=''
 
 # Merge Options
 THREADS='1'
-INDEX='false'
-FLAGSTAT='false'
-SORT='false'
+INDEX='negative'
+FLAGSTAT='negative'
+SORT='negative'
 
 # Script Arguments -M
 MERGE_ARGS=''
@@ -147,7 +147,7 @@ summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summar
 ls $BAMREGEX > bam.list
 
 
-if [[ "$SORT" -eq 'true' ]]
+if [[ "$SORT" = true ]]
 then
   # GENERATE SORTED BAM OUTPUT
   # Requires high disk usage for tmp files
@@ -164,7 +164,7 @@ then
   samtools reheader 0.header.sam - >\
   $OUTBAM
 
-  if [[ "$INDEX" -eq 'true' ]]
+  if [[ "$INDEX" = true ]]
   then
     samtools index $OUTBAM
   fi
@@ -203,7 +203,7 @@ else
   
 fi
 
-if [[ "$FLAGSTAT" -eq 'true' ]]
+if [[ "$FLAGSTAT" = true ]]
 then
   samtools flagstat $OUTBAM > $SRA.flagstat
   #cat $SRA.flagstat

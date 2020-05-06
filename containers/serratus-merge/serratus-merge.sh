@@ -10,7 +10,7 @@ set -eu
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 # Container: serratus-merge:0.1
-#m
+#
 
 # Test cmd: ./serratus-merge.sh 
 # TODO: Consider switching to an external definition for RUNID
@@ -247,7 +247,7 @@ aws s3 cp --recursive $S3_BAM ./
 # RUN MERGE ===============================================
 echo "  Running -- run_merge.sh --"
 echo ""
-bash $BASEDIR/run_merge.sh -i -s $SRA -b "*bam" 
+bash $BASEDIR/run_merge.sh -s $SRA -b "*bam" 
 
 
 # RUN UPLOAD ==============================================
