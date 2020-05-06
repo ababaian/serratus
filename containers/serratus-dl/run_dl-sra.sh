@@ -1,5 +1,9 @@
 #!/usr/bin/bash
 set -eux
+# Max number of FQ reads to download per accession [100M reads]
+# ~ 20 GB max
+FQMAX=${FQMAX:-100000000}
+# 4*Max number of FQ reads to partition per fq-block [250K reads * 4 lines]
 BLOCKSIZE=${BLOCKSIZE:-1000000}
 BASEDIR=${BASEDIR:-.}
 
@@ -26,7 +30,7 @@ FQ_3="$SRA".fastq
 
 # Create some named pipes for fastq-dump to put its data into.
 mkfifo "$FQ_1" "$FQ_2" "$FQ_3"
-fastq-dump --split-e $SRA & pid=$!
+fastq-dump -X $FQMAX --split-e $SRA & pid=$!
 
 S3_FQ1="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.1.fq.%010d"
 S3_FQ2="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.2.fq.%010d"

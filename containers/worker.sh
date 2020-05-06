@@ -49,6 +49,14 @@ function main_loop {
 
     while true; do
         echo "$WORKER_ID - Requesting job from Scheduler..."
+
+        if [ -f "$BASEDIR/.shutdown-lock" ]
+        then
+            # Shutdown on another worker/thread is initiated.
+            # Do not request work. Shutdown imminent
+            sleep 300s
+        fi
+
         JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/?worker_id=$WORKER_ID" || true)
 
         if [ "$TYPE" = align ]; then
@@ -65,7 +73,7 @@ function main_loop {
 
         # Maximum failed retries before
         # self-termination is initiated
-        if [ $retry_count -gt 3 ]
+        if [ $retry_count -gt 5 ]
         then
             ACTION=shutdown
         fi
@@ -160,21 +168,22 @@ function main_loop {
             (
                 flock 200
 
-                echo $ASG_NAME
-
-                ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
-                  --region us-east-1 | \
-                  jq --arg ASG_NAME "$ASG_NAME" \
-                  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
-
-                ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
-
-                echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
-
-                aws autoscaling set-desired-capacity \
-                  --region us-east-1 \
-                  --auto-scaling-group-name $ASG_NAME \
-                  --desired-capacity $ASG_CAP
+                # ASG adjustments have been moved to scheduler
+                # echo $ASG_NAME
+                #
+                #ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
+                #  --region us-east-1 | \
+                #  jq --arg ASG_NAME "$ASG_NAME" \
+                #  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
+                #
+                #ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
+                #
+                #echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
+                #
+                #aws autoscaling set-desired-capacity \
+                #  --region us-east-1 \
+                #  --auto-scaling-group-name $ASG_NAME \
+                #  --desired-capacity $ASG_CAP
 
                 echo "  Shutting down instance"
                 aws ec2 terminate-instances \
@@ -182,6 +191,7 @@ function main_loop {
                  --instance-ids $INSTANCE_ID
 
                 sleep 300
+                false
                 exit 0
 
             ) 200> "$BASEDIR/.shutdown-lock"

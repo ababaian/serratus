@@ -10,7 +10,7 @@ set -eu
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 # Container: serratus-merge:0.1
-#m
+#
 
 # Test cmd: ./serratus-merge.sh 
 # TODO: Consider switching to an external definition for RUNID
@@ -21,9 +21,9 @@ set -eu
 # single-end reads and not interleaved or mixed paire-end reads.
 # Adapt script to deal with these edge cases
 #
-PIPE_VERSION="0.1"
+PIPE_VERSION="0.1.4"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
-CONTAINER_VERSION='serratus-merge:0.1'
+CONTAINER_VERSION='serratus-merge:0.1.4'
 
 # Usage
 function usage {
@@ -37,8 +37,9 @@ function usage {
   echo "    -k    S3 bucket path for /bam, /bai, /flagstat [s3://serratus-public/out]"
   echo ""
   echo "    Merge Parameters"
-  echo "    -i    Flag. Do not generate bam.bai index file"
-  echo "    -f    Flag. Do not generate flagstat summary file"
+  echo "    -i    Flag. Generate bam.bai index file"
+  echo "    -f    Flag. Generate flagstat summary file"
+  echo "    -r    Flag. Sort final bam output (requires double disk usage)"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
   echo ""
   echo "    Manual overwrites"
@@ -63,7 +64,7 @@ function usage {
   echo "          <output_prefix>.bam ... <output_prefix>.fq.yyyy"
   echo ""
   echo "ex: docker exec serratus-dl -u localhost:8000"
-  exit 1
+  exit 0
 }
 
 # PARSE INPUT =============================================
@@ -72,8 +73,9 @@ S3_BUCKET=${S3_BUCKET:-'serratus-public'}
 
 # Merge Options
 THREADS='1'
-INDEX='true'
-FLAGSTAT='true'
+INDEX='false'
+FLAGSTAT='false'
+SORT='false'
 
 # Inputs (manual overwrite)
 SRA=''
@@ -90,7 +92,7 @@ MERGE_ARGS=''
 BASEDIR="/home/serratus"
 OUTNAME="$SRA"
 
-while getopts u:k:n:s:b:g:M:d:o:whif FLAG; do
+while getopts u:k:n:s:b:g:M:d:o:whifr FLAG; do
   case $FLAG in
     # Scheduler Options -----
     u)
@@ -104,10 +106,13 @@ while getopts u:k:n:s:b:g:M:d:o:whif FLAG; do
       THREADS=$OPTARG
       ;;
     i)
-      INDEX="false"
+      INDEX="true"
       ;;
     f)
-      FLAGSTAT="false"
+      FLAGSTAT="true"
+      ;;
+    r)
+      SORT="true"
       ;;
     # Manual Overwrite ------
     s)
@@ -149,7 +154,8 @@ shift $((OPTIND-1))
 
 if [ -z "$SCHEDULER" ]; then
     echo Please set SCHEDULER environment variable or use -k flag.
-    exit 1
+    false
+    exit 0
 fi
 
 # SCRIPT CORE ===================================
@@ -231,6 +237,7 @@ if [[ "$BLOCKS" != "$BL_COUNT" ]]
    echo "  aws s3 ls $S3_BAM/"
    echo ""
    aws s3 ls $S3_BAM/
+   false
    exit 1
  fi
 
@@ -240,7 +247,7 @@ aws s3 cp --recursive $S3_BAM ./
 # RUN MERGE ===============================================
 echo "  Running -- run_merge.sh --"
 echo ""
-bash $BASEDIR/run_merge.sh -i -s $SRA -b "*bam" 
+bash $BASEDIR/run_merge.sh -s $SRA -b "*bam" 
 
 
 # RUN UPLOAD ==============================================

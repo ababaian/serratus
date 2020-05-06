@@ -21,9 +21,9 @@ set -eux
 # single-end reads and not interleaved or mixed paire-end reads.
 # Adapt script to deal with these edge cases
 #
-PIPE_VERSION="0.1"
+PIPE_VERSION="0.1.4"
 AMI_VERSION='ami-0fdf24f2ce3c33243'
-CONTAINER_VERSION='serratus-align:0.1'
+CONTAINER_VERSION='serratus-align:0.1.4'
 
 # Usage
 function usage {

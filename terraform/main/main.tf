@@ -45,7 +45,9 @@ provider "aws" {
   region      = var.aws_region
 }
 
-provider "local" {}
+provider "local" {
+  version = "~> 1.4"
+}
 
 resource "aws_security_group" "internal" {
   name = "serratus-internal"
@@ -112,8 +114,8 @@ module "download" {
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
-  instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
-  volume_size        = 25 // Mitigate the storage leak in fastq-dump
+  instance_type      = "c5.large" // Mitigate the memory leak in fastq-dump
+  volume_size        = 50 // Mitigate the storage leak in fastq-dump
   spot_price         = 0.05
 
   s3_bucket          = module.work_bucket.name
@@ -168,7 +170,7 @@ module "merge" {
   // TODO: the credentials are not properly set-up to
   //       upload to serratus-public, requires a *Object policy
   //       on the bucket.
-  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200427_CoV_positve_ctrl"
+  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200505_zoonotic"
 }
 
 // RESOURCES ##############################
