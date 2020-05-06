@@ -6,7 +6,7 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-PIPE_VERSION="0.1"
+PIPE_VERSION="0.1.4"
 
 #Usage function
 function usage {
