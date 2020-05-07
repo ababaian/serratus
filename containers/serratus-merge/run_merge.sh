@@ -183,11 +183,11 @@ else
 @SQ\tSN:serratus\tLN:1337
   " header.sam
 
-  echo -e "@CO\t====SERRATUS.IO====" >> header.sam
-  echo -e "@CO\tThis sam header is modified to reduce filesize." >> header.sam
-  echo -e "@CO\tTo reconstitute the missing @SQ entries" >> header.sam
-  echo -e "@CO\tDownload the header this pan-genome (i.e. cov2r) from:" >> header.sam
-  echo -e "@CO\t  https://serratus-public.s3.amazonaws.com/seq/<GENOME>/dummy_header.sam" >> header.sam
+  #echo -e "@CO\t====SERRATUS.IO====" >> header.sam
+  #echo -e "@CO\tThis sam header is modified to reduce filesize." >> header.sam
+  #echo -e "@CO\tTo reconstitute the missing @SQ entries" >> header.sam
+  #echo -e "@CO\tDownload the header this pan-genome (i.e. cov2r) from:" >> header.sam
+  #echo -e "@CO\t  https://serratus-public.s3.amazonaws.com/seq/<GENOME>/dummy_header.sam" >> header.sam
 
   # Convert new header to bam (add EOF)
   #samtools view -b header.sam > header.bam
