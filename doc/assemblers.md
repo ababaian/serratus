@@ -2,6 +2,14 @@
 
 List of assemblers which might be useful for serratus.
 
+Review article:
+
+https://doi.org/10.1186/s40168-019-0626-5
+
+This table lists 13 virus assemblers with links to code & papers:
+
+https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-019-0626-5/tables/1
+
 Please update this list if you have ideas, corrections, comments. If you don't have commit rights to this repository, add a comment to Issue #71 or send me an email (robert@drive5.com). For each assembler, provide:
 
 1. Name
@@ -13,7 +21,7 @@ Please update this list if you have ideas, corrections, comments. If you don't h
 Use "??" as a placeholder if not known.
 
 **Kollector**  
-Type: Targetted De-novo  
+Type: Targeted De-novo  
 Code: https://github.com/bcgsc/kollector  
 Paper: doi: 10.1093/bioinformatics/btx078  
 Comments: Orignally tested for genomic DNA assembly, may need refinement to work with transcriptome data.  
@@ -28,4 +36,6 @@ Comments: ??
 Type: De-novo Transcriptomic  
 Code: https://github.com/bcgsc/RNA-Bloom  
 Paper: doi: https://doi.org/10.1101/701607  
-Comments: Isoform assembly maybe an unnecessary feature, but our datasets are expected to be transciptomic.  
+Comments: Isoform assembly maybe an unnecessary feature, but our datasets are expected to be transciptomic.
+
+
