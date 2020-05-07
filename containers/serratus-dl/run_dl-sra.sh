@@ -1,10 +1,10 @@
 #!/usr/bin/bash
-set -eux
+set -eu
 # Max number of FQ reads to download per accession [100M reads]
 # ~ 20 GB max
 FQMAX=${FQMAX:-100000000}
 # 4*Max number of FQ reads to partition per fq-block [250K reads * 4 lines]
-BLOCKSIZE=${BLOCKSIZE:-1000000}
+BLOCKSIZE=${BLOCKSIZE:-4000000}
 BASEDIR=${BASEDIR:-.}
 
 while getopts n: FLAG; do

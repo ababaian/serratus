@@ -47,6 +47,15 @@ function main_loop {
     NWORKER="$1"
     shift
 
+    # To off-set AWS API calls, offset all workers coming online
+    # at once. Sleep for 0.0-9.9 seconds once.
+    if [ "$FIRST" = "true" ]
+    then
+        sleep $[ ( $RANDOM % 9 ) ].$[ ( $RANDOM % 9 ) ]
+        FIRST='false'
+    fi
+
+
     while true; do
         echo "$WORKER_ID - Requesting job from Scheduler..."
 
@@ -89,24 +98,20 @@ function main_loop {
             # offset by worker # seconds to not collide dl queries
             if [ ! -f "running.$NWORKER" ]; then
                 touch running.$NWORKER
-                #sleep $NWORKER & wait
-            fi
 
-            echo "  Enable SCALE-IN protection"
-            # Turn off scale-in protection
-            aws autoscaling set-instance-protection \
-              --region us-east-1 \
-              --instance-ids $INSTANCE_ID \
-              --auto-scaling-group-name $ASG_NAME \
-              --protected-from-scale-in & wait
+                if [ ! -f $BASEDIR/scale.in.pro ]; then
+                  echo "  Enable SCALE-IN protection"
+                  # Turn ON scale-in protection
+                  aws autoscaling set-instance-protection \
+                    --region us-east-1 \
+                    --instance-ids $INSTANCE_ID \
+                    --auto-scaling-group-name $ASG_NAME \
+                    --protected-from-scale-in & wait
+                fi
+            fi
 
             # Run the target script.
             "$@" & wait
-
-            # Worker punch-out (work is complete)
-            if [ -f "running.$NWORKER" ]; then
-                rm running.$NWORKER
-            fi
 
             # Unset job ID to prevent incorrect terminations
             unset JOB_ID
@@ -125,7 +130,7 @@ function main_loop {
             then
                 ## Other worker is not checked out
                 retry_count=0
-            elif [ -f "scale.in.pro" ]
+            elif [ -f "$BASEDIR/scale.in.pro" ]
             then
                 echo "  Removing SCALE-IN protection"
                 # Turn off scale-in protection
@@ -135,7 +140,7 @@ function main_loop {
                   --auto-scaling-group-name $ASG_NAME \
                   --no-protected-from-scale-in & wait
 
-                rm -f scale.in.pro
+                rm -f $BASEDIR/scale.in.pro
             fi
 
             # Add to retry counter
@@ -168,24 +173,8 @@ function main_loop {
             (
                 flock 200
 
-                # ASG adjustments have been moved to scheduler
-                # echo $ASG_NAME
-                #
-                #ASG_CAP=$(aws autoscaling describe-auto-scaling-groups \
-                #  --region us-east-1 | \
-                #  jq --arg ASG_NAME "$ASG_NAME" \
-                #  '.AutoScalingGroups[] | select(.AutoScalingGroupName==$ASG_NAME).DesiredCapacity')
-                #
-                #ASG_CAP=$(expr "$ASG_CAP" - 1 || true)
-                #
-                #echo "  Scaling-in $ASG_NAME to size $ASG_CAP"
-                #
-                #aws autoscaling set-desired-capacity \
-                #  --region us-east-1 \
-                #  --auto-scaling-group-name $ASG_NAME \
-                #  --desired-capacity $ASG_CAP
-
                 echo "  Shutting down instance"
+                # TODO: change to shutdown (see below)
                 aws ec2 terminate-instances \
                  --region us-east-1 \
                  --instance-ids $INSTANCE_ID
@@ -209,12 +198,36 @@ echo "              SERRATUS  INIT              "
 echo "=========================================="
 cd $BASEDIR
 
-# Check AWS Credentials
-#aws s3api head-object --bucket $S3_BUCKET --key aws-test-token.jpg
-
+# AWS Internal check ------------
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+# Check AWS Credential
+aws s3 cp s3://serratus-public/var/aws-test-token.jpg ./ || true
+
+if [ ! -f ./aws-test-token.jpg ];
+then
+    # Internal credential error - kill
+    # Paradox, can't terminate without credentials
+    # --> solution: change default shutdown behavior
+    #     to "terminate" in terraform for all ASG
+    #
+
+    sudo shutdown
+
+    #aws ec2 terminate-instances \
+    # --region us-east-1 \
+    # --instance-ids $INSTANCE_ID
+
+    false
+    exit 0
+fi
+
+# Retrieve ASG name
 ASG_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region us-east-1 | jq -r '.Tags[] | select(.["Key"] | contains("aws:autoscaling:groupName")) | .Value')
-export INSTANCE_ID ASG_NAME
+FIRST='true'
+export INSTANCE_ID ASG_NAME FIRST
+
+# ----------------------------
 
 # Fire up main loop (SRA downloader)
 echo "Creating $WORKERS worker processes"
@@ -237,10 +250,6 @@ trap kill_workers TERM
 # Monitor AWS Cloudwatch for spot-termination signal
 # if Spot termination signal detected, proceed with
 # shutdown via SIGURS1 signal
-
-# TODO: For a minor optimization; query the time of the
-# spot-termination signal and shutdown in the last 10
-# seconds to maximize chance the job finishes.
 
 METADATA=http://169.254.169.254/latest/meta-data
 while true; do

@@ -2,7 +2,7 @@
 # ENTRYPOINT SCRIPT ===================
 # serrtaus-align
 # =====================================
-set -eux
+set -eu
 #
 # Base: serratus-aligner (0.1)
 # Amazon Linux 2 with Docker
