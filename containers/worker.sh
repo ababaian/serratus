@@ -107,6 +107,9 @@ function main_loop {
                     --instance-ids $INSTANCE_ID \
                     --auto-scaling-group-name $ASG_NAME \
                     --protected-from-scale-in & wait
+
+                  touch $BASEDIR/scale.in.pro
+                  
                 fi
             fi
 
