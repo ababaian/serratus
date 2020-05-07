@@ -175,13 +175,14 @@ else
   # (Only for non-sort option)
 
   # Extract header from first file
-  samtools view -H $(head -n1 bam.list) |
-  sed '/^@SQ/d' - > header.sam
+  #samtools view -H $(head -n1 bam.list) |
+  #sed '/^@SQ/d' - > header.sam
+  samtools view -H $(head -n1 bam.list) > header.sam
 
   # Insert dummy SQ to make file 'intact'
-  sed -i "1a\
-@SQ\tSN:serratus\tLN:1337
-  " header.sam
+  #sed -i "1a\
+#@SQ\tSN:serratus\tLN:1337
+  #" header.sam
 
   #echo -e "@CO\t====SERRATUS.IO====" >> header.sam
   #echo -e "@CO\tThis sam header is modified to reduce filesize." >> header.sam
