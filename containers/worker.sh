@@ -101,15 +101,15 @@ function main_loop {
 
                 if [ ! -f $BASEDIR/scale.in.pro ]; then
                   echo "  Enable SCALE-IN protection"
+                  touch $BASEDIR/scale.in.pro
+
                   # Turn ON scale-in protection
                   aws autoscaling set-instance-protection \
                     --region us-east-1 \
                     --instance-ids $INSTANCE_ID \
                     --auto-scaling-group-name $ASG_NAME \
                     --protected-from-scale-in & wait
-
-                  touch $BASEDIR/scale.in.pro
-                  
+                    
                 fi
             fi
 
