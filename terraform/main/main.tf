@@ -109,12 +109,12 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 256
+  max_size           = 200
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
-  instance_type      = "c5.large" // Mitigate the memory leak in fastq-dump
+  instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
   volume_size        = 50 // Mitigate the storage leak in fastq-dump
   spot_price         = 0.05
 
@@ -134,7 +134,7 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 256
+  max_size           = 500
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
