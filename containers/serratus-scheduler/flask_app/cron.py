@@ -28,7 +28,8 @@ def set_asg_size(autoscaling, asg_name, constant, max_, num_jobs, name):
             DesiredCapacity=desired_size,
         )
     except (autoscaling.exceptions.ScalingActivityInProgressFault,
-            autoscaling.exceptions.ResourceContentionFault) as e:
+            autoscaling.exceptions.ResourceContentionFault,
+            autoscaling.exceptions.ClientError) as e:
         print("Error setting ASG size, {}".format(e))
 
 
