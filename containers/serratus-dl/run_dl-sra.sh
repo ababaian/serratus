@@ -28,6 +28,11 @@ FQ_1="$SRA"_1.fastq
 FQ_2="$SRA"_2.fastq
 FQ_3="$SRA".fastq
 
+# Prefetch the data before processing
+# This should be VERY fast, and will cause fastq-dump to have
+# smoother CPU usage in the end.
+prefetch $SRA
+
 # Create some named pipes for fastq-dump to put its data into.
 mkfifo "$FQ_1" "$FQ_2" "$FQ_3"
 fastq-dump -X $FQMAX --split-e $SRA & pid=$!

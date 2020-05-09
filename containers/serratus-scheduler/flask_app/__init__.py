@@ -2,10 +2,27 @@
 them information about work that needs doing."""
 import os
 import json
+import time
 
 from flask import Flask, jsonify, request, current_app, redirect, url_for
+from prometheus_client import Summary
 
 from . import db, jobs, metrics, cron
+
+FLASK_REQUEST_SUMMARY = Summary(
+    'flask_request_latency_seconds', 'Flask Request Latency',
+    ['method', 'endpoint']
+)
+
+def before_request():
+    request.start_time = time.time()
+
+def after_request(response):
+    request_latency = time.time() - request.start_time
+    FLASK_REQUEST_SUMMARY.labels(request.method, request.url_rule).observe(request_latency)
+
+    return response
+
 
 def create_app(test_config=None):
     """Main entrypoint.  Run this program using:
@@ -52,5 +69,8 @@ def create_app(test_config=None):
     db.init_app(app)
 
     cron.register(app)
+
+    app.before_request(before_request)
+    app.after_request(after_request)
 
     return app
