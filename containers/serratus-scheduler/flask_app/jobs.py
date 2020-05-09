@@ -37,7 +37,17 @@ def check_and_clear(instances, table, active_state, new_state, name):
 
     count = 0
     for accession in accessions:
-        instance_id = worker_to_instance_id(accession.split_worker)
+        if name == "dl":
+            worker_id = accession.split_worker
+        elif name == "merge":
+            worker_id = accession.merge_worker
+        elif name == "align":
+            worker_id = accession.align_worker
+        else:
+            raise AssertionError("Invalid job type {}".format(name))
+
+        instance_id = worker_to_instance_id(worker_id)
+
         if instance_id not in instances:
             accession.state = new_state
             missing_instances.append(instance_id)
@@ -55,7 +65,6 @@ def check_and_clear(instances, table, active_state, new_state, name):
 
     return count
 
-
 @bp.route('/clear_terminated', methods=['PUT'])
 def clear_terminated_jobs():
     """Reset all jobs (dl, align, merge) which is in the running state but
@@ -66,9 +75,9 @@ def clear_terminated_jobs():
     but I would need to test how that impacts performance."""
     instances = set(get_running_instances())
 
-    dl = check_and_clear(instances, db.Accession, 'splitting', 'new', "DL")
-    merge = check_and_clear(instances, db.Accession, 'merging', 'merge_wait', "Merge")
-    align = check_and_clear(instances, db.Block, 'aligning', 'new', "Align")
+    dl = check_and_clear(instances, db.Accession, 'splitting', 'new', "dl")
+    merge = check_and_clear(instances, db.Accession, 'merging', 'merge_wait', "merge")
+    align = check_and_clear(instances, db.Block, 'aligning', 'new', "align")
 
     return jsonify({"dl": dl, "merge": merge, "align": align})
 
@@ -93,6 +102,16 @@ def add_sra_runinfo(filename):
         'inserted_rows': insert_count,
         'total_rows': total_count,
     })
+
+@bp.route('/', methods=['GET'])
+def show_jobs():
+    session = db.get_session()
+    accs = session.query(db.Accession).all()
+    blocks = session.query(db.Block, db.Accession)\
+        .filter(db.Block.acc_id == db.Accession.acc_id)\
+        .all()
+    return render_template('job_list.html', accs=accs, blocks=blocks)
+
 
 @bp.route('/split/', methods=['POST'])
 def start_split_job():
@@ -122,16 +141,6 @@ def start_split_job():
 
     # Send the response as JSON
     return jsonify(response)
-
-@bp.route('/', methods=['GET'])
-def show_jobs():
-    session = db.get_session()
-    accs = session.query(db.Accession).all()
-    blocks = session.query(db.Block, db.Accession)\
-        .filter(db.Block.acc_id == db.Accession.acc_id)\
-        .all()
-    return render_template('job_list.html', accs=accs, blocks=blocks)
-
 
 @bp.route('/split/<acc_id>', methods=['POST'])
 def finish_split_job(acc_id):
@@ -242,6 +251,7 @@ def start_align_job():
 
     # Send the response as JSON
     return jsonify(response)
+
 
 @bp.route('/align/<block_id>', methods=['POST'])
 def finish_align_job(block_id):
