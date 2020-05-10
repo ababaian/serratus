@@ -2,7 +2,7 @@
 
 ## Usage
 
-python3 serratus_summarizer.py InputFileName SummaryFileName OutputFileName
+python3 serratus_summarizer.py InputFileName SummaryFileName OutputSAMFileName [OutputTripletFileName]
     
 ### Positional arguments:
     1. InputFileName      Input filename, SAM filename or /dev/stdin
