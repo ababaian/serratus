@@ -6,6 +6,13 @@
 import sys
 import os
 
+Blacklist = [ \
+	"AX191449.1",
+	"AX191447.1",
+	"HV449436.1",
+	"KC786228.1",
+	];
+
 COV_BINS = 32
 MIN_COMPLETE_LEN = 25000
 PAN_GENOME = "pan_genome"
@@ -13,6 +20,14 @@ PAN_GENOME = "pan_genome"
 InputFileName = sys.argv[1]
 SummaryFileName = sys.argv[2]
 OutputFileName = sys.argv[3]
+TripletFileName = None
+fTriplet = None
+if len(sys.argv) > 4:
+	TripletFileName = sys.argv[4]
+	try:
+		fTriplet = open(TripletFileName, "w")
+	except:
+		fTriplet = None
 
 Dir = os.getenv("SUMZER_DIR", ".")
 if not Dir.endswith('/'):
@@ -40,6 +55,26 @@ AccToLen[PAN_GENOME] = 30000
 d = {}
 Order = []
 Keys = []
+
+def GetAlnLen(CIGAR):
+	Ns = []
+	Letters = []
+
+	if CIGAR == "*":
+		return 100
+	try:
+		Len = 0
+		n = 0
+		for c in CIGAR:
+			if c.isdigit():
+				n = n*10 + (ord(c) - ord('0'))
+			elif c.isalpha() or c == '=':
+				if c != 'S' and c != 'H':
+					Len += n
+				n = 0
+	except:
+		Len = 100
+	return Len
 
 def CmpKey__(i):
 	global d, Keys
@@ -93,6 +128,8 @@ for Line in open(TaxDescFileName):
 AccToHits = {}
 
 def AddHit(Acc, TBin, L, PctId):
+	if Acc in Blacklist:
+		return
 	try:
 		AccToHits[Acc] += 1
 		AccToSumBases[Acc] += L
@@ -136,16 +173,19 @@ for Line in fIn:
 		Acc = Fields[2]
 		TPos = int(Fields[3])
 		# MAPQ = Fields[4]
-		# CIGAR = Fields[5]
+		CIGAR = Fields[5]
 		# RNEXT = Fields[6]
 		# PNEXT = Fields[7]
 		# TL = int(Fields[8])
-		SEQ = Fields[9]
+		# SEQ = Fields[9]
 		# QUAL = Fields[10]
-		L = len(SEQ)
+		L = GetAlnLen(CIGAR)
 		SumL += L
 		if L > MaxL:
 			MaxL = L
+
+		if fTriplet != None:
+			print(Acc + "\t" + str(TPos) + "\t" + str(L), file=fTriplet)
 
 		if Acc.lower().find("reverse") >= 0:
 			MappedReverse += 1
@@ -178,7 +218,6 @@ for Line in fIn:
 		AddHit(Acc, TBin, L, PctId)
 		if TL >= MIN_COMPLETE_LEN:
 			AddHit(PAN_GENOME, TBin, L, PctId)
-
 	except:
 		pass
 
@@ -288,10 +327,10 @@ for i in Order:
 
 	s = "acc=" + Acc + ";"
 	s += "hits=%d;" % Hits
+	s += "pctid=%.1f;" % PctId
 	if Len != None:
 		s += "len=" + str(Len) + ";"
 		s += "depth=%.3g;" % Depth
-		s += "pctid=%.1f;" % PctId
 		s += "tax=%s;" % Tax
 		s += "cov=%.4f;" % CovFract
 		s += "coverage=" + Cartoon + ";"
