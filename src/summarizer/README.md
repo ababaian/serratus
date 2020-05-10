@@ -9,8 +9,8 @@ python3 serratus_summarizer.py InputFileName SummaryFileName OutputFileName
     2. SummaryFileName    Summary filename, text format
     3. OutputFileName     Output filename, usually /dev/stdout or - for none.
     
-### Optional arguments:
-    None.
+### Optional positional argument:
+    4. TipletFileName     Output filename to store tsv file with (Label, Start, Length) for each alignment.
     
 ### Dependecies
     Modules: None (stand-alone python3).
@@ -19,7 +19,7 @@ python3 serratus_summarizer.py InputFileName SummaryFileName OutputFileName
 ### Usage in pipeline
 
     $ bowtie2 <args> \
-        | python3 serratus_summarizer.py /dev/stdin summary.txt /dev/stdout \
+        | python3 serratus_summarizer.py /dev/stdin summary.txt /dev/stdout tiplets.txt \
         | samtools <args>
 
 ### Stand-alone usage
