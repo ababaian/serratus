@@ -7,7 +7,7 @@ python3 serratus_summarizer.py InputFileName SummaryFileName OutputSAMFileName [
 ### Positional arguments:
     1. InputFileName      Input filename, SAM filename or /dev/stdin
     2. SummaryFileName    Summary filename, text format
-    3. OutputFileName     Output filename, usually /dev/stdout or - for none.
+    3. OutputSAMFileName     Output filename, usually /dev/stdout or - for none. Input is echo'd to this file.
     
 ### Optional positional argument:
     4. TipletFileName     Output filename to store tsv file with (Label, Start, Length) for each alignment.
