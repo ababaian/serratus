@@ -28,7 +28,7 @@ class Accession(Base, Dicter):
     __tablename__ = 'acc'
 
     acc_id = Column(Integer, primary_key=True)
-    state = Column(Enum(name='state', *ACC_STATES))
+    state = Column(Enum(name='state', *ACC_STATES), index=True)
 
     contains_paired = Column(Boolean)
     contains_unpaired = Column(Boolean)
@@ -49,7 +49,7 @@ class Block(Base, Dicter):
     __tablename__ = 'blocks'
 
     block_id = Column(Integer, primary_key=True)
-    state = Column(Enum(name='state', *BLOCK_STATES))
+    state = Column(Enum(name='state', *BLOCK_STATES), index=True)
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
     n = Column(Integer)
 
