@@ -10,7 +10,7 @@ python3 serratus_summarizer.py InputFileName SummaryFileName OutputSAMFileName [
     3. OutputSAMFileName     Output filename, usually /dev/stdout or - for none. Input is echo'd to this file.
     
 ### Optional positional argument:
-    4. TipletFileName     Output filename to store tsv file with (Label, Start, Length) for each alignment.
+    4. TinyhitFileName     Output filename to store tinyhits.
     
 ### Dependecies
     Modules: None (stand-alone python3).
@@ -24,14 +24,13 @@ python3 serratus_summarizer.py InputFileName SummaryFileName OutputSAMFileName [
 
 ### Stand-alone usage
 
-    $ python3 serratus_summarizer.py SRR1234.sam summary.txt - # notice trailing "-"
+    $ python3 serratus_summarizer.py SRR1234.sam summary.txt - th.tsv # notice "-" for the output filename
 
 ## Description
 
 The summarizer is designed to be inserted into the mapping pipeline to generate a summary of hits when a dataset completes. It acts like the Linux 'tee' command: input is forwarded to output while collecting data.
 
-Two meta-data files are required: acc_len_taxid.txt and taxid_desc.txt which are derived from NCBI data (Genbank records for pan-genome accessions and the Taxonomy database, respectively). By default, they are expected in the current directory. This can be overridden by exporting the SUMZER_DIR environment variable. These files can be obtained from here:
+Two meta-data files are required: acc_len_taxid.txt and taxid_desc.txt which are derived from NCBI data (Genbank records for pan-genome accessions and the Taxonomy database, respectively). By default, they are expected in the current directory. This can be overridden by exporting the SUMZER_DIR environment variable.
 
-    s3://serratus-public/var/acc_len_taxid.txt
-    s3://serratus-public/var/taxid_desc.txt
+Tinyhit is a new output format designed to be small as possible while enabling summary reports to be generated or re-generated. We expect the summarizer to evolve rapidly, and it would be better to work from a more compact format if possible. There are five fields: 1=Label, 2=Start, 3=Length, 4=diffs, 5=ee. Diffs is edit distance (NM:i tag in SAM record), ee=number of expected errors in the alignment calculated from the Q scores [https://doi.org/10.1093/bioinformatics/btv401].
 
