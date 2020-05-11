@@ -6,6 +6,17 @@
 import sys
 import os
 
+# Set RAISEX to False for production.
+# If True, exceptions are raised (helpful for debugging).
+RAISEX = False
+
+Blacklist = [ \
+	"AX191449.1",
+	"AX191447.1",
+	"HV449436.1",
+	"KC786228.1",
+	];
+
 COV_BINS = 32
 MIN_COMPLETE_LEN = 25000
 PAN_GENOME = "pan_genome"
@@ -13,6 +24,16 @@ PAN_GENOME = "pan_genome"
 InputFileName = sys.argv[1]
 SummaryFileName = sys.argv[2]
 OutputFileName = sys.argv[3]
+TinyhitFileName = None
+fTinyhit = None
+if len(sys.argv) > 4:
+	TinyhitFileName = sys.argv[4]
+	try:
+		fTinyhit = open(TinyhitFileName, "w")
+	except:
+		if RAISEX:
+			raise
+		fTinyhit = None
 
 Dir = os.getenv("SUMZER_DIR", ".")
 if not Dir.endswith('/'):
@@ -40,6 +61,48 @@ AccToLen[PAN_GENOME] = 30000
 d = {}
 Order = []
 Keys = []
+
+def CharToProb(c):
+	ic = ord(c)
+	iq = ic - 33
+	if iq < 0:
+		return 1.0
+	if iq > 60:
+		return 0.0
+	return 10**(-iq/10.0)
+
+def GetEE(Qual):
+	SumP = 0
+	L = len(Qual)
+	if L == 0:
+		return 0.0
+
+	for q in Qual:
+		P = CharToProb(q)
+		SumP += P
+	return SumP
+
+def GetAlnLen(CIGAR):
+	Ns = []
+	Letters = []
+
+	if CIGAR == "*":
+		return 100
+	try:
+		Len = 0
+		n = 0
+		for c in CIGAR:
+			if c.isdigit():
+				n = n*10 + (ord(c) - ord('0'))
+			elif c.isalpha() or c == '=':
+				if c != 'S' and c != 'H':
+					Len += n
+				n = 0
+	except:
+		if RAISEX:
+			raise
+		Len = 100
+	return Len
 
 def CmpKey__(i):
 	global d, Keys
@@ -93,6 +156,8 @@ for Line in open(TaxDescFileName):
 AccToHits = {}
 
 def AddHit(Acc, TBin, L, PctId):
+	if Acc in Blacklist:
+		return
 	try:
 		AccToHits[Acc] += 1
 		AccToSumBases[Acc] += L
@@ -136,19 +201,24 @@ for Line in fIn:
 		Acc = Fields[2]
 		TPos = int(Fields[3])
 		# MAPQ = Fields[4]
-		# CIGAR = Fields[5]
+		CIGAR = Fields[5]
 		# RNEXT = Fields[6]
 		# PNEXT = Fields[7]
 		# TL = int(Fields[8])
-		SEQ = Fields[9]
-		# QUAL = Fields[10]
-		L = len(SEQ)
+		# SEQ = Fields[9]
+		QUAL = Fields[10]
+		L = GetAlnLen(CIGAR)
 		SumL += L
 		if L > MaxL:
 			MaxL = L
 
-		if Acc.lower().find("reverse") >= 0:
-			MappedReverse += 1
+		try:
+			ee = GetEE(QUAL)
+			EE = "%.2f" % ee
+		except:
+			if RAISEX:
+				raise
+			EE = "-1.0"
 
 		AS = None
 		NM = None
@@ -158,8 +228,16 @@ for Line in fIn:
 				try:
 					NM = int(s)
 				except:
+					if RAISEX:
+						raise
 					NM = None
 				break
+
+		if fTinyhit != None:
+			print(Acc + "\t" + str(TPos) + "\t" + str(L) + "\t" + str(NM) + "\t" + EE, file=fTinyhit)
+
+		if Acc.lower().find("reverse") >= 0:
+			MappedReverse += 1
 
 		PctId = 0
 		if NM != None and L > 0:
@@ -178,8 +256,9 @@ for Line in fIn:
 		AddHit(Acc, TBin, L, PctId)
 		if TL >= MIN_COMPLETE_LEN:
 			AddHit(PAN_GENOME, TBin, L, PctId)
-
 	except:
+		if RAISEX:
+			raise
 		pass
 
 MappedReversePct = 0.0
@@ -288,10 +367,10 @@ for i in Order:
 
 	s = "acc=" + Acc + ";"
 	s += "hits=%d;" % Hits
+	s += "pctid=%.1f;" % PctId
 	if Len != None:
 		s += "len=" + str(Len) + ";"
 		s += "depth=%.3g;" % Depth
-		s += "pctid=%.1f;" % PctId
 		s += "tax=%s;" % Tax
 		s += "cov=%.4f;" % CovFract
 		s += "coverage=" + Cartoon + ";"
