@@ -6,6 +6,10 @@
 import sys
 import os
 
+# Set RAISEX to False for production.
+# If True, exceptions are raised (helpful for debugging).
+RAISEX = False
+
 Blacklist = [ \
 	"AX191449.1",
 	"AX191447.1",
@@ -20,14 +24,16 @@ PAN_GENOME = "pan_genome"
 InputFileName = sys.argv[1]
 SummaryFileName = sys.argv[2]
 OutputFileName = sys.argv[3]
-TripletFileName = None
-fTriplet = None
+TinyhitFileName = None
+fTinyhit = None
 if len(sys.argv) > 4:
-	TripletFileName = sys.argv[4]
+	TinyhitFileName = sys.argv[4]
 	try:
-		fTriplet = open(TripletFileName, "w")
+		fTinyhit = open(TinyhitFileName, "w")
 	except:
-		fTriplet = None
+		if RAISEX:
+			raise
+		fTinyhit = None
 
 Dir = os.getenv("SUMZER_DIR", ".")
 if not Dir.endswith('/'):
@@ -56,6 +62,26 @@ d = {}
 Order = []
 Keys = []
 
+def CharToProb(c):
+	ic = ord(c)
+	iq = ic - 33
+	if iq < 0:
+		return 1.0
+	if iq > 60:
+		return 0.0
+	return 10**(-iq/10.0)
+
+def GetEE(Qual):
+	SumP = 0
+	L = len(Qual)
+	if L == 0:
+		return 0.0
+
+	for q in Qual:
+		P = CharToProb(q)
+		SumP += P
+	return SumP
+
 def GetAlnLen(CIGAR):
 	Ns = []
 	Letters = []
@@ -73,6 +99,8 @@ def GetAlnLen(CIGAR):
 					Len += n
 				n = 0
 	except:
+		if RAISEX:
+			raise
 		Len = 100
 	return Len
 
@@ -178,17 +206,19 @@ for Line in fIn:
 		# PNEXT = Fields[7]
 		# TL = int(Fields[8])
 		# SEQ = Fields[9]
-		# QUAL = Fields[10]
+		QUAL = Fields[10]
 		L = GetAlnLen(CIGAR)
 		SumL += L
 		if L > MaxL:
 			MaxL = L
 
-		if fTriplet != None:
-			print(Acc + "\t" + str(TPos) + "\t" + str(L), file=fTriplet)
-
-		if Acc.lower().find("reverse") >= 0:
-			MappedReverse += 1
+		try:
+			ee = GetEE(QUAL)
+			EE = "%.2f" % ee
+		except:
+			if RAISEX:
+				raise
+			EE = "-1.0"
 
 		AS = None
 		NM = None
@@ -198,8 +228,16 @@ for Line in fIn:
 				try:
 					NM = int(s)
 				except:
+					if RAISEX:
+						raise
 					NM = None
 				break
+
+		if fTinyhit != None:
+			print(Acc + "\t" + str(TPos) + "\t" + str(L) + "\t" + str(NM) + "\t" + EE, file=fTinyhit)
+
+		if Acc.lower().find("reverse") >= 0:
+			MappedReverse += 1
 
 		PctId = 0
 		if NM != None and L > 0:
@@ -219,6 +257,8 @@ for Line in fIn:
 		if TL >= MIN_COMPLETE_LEN:
 			AddHit(PAN_GENOME, TBin, L, PctId)
 	except:
+		if RAISEX:
+			raise
 		pass
 
 MappedReversePct = 0.0
