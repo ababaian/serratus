@@ -6,13 +6,13 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-PIPE_VERSION="0.1.4"
+PIPE_VERSION="0.1.3"
 
 #Usage function
 function usage {
   echo ""
-  echo "Usage: run_bowtie2.sh -1 READ_1.fq(.gz) -2 READ_2.fq -x <genome> -L <RGLB> -I <RGID> -S <RGSM> -P <RGPO> -o <output_prefix>"
-  echo "   or: run_bowtie2.sh -3 READS.fq(.gz) -x <genome> [-LISPF] -o <output_prefix>"
+  echo "Usage: run_bwa.sh -1 READ_1.fq(.gz) -2 READ_2.fq -x <genome> -L <RGLB> -I <RGID> -S <RGSM> -P <RGPO> -o <output_prefix>"
+  echo "   or: run_bwa.sh -3 READS.fq(.gz) -x <genome> [-LISPF] -o <output_prefix>"
   echo ""
   echo "    Default behaviour is to retain mapped-reads and their unmapped-pairs only"
   echo ""
@@ -21,9 +21,9 @@ function usage {
   echo "    -2    path to fastq paired-end reads 2"
   echo "    -3    path to fastq unpaired reads"
   echo ""
-  echo "    bowtie2 Alignment Parameters"
-  echo "    -x    path to _name_ of bt2-indexed genome (exclude .fa extension)"
-  echo "    -a    Aligner arguments  [--very-sensitive-local]"
+  echo "    bwa-mem Alignment Parameters"
+  echo "    -x    path to _name_ of bwa-indexed genome (exclude .fa extension)"
+  echo "    -a    Aligner arguments  [-k 14]"
   echo "    -p    N parallel threads [1]"
   echo ""
   echo "    Read Group (meta-data) required for GATK"
@@ -40,8 +40,8 @@ function usage {
   echo ""
   echo "    Outputs: <output_prefix>.bam"
   echo ""
-  echo "ex: ./run_bowtie2.sh -3 ~/unpaired.fq -x cov1r -o testLib -I SRAX -S example -P silico"
-  echo "ex: ./run_bowtie2.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x ~/tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bwa.sh -3 ~/unpaired.fq -x cov1r -o testLib -I SRAX -S example -P silico"
+  echo "ex: ./run_bwa.sh -1 /scratch/toy.1.fq -2 /scratch/toy.2.fq -x ~/tmp/hgr1 -o toyLib -I SRAX -S example -P silico"
   exit 1
 }
 
@@ -54,7 +54,7 @@ FQ3=""
 
 # bowtie2 run parameters -xap
 GENOME=""
-ALIGN_ARG="--very-sensitive-local"
+ALIGN_ARG="-k 14"
 THREADS="1"
 
 # Read Group meta-data (required for GATK) -LISPF
@@ -172,16 +172,18 @@ then
   RGLB=$OUTNAME
 fi
 
+# Create Read Group ID
+RG="@RG\tLB:$RGLB\tID:$RGID\tSM:$RGSM\tPO:$RGPO\tPL:$RGPL"
+
 # ALIGN ===================================================
 # Generate random alpha-numeric for run-id
-RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
+# RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Logging to STDOUT
 echo " -- bowtie2 Alignment Pipeline -- "
 echo " date:    $(date)"
 echo " version: $PIPE_VERSION "
 echo " output:  $OUTNAME"
-echo " run-id:  $RUNID"
 
 if [ $paired_run = "T" ]
 then
@@ -211,18 +213,18 @@ echo ""
 if [ $paired_run = "T" ]
 then
   # Paired Read Alignment
-  echo "bowtie2 $ALIGN_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x $GENOME -1 $FQ1 -2 $FQ2 | \\"
+  # -G 12 excludes reads with both reads in pair unmapped
+  echo "bwa mem $ALIGN_ARG -t $THREADS \\"
+  echo "  -R $RG \\"
+  echo "  $GENOME \\"
+  echo "  $FQ1 $FQ2 | \\"
   echo "samtools view -bS -G 12 - > "$OUTNAME".bam"
 
-  # -G 12 excludes reads with both reads in pair unmapped
-  bowtie2 $ALIGN_ARG -p $THREADS \
-    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
-    --rg PL:$RGPL --rg PU:$RGPU \
-    -x $GENOME -1 $FQ1 -2 $FQ2 | \
-    samtools view -b -G 12 - > "$OUTNAME".bam
+  bwa mem $ALIGN_ARG -t $THREAD \
+    -R $RG \
+    $GENOME \
+    $FQ1 $FQ2 | \
+    samtools view -bS -G 12 - > "$OUTNAME".bam
 
   echo ""
   echo "Alignment complete."
@@ -237,18 +239,18 @@ then
   
 else
   # Unpaired Read Alignment
-  echo "bowtie2 $ALIGN_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x $GENOME -U $FQ3 | \\"
-  echo "samtools view -bS - > aligned_unsorted.bam"
-
   # -F 4 will retain only mapped reads
-  bowtie2 $ALIGN_ARG -p $THREADS \
-    --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
-    --rg PL:$RGPL --rg PU:$RGPU \
-    -x $GENOME -U $FQ3 | \
-    samtools view -b -F 4 - > "$OUTNAME".bam
+  echo "bwa mem $ALIGN_ARG -t $THREADS \\"
+  echo "  -R $RG \\"
+  echo "  $GENOME \\"
+  echo "  $FQ1 $FQ2 | \\"
+  echo "samtools view -bS -G 12 - > "$OUTNAME".bam"
+
+  bwa mem $ALIGN_ARG -t $THREAD \
+    -R $RG \
+    $GENOME \
+    $FQ3 | \
+    samtools view -bS -F 4 - > "$OUTNAME".bam
 
   echo ""
   echo "Alignment complete."

@@ -45,6 +45,28 @@ module "iam_role" {
   name   = "scheduler"
 }
 
+resource "aws_iam_role_policy" "scheduler" {
+  name = "DescribeInstances-scheduler"
+  role = module.iam_role.role.id
+
+  policy = <<EOF
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Action": [
+        "ec2:DescribeInstances",
+        "autoscaling:SetDesiredCapacity",
+        "autoscaling:DescribeAutoScalingGroups"
+			],
+			"Effect": "Allow",
+			"Resource": "*"
+		}
+	]
+}
+EOF
+}
+
 // RESOURCES ##############################
 
 resource "aws_cloudwatch_log_group" "scheduler" {
@@ -86,6 +108,7 @@ resource "aws_instance" "scheduler" {
               EOF
 
   tags = {
+    "Name": "serratus-scheduler"
     "project": "serratus"
     "component": "serratus-scheduler"
   }

@@ -6,8 +6,8 @@
 # login: ec2-user@<ipv4>
 # base: 9 Gb
 #
-PIPE_VERSION="0.1"
-AMI_VERSION='ami-059b454759561d9f4'
+set -eu
+PIPE_VERSION="0.1.4"
 
 function usage {
   echo ""
@@ -25,9 +25,11 @@ function usage {
   echo "          if merging SRR1337.001.bam, SRR1337.002.bam, ... , SRR1337.666.bam"
   echo "          then  [-b 'SRR1337*'] or  [-b 'SRR*'] will both work"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
-  echo "    -i    Flag. Generate bam.bai index file"
-  echo "    -f    Flag. Do not generate flagstat summary file"
-  echo "    -r    Flag. Do not chromosome sort output"
+  echo ""
+  echo "    Optional outputs"
+  echo "    -i    Flag. Generate bam.bai index file. Requires sort, otherwise false."
+  echo "    -f    Flag. Generate flagstat summary file"
+  echo "    -r    Flag. Sort final bam output (requires double disk usage)"
   echo ""
   echo "    Arguments as string to pass to `samtools merge` command"
   echo "    -M    String of arguments"
@@ -46,7 +48,7 @@ function usage {
 
 # PARSE INPUT =============================================
 # Generate random alpha-numeric for run-id
-RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
+#RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
 
 # Run Parameters
 BAMREGEX='*.bam'
@@ -54,9 +56,9 @@ SRA=''
 
 # Merge Options
 THREADS='1'
-INDEX='false'
-FLAGSTAT='true'
-SORT='true'
+INDEX='negative'
+FLAGSTAT='negative'
+SORT='negative'
 
 # Script Arguments -M
 MERGE_ARGS=''
@@ -82,7 +84,10 @@ while getopts b:s:nifrM:d:o:h FLAG; do
       INDEX="true"
       ;;
     f)
-      FLAGSTAT="false"
+      FLAGSTAT="true"
+      ;;
+    r)
+      SORT="true"
       ;;
     # Manual Overwrite ------
     s)
@@ -132,62 +137,79 @@ fi
 
 
 # MERGE ===================================================
-# Final Output Bam Files
+# Final Output Bam File name
 OUTBAM="$SRA.bam"
 
-# Create tmp file of bam files to merge
+# Command to run summarizer script
+summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout"
+
+# Create tmp list of bam files to merge
 ls $BAMREGEX > bam.list
 
-# Initial merge gives un-sorted; with ugly header
-samtools merge -n -@ $THREADS \
-  -b bam.list \
-  temporary.bam
 
-# Extract header from first file
-samtools view -H $(head -n1 bam.list) > 0.header.sam
-
-if [[ "$SORT" -eq 'true' ]]
+if [[ "$SORT" = true ]]
 then
-  # Sort + Reheader
-  samtools view -h temporary.bam | \
-  python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout | \
+  # GENERATE SORTED BAM OUTPUT
+  # Requires high disk usage for tmp files
+  # Uses header from first bam entry
+
+  # Extract header from first file
+  samtools view -H $(head -n1 bam.list) > 0.header.sam
+
+  # Initial merge gives un-sorted; with ugly header
+  samtools merge -n -@ $THREADS -b bam.list -f /dev/stdout | \
+  samtools view -h - | \
+  $summarizer | \
   samtools sort -@ $THREADS - | \
   samtools reheader 0.header.sam - >\
-  merged_sorted.bam
+  $OUTBAM
 
-  mv merged_sorted.bam temporary.bam
-  rm 0.header.sam
+  if [[ "$INDEX" = true ]]
+  then
+    samtools index $OUTBAM
+  fi
+
 else
-  # Re-header only
-  samtools view -h temporary.bam | \
-  python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout | \
-  samtools reheader 0.header.sam - > \
-  reheader.bam
+  # GENERATE REDUCED SIZE, UNSORTED BAM [DEFAULT]
+  # Create Reduced SAM Header
+  # (Only for non-sort option)
 
-  mv reheader.bam temporary.bam
-  rm 0.header.sam
+  # Extract header from first file
+  #samtools view -H $(head -n1 bam.list) |
+  #sed '/^@SQ/d' - > header.sam
+  samtools view -H $(head -n1 bam.list) > header.sam
+
+  # Insert dummy SQ to make file 'intact'
+  #sed -i "1a\
+#@SQ\tSN:serratus\tLN:1337
+  #" header.sam
+
+  #echo -e "@CO\t====SERRATUS.IO====" >> header.sam
+  #echo -e "@CO\tThis sam header is modified to reduce filesize." >> header.sam
+  #echo -e "@CO\tTo reconstitute the missing @SQ entries" >> header.sam
+  #echo -e "@CO\tDownload the header this pan-genome (i.e. cov2r) from:" >> header.sam
+  #echo -e "@CO\t  https://serratus-public.s3.amazonaws.com/seq/<GENOME>/dummy_header.sam" >> header.sam
+
+  # Convert new header to bam (add EOF)
+  #samtools view -b header.sam > header.bam
+
+  # Created concatenated bam file w/ reduced header
+  samtools cat --threads $THREADS \
+    -b bam.list --no-PG |\
+    samtools view -h - |\
+    $summarizer | \
+    samtools view -b - |\
+    samtools reheader -P header.sam - \
+    > $OUTBAM
+  
 fi
 
-# Set output name
-mv temporary.bam $OUTBAM
-
-# Clear bam-blocks
-xargs rm -r <bam.list; rm bam.list
-
-# Only final bam file in current directory
-
-if [[ "$INDEX" -eq 'true' ]]
-then
-  samtools index $OUTBAM
-fi
-
-if [[ "$FLAGSTAT" -eq 'true' ]]
+if [[ "$FLAGSTAT" = true ]]
 then
   samtools flagstat $OUTBAM > $SRA.flagstat
-
-  echo "  Post Merge Flagstat"
-  cat $SRA.flagstat
-  echo ''
+  #cat $SRA.flagstat
+  #echo ''
 fi
+
 
 # end of script

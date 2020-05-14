@@ -1,6 +1,10 @@
 #!/usr/bin/bash
-set -eux
-BLOCKSIZE=${BLOCKSIZE:-1000000}
+set -eu
+# Max number of FQ reads to download per accession [100M reads]
+# ~ 20 GB max
+FQMAX=${FQMAX:-100000000}
+# 4*Max number of FQ reads to partition per fq-block [250K reads * 4 lines]
+BLOCKSIZE=${BLOCKSIZE:-4000000}
 BASEDIR=${BASEDIR:-.}
 
 while getopts n: FLAG; do
@@ -24,9 +28,14 @@ FQ_1="$SRA"_1.fastq
 FQ_2="$SRA"_2.fastq
 FQ_3="$SRA".fastq
 
+# Prefetch the data before processing
+# This should be VERY fast, and will cause fastq-dump to have
+# smoother CPU usage in the end.
+prefetch $SRA
+
 # Create some named pipes for fastq-dump to put its data into.
 mkfifo "$FQ_1" "$FQ_2" "$FQ_3"
-fastq-dump --split-e $SRA & pid=$!
+fastq-dump -X $FQMAX --split-e $SRA & pid=$!
 
 S3_FQ1="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.1.fq.%010d"
 S3_FQ2="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.2.fq.%010d"

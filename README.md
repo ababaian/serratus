@@ -1,14 +1,14 @@
-# serratus
-![Serratus Mountain in Squamish, BC. Canada](img/logo/splash.png)
+# Serratus
 
-*Serratus Mountain, Squamish,BC*
+#### Introduction Video (1:59)
+[![Serratus Mountain in Squamish, BC. Canada](img/logo/splash_play.png)](https://youtu.be/MtZk7JEOzus)
 
 ### Background
 The SARS-CoV-2 pandemic will infect millions and has already crippled the global economy. 
 
-While there is an intense research effort to sequence SARS-CoV-2 isolates to understand the evolution of the virus in real-time, our understanding of where it originated is limited by the sparse characterization of other members of the Coronaviridae family (only 53/436 CoV sp. Genomes are available).
- 
-We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to discover new members of Coronaviridae. Our initial focus is mammalian RNA-sequencing libraries followed by avian/vertebrate, metagenomic, and finally all 1.12M entries (5.72 petabytes).
+While there is an intense research effort to sequence SARS-CoV-2 isolates to understand the evolution of the virus in real-time, our understanding of coronavirus evolution is limited by the poor characterization of other members of the Coronaviridae family (only 421/957 CoV sp. Genomes are available).
+
+We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to discover new members of Coronaviridae and assemble their genomes. That is >1.12 million biological samples or 5.72 petabytes of sequencing data.
 
 ### Architecture
 ![serratus-overview](img/serratus_overview.png)

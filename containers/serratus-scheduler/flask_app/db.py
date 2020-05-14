@@ -28,7 +28,7 @@ class Accession(Base, Dicter):
     __tablename__ = 'acc'
 
     acc_id = Column(Integer, primary_key=True)
-    state = Column(Enum(name='state', *ACC_STATES))
+    state = Column(Enum(name='state', *ACC_STATES), index=True)
 
     contains_paired = Column(Boolean)
     contains_unpaired = Column(Boolean)
@@ -49,13 +49,39 @@ class Block(Base, Dicter):
     __tablename__ = 'blocks'
 
     block_id = Column(Integer, primary_key=True)
-    state = Column(Enum(name='state', *BLOCK_STATES))
+    state = Column(Enum(name='state', *BLOCK_STATES), index=True)
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
     n = Column(Integer)
 
     align_start_time = Column(DateTime)
     align_end_time = Column(DateTime)
     align_worker = Column(String)
+
+CONFIG_DEFAULT = dict(
+    GENOME="cov2r",
+    CLEAR_INTERVAL=10,
+    SCALING_INTERVAL=30,
+    DL_ARGS="",
+    DL_SCALING_ENABLE=True,
+    DL_SCALING_CONSTANT=(1 / 1000),
+    DL_SCALING_MAX=10,
+    ALIGN_ARGS="--very-sensitive-local",
+    ALIGN_SCALING_ENABLE=True,
+    ALIGN_SCALING_CONSTANT=(1 / 1000),
+    ALIGN_SCALING_MAX=20,
+    MERGE_ARGS="",
+    MERGE_SCALING_ENABLE=True,
+    MERGE_SCALING_CONSTANT=(1 / 1000),
+    MERGE_SCALING_MAX=2,
+    VIRTUAL_ASG_MAX_INCREASE=10,
+    VIRTUAL_SCALING_INTERVAL=30,
+)
+
+class Config(Base):
+    __tablename__ = "config"
+
+    key = Column(String, primary_key=True)
+    value = Column(JSON)
 
 def get_engine(echo=False, engine=[]):
     if not engine:
@@ -69,17 +95,46 @@ def get_session():
         g.session = sessionmaker(bind=get_engine())()
     return g.session
 
+
 def teardown_session(e=None):
     session = g.pop('session', None)
 
     if session is not None:
         session.close()
 
+
+def update_config(data, create=True):
+    session = get_session()
+    for key, value in data.items():
+        row = session.query(Config).filter_by(key=key).one_or_none()
+        if row is None:
+            if create:
+                row = Config(key=key)
+            else:
+                raise ValueError("Invalid key: {}".format(key))
+        row.value = value
+        session.add(row)
+    session.commit()
+
+
+def get_config():
+    session = get_session()
+    rows = session.query(Config).all()
+    for row in rows:
+        yield row.key, row.value
+
+def get_config_val(key):
+    session = get_session()
+    row = session.query(Config).filter_by(key=key).one()
+    return row.value
+
+
 def init_db():
     """Clear the existing data and create new tables."""
     engine = get_engine(echo=False)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+    update_config(CONFIG_DEFAULT, create=True)
 
 @bp.route('', methods=['GET'])
 def dump_db_sqlite():

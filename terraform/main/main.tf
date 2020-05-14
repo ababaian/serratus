@@ -45,7 +45,9 @@ provider "aws" {
   region      = var.aws_region
 }
 
-provider "local" {}
+provider "local" {
+  version = "~> 1.4"
+}
 
 resource "aws_security_group" "internal" {
   name = "serratus-internal"
@@ -87,7 +89,7 @@ module "scheduler" {
   
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
-  instance_type      = "t3.nano"
+  instance_type      = "t3.small"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
 }
@@ -107,14 +109,14 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 256
+  max_size           = 200
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
   instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
-  volume_size        = 16 // Mitigate the storage leak in fastq-dump
-  spot_price         = 0.04
+  volume_size        = 50 // Mitigate the storage leak in fastq-dump
+  spot_price         = 0.05
 
   s3_bucket          = module.work_bucket.name
   s3_prefix          = "fq-blocks"
@@ -132,7 +134,7 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 256
+  max_size           = 500
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
@@ -151,12 +153,13 @@ module "align" {
 module "merge" {
   source             = "../worker"
 
-  desired_size       = 1
+  desired_size       = 0
   max_size           = 10
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "t3.small"
-  spot_price         = 0.007
+  instance_type      = "c5.large"
+  volume_size        = 50 // prevent disk overflow via samtools sort
+  spot_price         = 0.04
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "bam-blocks"
   s3_prefix          = "out"
@@ -164,7 +167,10 @@ module "merge" {
   image_name         = "serratus-merge"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${module.work_bucket.name} -b s3://${module.work_bucket.name}/out"
+  // TODO: the credentials are not properly set-up to
+  //       upload to serratus-public, requires a *Object policy
+  //       on the bucket.
+  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200505_zoonotic"
 }
 
 // RESOURCES ##############################

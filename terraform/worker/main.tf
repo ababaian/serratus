@@ -1,3 +1,11 @@
+///////////////////////////////////////////////////////////
+// Worker Node
+///////////////////////////////////////////////////////////
+//
+//
+
+// VARIABLES ==============================================
+
 variable "instance_type" {
   description = "Type of node to use for the workers"
   type        = string
@@ -107,6 +115,8 @@ data "aws_availability_zones" "all" {}
 
 data "aws_region" "current" {}
 
+// RESOURCES ==============================================
+
 resource "aws_cloudwatch_log_group" "g" {
   name = var.image_name
 }
@@ -115,6 +125,67 @@ module "iam_role" {
   source      = "../iam_role"
   name        = var.image_name
   policy_arns = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+}
+
+
+resource "aws_iam_role_policy" "ec2Describe" {
+  name = "DescribeEC2Instances-${var.image_name}"
+  role = module.iam_role.role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "ec2:Describe*"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "ec2Terminate" {
+  name = "TerminateEC2Instances-${var.image_name}"
+  role = module.iam_role.role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "ec2:Terminate*"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "AdjustAutoScaling" {
+  name = "AdjustAutoScaling-${var.image_name}"
+  role = module.iam_role.role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "autoscaling:*"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
 }
 
 resource "aws_iam_role_policy" "s3_write" {
@@ -159,7 +230,7 @@ EOF
 }
 
 resource "aws_launch_configuration" "worker" {
-  name_prefix          = "tf-${var.image_name}-"
+  name_prefix          = "${var.image_name}-"
   image_id             = data.aws_ami.amazon_linux_2.id
   instance_type        = var.instance_type
   security_groups      = var.security_group_ids
@@ -180,6 +251,7 @@ resource "aws_launch_configuration" "worker" {
 
   user_data = <<-EOF
               #!/bin/bash
+              export 
               instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               hostname ${var.image_name}-$instance_id
               docker run -d \
@@ -194,9 +266,18 @@ resource "aws_launch_configuration" "worker" {
               EOF
 }
 
+
+// TODO: COOLDOWN POLICY NOT ATTACHED TO GROUP
+resource "aws_autoscaling_policy" "worker" {
+  name = aws_launch_configuration.worker.name
+  autoscaling_group_name = aws_autoscaling_group.worker.name
+  scaling_adjustment     = 5
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 30
+}
+
 resource "aws_autoscaling_group" "worker" {
-  # Forces a change in launch configuration to create a new ASG.
-  name = "tf-asg-${aws_launch_configuration.worker.name}"
+  name = aws_launch_configuration.worker.name
 
   launch_configuration = aws_launch_configuration.worker.id
   availability_zones   = data.aws_availability_zones.all.names
@@ -221,6 +302,12 @@ resource "aws_autoscaling_group" "worker" {
   tag {
     key                 = "component"
     value               = var.image_name
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "${var.image_name}-instance"
     propagate_at_launch = true
   }
 }

@@ -17,39 +17,16 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 2,
-  "iteration": 1587182446329,
+  "iteration": 1588976488349,
   "links": [],
   "panels": [
-    {
-      "dashboardFilter": "",
-      "dashboardTags": [],
-      "datasource": null,
-      "folderId": -1,
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 25,
-      "limit": 10,
-      "nameFilter": "",
-      "onlyAlertsOnDashboard": false,
-      "show": "current",
-      "sortOrder": 1,
-      "stateFilter": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Alert List",
-      "type": "alertlist"
-    },
     {
       "datasource": null,
       "gridPos": {
         "h": 3,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 0
       },
       "id": 18,
       "options": {
@@ -103,7 +80,7 @@
         "h": 3,
         "w": 9,
         "x": 12,
-        "y": 4
+        "y": 0
       },
       "id": 16,
       "links": [],
@@ -158,7 +135,7 @@
         "h": 3,
         "w": 3,
         "x": 21,
-        "y": 4
+        "y": 0
       },
       "id": 20,
       "options": {
@@ -219,7 +196,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 3
       },
       "hiddenSeries": false,
       "id": 8,
@@ -309,7 +286,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 7
+        "y": 3
       },
       "hiddenSeries": false,
       "id": 10,
@@ -399,7 +376,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 11
       },
       "hiddenSeries": false,
       "id": 2,
@@ -429,9 +406,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg by (instance) (sum without (mode) (rate(node_cpu_seconds_total{mode=~\"user|system\",instance=~\"$instance\"}[15s])))",
+          "expr": "avg by (autoscaling_group) (sum without (mode) (rate(node_cpu_seconds_total{mode=~\"user|system\",instance=~\"$instance\"}[15s])))",
           "interval": "",
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{autoscaling_group}}",
           "refId": "B"
         }
       ],
@@ -490,7 +467,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 11
       },
       "hiddenSeries": false,
       "id": 4,
@@ -519,10 +496,10 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "1-(node_memory_MemAvailable_bytes{instance=~\"$instance\"}/node_memory_MemTotal_bytes{instance=~\"$instance\"})",
+          "expr": "avg by (autoscaling_group) ( 1 - (node_memory_MemAvailable_bytes{instance=~\"$instance\"}/node_memory_MemTotal_bytes{instance=~\"$instance\"} ) )",
           "format": "time_series",
           "interval": "",
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
         }
       ],
@@ -581,7 +558,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 19
       },
       "hiddenSeries": false,
       "id": 23,
@@ -610,9 +587,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\"}[5m])",
+          "expr": "avg by (autoscaling_group) (rate(node_disk_read_bytes_total{instance=~\"$instance\"}[5m]))",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
         }
       ],
@@ -671,7 +648,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 19
       },
       "hiddenSeries": false,
       "id": 22,
@@ -700,9 +677,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(node_disk_written_bytes_total{instance=~\"$instance\"}[5m])",
+          "expr": "avg by (autoscaling_group) (rate(node_disk_written_bytes_total{instance=~\"$instance\"}[5m]))",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
         }
       ],
@@ -761,7 +738,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 26,
@@ -790,9 +767,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(node_network_transmit_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m])",
+          "expr": "avg by (autoscaling_group) (rate(node_network_transmit_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m]))",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
         }
       ],
@@ -851,7 +828,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 27
       },
       "hiddenSeries": false,
       "id": 27,
@@ -880,9 +857,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(node_network_receive_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m])",
+          "expr": "avg by (autoscaling_group) (rate(node_network_receive_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m]))",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
         }
       ],
@@ -976,7 +953,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 35
       },
       "hiddenSeries": false,
       "id": 6,
@@ -1005,9 +982,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "1 - (node_filesystem_avail_bytes{instance=~\"$instance\"} / node_filesystem_size_bytes{instance=~\"$instance\"})",
+          "expr": "avg by (autoscaling_group) (1- (node_filesystem_avail_bytes{instance=~\"$instance\"} / node_filesystem_size_bytes{instance=~\"$instance\"}))",
           "interval": "",
-          "legendFormat": "{{instance}} - {{mountpoint}}",
+          "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
         }
       ],
@@ -1063,7 +1040,7 @@
       }
     }
   ],
-  "refresh": "5s",
+  "refresh": "5m",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -1100,7 +1077,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
@@ -1118,10 +1095,10 @@
     ]
   },
   "timezone": "",
-  "title": "Serratus",
+  "title": "Serratus - ASG",
   "uid": "-jAPZ9rWzthtaoeueue",
   "variables": {
     "list": []
   },
-  "version": 9
+  "version": 1
 }

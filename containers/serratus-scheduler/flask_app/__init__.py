@@ -1,10 +1,28 @@
 """Master job scheduler.  Listens for requests from workers and feeds
 them information about work that needs doing."""
 import os
+import json
+import time
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, current_app, redirect, url_for
+from prometheus_client import Summary
 
-from . import db, jobs, metrics
+from . import db, jobs, metrics, cron
+
+FLASK_REQUEST_SUMMARY = Summary(
+    'flask_request_latency_seconds', 'Flask Request Latency',
+    ['method', 'endpoint']
+)
+
+def before_request():
+    request.start_time = time.time()
+
+def after_request(response):
+    request_latency = time.time() - request.start_time
+    FLASK_REQUEST_SUMMARY.labels(request.method, request.url_rule).observe(request_latency)
+
+    return response
+
 
 def create_app(test_config=None):
     """Main entrypoint.  Run this program using:
@@ -17,7 +35,8 @@ def create_app(test_config=None):
     """
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
-        DATABASE=os.path.join(app.instance_path, 'scheduler.sqlite')
+        DATABASE=os.path.join(app.instance_path, 'scheduler.sqlite'),
+        AWS_REGION="us-east-1",
     )
 
     if test_config is None:
@@ -34,10 +53,24 @@ def create_app(test_config=None):
     def status():
         return jsonify({'status': 'up'})
 
+    @app.route('/config', methods=["GET", "PUT"])
+    def config():
+        if request.method == "PUT":
+            db.update_config(json.loads(request.data))
+        return jsonify(dict(db.get_config()))
+
+    @app.route('/')
+    def root():
+        return redirect(url_for('jobs.show_jobs'))
+
     app.register_blueprint(db.bp)
     app.register_blueprint(jobs.bp)
     app.register_blueprint(metrics.bp)
     db.init_app(app)
 
-    return app
+    cron.register(app)
 
+    app.before_request(before_request)
+    app.after_request(after_request)
+
+    return app
