@@ -66,7 +66,7 @@ test-mash:
 
 test-mash-sensitivity:
 	cd test
-	mash sketch -k 15 -s 4000 cov2.fa.gz
+	mash sketch -k 15 -s 5000 cov2.fa.gz
 	for sim in 0 30 300 1500 3000 4500 6000 7500 9000 10500 12000
 	do
 		echo Simulation $$sim
