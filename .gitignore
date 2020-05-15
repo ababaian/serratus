@@ -7,6 +7,8 @@ local*
 data/*
 data/sra/*
 
+# Ignore wiki sub-repo ===================================
+wiki/*
 
 # AWS gitignore ===========================================
 # local credentials file
