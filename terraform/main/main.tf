@@ -89,7 +89,7 @@ module "scheduler" {
   
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
-  instance_type      = "t3.small"
+  instance_type      = "c5.large"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
 }
@@ -101,7 +101,7 @@ module "monitoring" {
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
-  instance_type      = "t3.medium"
+  instance_type      = "r5.large"
 }
 
 // Serratus-dl
@@ -109,7 +109,7 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 200
+  max_size           = 250
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
@@ -134,7 +134,7 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 500
+  max_size           = 750
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
@@ -154,7 +154,7 @@ module "merge" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 10
+  max_size           = 30
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
