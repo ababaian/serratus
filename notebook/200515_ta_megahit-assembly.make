@@ -91,15 +91,36 @@ $(INSTALL_DIR)/prokka:
 	git clone https://github.com/tseemann/prokka.git
 	prokka/bin/prokka --setupdb
 
+$(INSTALL_DIR)/eggnog-mapper:
+	mkdir -p $(INSTALL_DIR)
+	cd $(INSTALL_DIR)
+	git clone git@github.com:eggnogdb/eggnog-mapper.git
 
 ### Stage Data:
 $(DATA_DIR)/ERR2756788_1.fastq:
 	mkdir -p $(DATA_DIR)
 	cd $(DATA_DIR)
 	fastq-dump -I --split-files ERR2756788
+
+$(DATA_DIR)/ERR2756787_1.fastq:
+	mkdir -p $(DATA_DIR)
+	cd $(DATA_DIR)
 	fastq-dump -I --split-files ERR2756787
+
+$(DATA_DIR)/ERR3569452_1.fastq:
+	mkdir -p $(DATA_DIR)
+	cd $(DATA_DIR)
 	fastq-dump -I --split-files ERR3569452
 
+$(DATA_DIR)/SRR7287114_1.fastq:
+	mkdir -p $(DATA_DIR)
+	cd $(DATA_DIR)
+	fastq-dump -I --split-files SRR7287114
+
+$(DATA_DIR)/SRR7287110_1.fastq:
+	mkdir -p $(DATA_DIR)
+	cd $(DATA_DIR)
+	fastq-dump -I --split-files SRR7287110
 
 $(DATA_DIR)/cov2m.fa:
 	aws s3 cp s3://serratus-public/seq/cov2m/cov2m.fa
@@ -113,11 +134,17 @@ update-blastdbs:
 	cd $(DATA_DIR)/../blastdbs
 	date; time update_blastdb.pl --decompress nt; echo $$?; date
 
+download-emapper-db:
+	$(INSTALL_DIR)/eggnog-mapper/download_eggnog_data.py \
+		-y -f --data_dir $(DATA_DIR)
+
 ### Run Assembly:
 ## ~30 minutes on 72 cores, 144G RAM, and 200G instance swap
 run-assembly: $(DATA_DIR)/ERR2756787_megahit/final.contigs.fa \
 		$(DATA_DIR)/ERR3569452_megahit/final.contigs.fa \
-		$(DATA_DIR)/ERR2756788_megahit/final.contigs.fa
+		$(DATA_DIR)/ERR2756788_megahit/final.contigs.fa \
+		$(DATA_DIR)/SRR7287114_megahit/final.contigs.fa \
+		$(DATA_DIR)/SRR7287110_megahit/final.contigs.fa
 
 $(DATA_DIR)/ERR2756788_megahit/final.contigs.fa: $(DATA_DIR)/ERR2756788_1.fastq
 	megahit -1 $(DATA_DIR)/ERR2756788_1.fastq \
@@ -137,9 +164,26 @@ $(DATA_DIR)/ERR3569452_megahit/final.contigs.fa: $(DATA_DIR)/ERR3569452_1.fastq
 		-o $(DATA_DIR)/ERR3569452_megahit \
 		--mem-flag 2
 
+$(DATA_DIR)/SRR7287114_megahit/final.contigs.fa: $(DATA_DIR)/SRR7287114_1.fastq
+	megahit -1 $(DATA_DIR)/SRR7287114_1.fastq \
+		-2 $(DATA_DIR)/SRR7287114_2.fastq \
+		-o $(DATA_DIR)/SRR7287114_megahit \
+		--mem-flag 2
+
+$(DATA_DIR)/SRR7287110_megahit/final.contigs.fa: $(DATA_DIR)/SRR7287110_1.fastq
+	megahit -1 $(DATA_DIR)/SRR7287110_1.fastq \
+		-2 $(DATA_DIR)/SRR7287110_2.fastq \
+		-o $(DATA_DIR)/SRR7287110_megahit \
+		--mem-flag 2
+
+
+
 align-assembly: $(DATA_DIR)/ERR3569452.delta \
 	$(DATA_DIR)/ERR2756787.delta \
-	$(DATA_DIR)/ERR2756788.delta
+	$(DATA_DIR)/ERR2756788.delta \
+	$(DATA_DIR)/SRR7287114.delta \
+	$(DATA_DIR)/SRR7287110.delta
+
 
 $(DATA_DIR)/ERR3569452.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/ERR3569452_megahit/final.contigs.fa
 	cd $(DATA_DIR)
@@ -153,17 +197,31 @@ $(DATA_DIR)/ERR2756788.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/ERR2756788_megahi
 	cd $(DATA_DIR)
 	nucmer --prefix=ERR2756788 $^
 
+$(DATA_DIR)/SRR7287114.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/SRR7287114_megahit/final.contigs.fa
+	cd $(DATA_DIR)
+	nucmer --prefix=SRR7287114 $^
+
+$(DATA_DIR)/SRR7287110.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/SRR7287110_megahit/final.contigs.fa
+	cd $(DATA_DIR)
+	nucmer --prefix=SRR7287110 $^
+
+
 ## This shows that k141_146741 wholly contains three fragments in cov2m, and is ~29k:
 show-coords:
 	cd $(DATA_DIR)
 	show-coords -c -q -g -o -l -T ERR2756788.delta > ERR2756788-alignments.txt
 	show-coords -c -q -g -o -l -T ERR2756787.delta > ERR2756787-alignments.txt
 	show-coords -c -q -g -o -l -T ERR3569452.delta > ERR3569452-alignments.txt
+	show-coords -c -q -g -o -l -T SRR7287114.delta > SRR7287114-alignments.txt
+	show-coords -c -q -g -o -l -T SRR7287110.delta > SRR7287110-alignments.txt
 
 stage-results-to-s3:
 	cd $(DATA_DIR)
-	for acc in ERR2756787 ERR2756788 ERR3569452
+	for acc in ERR2756787 ERR2756788 ERR3569452 SRR7287114 SRR7287110
 	do
-		tar czf $${acc}_megahit.tar.gz $${acc}_megahit
+		[ ! -e $${acc}_megahit.tar.gz ] && tar czf $${acc}_megahit.tar.gz $${acc}_megahit
 		aws s3 cp $${acc}_megahit.tar.gz s3://serratus-public/notebook/200515_ta/
 	done
+
+stage-alignment-reports:
+	cp $(DATA_DIR)/*-alignments.txt $(CURDIR)/notebook/200515_ta_megahit-assembly/
