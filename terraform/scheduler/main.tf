@@ -42,7 +42,7 @@ data "aws_region" "current" {}
 
 module "iam_role" {
   source = "../iam_role"
-  name   = "scheduler"
+  name   = "serratus-scheduler"
 }
 
 resource "aws_iam_role_policy" "scheduler" {
@@ -70,7 +70,7 @@ EOF
 // RESOURCES ##############################
 
 resource "aws_cloudwatch_log_group" "scheduler" {
-  name = "scheduler"
+  name = "serratus-scheduler"
 }
 
 # Give the scheduler an Elastic-IP so we can destroy and recreate it without

@@ -19,7 +19,15 @@
     "mountPoints": [{
       "sourceVolume": "prometheus-data",
       "containerPath": "/prometheus"
-    }]
+    }],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-monitor",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "prometheus"
+      }
+    }
   },
   {
     "name": "grafana",
@@ -32,6 +40,14 @@
         "containerPort": 3000,
         "hostPort": 3000
       }
-    ]
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-monitor",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "grafana"
+      }
+    }
   }
 ]

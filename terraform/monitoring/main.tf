@@ -37,6 +37,8 @@ data "aws_ami" "ecs" {
   }
 }
 
+data "aws_region" "current" {}
+
 // RESOURCES ==============================================
 
 # Give our instance the set of permissions required to act as an ECS node.
@@ -164,10 +166,17 @@ resource "aws_iam_role_policy_attachment" "attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
 }
 
+resource "aws_cloudwatch_log_group" "g" {
+  name = "serratus-monitor"
+}
+
+
 resource aws_ecs_task_definition "monitor" {
   family = "monitor"
-  container_definitions = templatefile("../monitoring/monitor-task-definition.json",
-                                       { sched_ip = var.scheduler_ip})
+  container_definitions = templatefile("../monitoring/monitor-task-definition.json", {
+    sched_ip = var.scheduler_ip,
+    aws_region = data.aws_region.current.name
+  })
   task_role_arn = aws_iam_role.task_role.arn
   network_mode = "host"
 
