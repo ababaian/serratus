@@ -15,8 +15,9 @@
   },
   "editable": true,
   "gnetId": null,
-  "graphTooltip": 0,
-  "id": 3,
+  "graphTooltip": 1,
+  "id": 2,
+  "iteration": 1589588719478,
   "links": [],
   "panels": [
     {
@@ -205,11 +206,11 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "fill": 1,
+      "fill": 0,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 8
       },
@@ -226,6 +227,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxPerRow": 3,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
@@ -234,29 +236,63 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "repeat": "asg",
+      "repeatDirection": "h",
+      "scopedVars": {
+        "asg": {
+          "$$hashKey": "object:714",
+          "selected": false,
+          "text": "align",
+          "value": "align"
+        }
+      },
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:114",
+          "alias": "/desired/",
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:92",
+          "alias": "/up/",
+          "fill": 1
+        },
+        {
+          "$$hashKey": "object:99",
+          "alias": "/actual/",
+          "dashLength": 1,
+          "dashes": true,
+          "spaceLength": 1
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "asg_desired_size",
+          "expr": "asg_desired_size{asg=~\"$asg\"}",
           "interval": "",
-          "legendFormat": "{{asg}} (desired)",
+          "legendFormat": "serratus-{{asg}} (desired)",
           "refId": "A"
         },
         {
-          "expr": "asg_virt_size",
+          "expr": "asg_virt_size{asg=~\"$asg\"}",
           "interval": "",
-          "legendFormat": "{{asg}} (actual)",
+          "legendFormat": "serratus-{{asg}} (actual)",
           "refId": "B"
+        },
+        {
+          "expr": "sum by (autoscaling_group) (up{autoscaling_group=~\"serratus-$asg\"})",
+          "interval": "",
+          "legendFormat": "{{autoscaling_group}} (up)",
+          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Autoscaling",
+      "title": "serratus-$asg Autoscaling",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -296,56 +332,21 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                0.8
-              ],
-              "type": "gt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "5m",
-        "frequency": "1m",
-        "handler": 1,
-        "name": "Total Request Time [per second] alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "fill": 1,
+      "fill": 0,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
+        "w": 8,
+        "x": 8,
         "y": 8
       },
       "hiddenSeries": false,
-      "id": 6,
+      "id": 12,
       "legend": {
         "avg": false,
         "current": false,
@@ -357,6 +358,7 @@
       },
       "lines": true,
       "linewidth": 1,
+      "maxPerRow": 3,
       "nullPointMode": "null",
       "options": {
         "dataLinks": []
@@ -365,31 +367,65 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "repeat": null,
+      "repeatDirection": "h",
+      "repeatIteration": 1589588719478,
+      "repeatPanelId": 2,
+      "scopedVars": {
+        "asg": {
+          "$$hashKey": "object:715",
+          "selected": false,
+          "text": "dl",
+          "value": "dl"
+        }
+      },
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:114",
+          "alias": "/desired/",
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:92",
+          "alias": "/up/",
+          "fill": 1
+        },
+        {
+          "$$hashKey": "object:99",
+          "alias": "/actual/",
+          "dashLength": 1,
+          "dashes": true,
+          "spaceLength": 1
+        }
+      ],
       "spaceLength": 10,
-      "stack": true,
+      "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(flask_request_latency_seconds_sum[1m])",
+          "expr": "asg_desired_size{asg=~\"$asg\"}",
           "interval": "",
-          "legendFormat": "{{method}} {{endpoint}}",
+          "legendFormat": "serratus-{{asg}} (desired)",
           "refId": "A"
-        }
-      ],
-      "thresholds": [
+        },
         {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 0.8
+          "expr": "asg_virt_size{asg=~\"$asg\"}",
+          "interval": "",
+          "legendFormat": "serratus-{{asg}} (actual)",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (autoscaling_group) (up{autoscaling_group=~\"serratus-$asg\"})",
+          "interval": "",
+          "legendFormat": "{{autoscaling_group}} (up)",
+          "refId": "C"
         }
       ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Total Request Time [per second]",
+      "title": "serratus-$asg Autoscaling",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -405,16 +441,149 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:267",
+          "$$hashKey": "object:1305",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1306",
           "format": "short",
           "label": null,
           "logBase": 1,
           "max": null,
           "min": null,
           "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "hiddenSeries": false,
+      "id": 13,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "maxPerRow": 3,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "repeat": null,
+      "repeatDirection": "h",
+      "repeatIteration": 1589588719478,
+      "repeatPanelId": 2,
+      "scopedVars": {
+        "asg": {
+          "$$hashKey": "object:716",
+          "selected": false,
+          "text": "merge",
+          "value": "merge"
+        }
+      },
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:114",
+          "alias": "/desired/",
+          "dashes": true
         },
         {
-          "$$hashKey": "object:268",
+          "$$hashKey": "object:92",
+          "alias": "/up/",
+          "fill": 1
+        },
+        {
+          "$$hashKey": "object:99",
+          "alias": "/actual/",
+          "dashLength": 1,
+          "dashes": true,
+          "spaceLength": 1
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "asg_desired_size{asg=~\"$asg\"}",
+          "interval": "",
+          "legendFormat": "serratus-{{asg}} (desired)",
+          "refId": "A"
+        },
+        {
+          "expr": "asg_virt_size{asg=~\"$asg\"}",
+          "interval": "",
+          "legendFormat": "serratus-{{asg}} (actual)",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (autoscaling_group) (up{autoscaling_group=~\"serratus-$asg\"})",
+          "interval": "",
+          "legendFormat": "{{autoscaling_group}} (up)",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "serratus-$asg Autoscaling",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1305",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1306",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -517,6 +686,41 @@
       }
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                0.8
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "5m",
+        "frequency": "1m",
+        "handler": 1,
+        "name": "Total Request Time [per second] alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -529,6 +733,104 @@
         "w": 12,
         "x": 12,
         "y": 16
+      },
+      "hiddenSeries": false,
+      "id": 6,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "rate(flask_request_latency_seconds_sum[1m])",
+          "interval": "",
+          "legendFormat": "{{method}} {{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 0.8
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Total Request Time [per second]",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:267",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:268",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 7,
@@ -607,12 +909,66 @@
       }
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "Prometheus",
+        "definition": "label_values(asg)",
+        "hide": 0,
+        "includeAll": true,
+        "index": -1,
+        "label": "",
+        "multi": true,
+        "name": "asg",
+        "options": [
+          {
+            "$$hashKey": "object:713",
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          {
+            "$$hashKey": "object:714",
+            "selected": false,
+            "text": "align",
+            "value": "align"
+          },
+          {
+            "$$hashKey": "object:715",
+            "selected": false,
+            "text": "dl",
+            "value": "dl"
+          },
+          {
+            "$$hashKey": "object:716",
+            "selected": false,
+            "text": "merge",
+            "value": "merge"
+          }
+        ],
+        "query": "label_values(asg)",
+        "refresh": 0,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
   },
   "time": {
     "from": "now-15m",
@@ -638,5 +994,5 @@
   "variables": {
     "list": []
   },
-  "version": 6
+  "version": 8
 }
