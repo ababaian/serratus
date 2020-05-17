@@ -53,6 +53,7 @@ function usage {
 # Run Parameters
 BAMREGEX='*.bam'
 SRA=''
+GENOME=''
 
 # Merge Options
 THREADS='1'
@@ -67,7 +68,8 @@ MERGE_ARGS=''
 BASEDIR="/home/serratus"
 OUTNAME="$SRA"
 
-while getopts b:s:nifrM:d:o:h FLAG; do
+
+while getopts b:s:nifrM:d:o:x:h FLAG; do
   case $FLAG in
     # Scheduler Options -----
     u)
@@ -75,6 +77,9 @@ while getopts b:s:nifrM:d:o:h FLAG; do
       ;;
     k)
       S3_BUCKET=$OPTARG
+      ;;
+    x)
+      GENOME=$OPTARG
       ;;
     # Merge Options ---------
     n)
