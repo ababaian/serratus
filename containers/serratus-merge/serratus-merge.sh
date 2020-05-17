@@ -54,7 +54,7 @@ function usage {
 }
 
 # PARSE INPUT =============================================
-# Scheduler / Container Parameters
+# Scheduler / Container Parametersterraform apply -auto-approve
 S3_BUCKET=${S3_BUCKET:-'serratus-public'}
 
 # Merge Options
@@ -192,10 +192,10 @@ mkdir -p $WORKDIR; cd $WORKDIR
 
 # Download pan-genome summary data
 if [ ! -f $BASEDIR/acc_len_taxid.txt ]; then
-  aws s3 cp s3://serratus-public/seq/"$GENOME"/acc_len_taxid.txt ./
+  aws s3 cp s3://serratus-public/seq/"$GENOME"/acc_len_taxid.txt $BASEDIR/
 fi
 if [ ! -f $BASEDIR/taxid_desc.txt ]; then
-  aws s3 cp s3://serratus-public/seq/"$GENOME"/taxid_desc.txt ./
+  aws s3 cp s3://serratus-public/seq/"$GENOME"/taxid_desc.txt $BASEDIR/
 fi
 
 cp $BASEDIR/*.txt $WORKDIR # copy summarizer tables into runid
