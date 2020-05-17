@@ -141,11 +141,10 @@ fi
 OUTBAM="$SRA.bam"
 
 # Command to run summarizer script
-summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout"
+summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout $SRA.th"
 
 # Create tmp list of bam files to merge
 ls $BAMREGEX > bam.list
-
 
 if [[ "$SORT" = true ]]
 then
