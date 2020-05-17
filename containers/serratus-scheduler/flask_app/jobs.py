@@ -2,7 +2,6 @@ from datetime import datetime
 
 import boto3
 from flask import Blueprint, jsonify, request, abort, render_template, current_app
-from sqlalchemy import func
 
 from . import db
 
@@ -33,6 +32,7 @@ def check_and_clear(instances, table, active_state, new_state, name):
 
     accessions = session.query(table)\
         .filter(table.state == active_state)\
+        .with_for_update()\
         .all()
 
     count = 0
@@ -95,9 +95,9 @@ def add_sra_runinfo(filename):
         acc = db.Accession(state='new', sra_run_info=line)
         session.add(acc)
 
-    total_count = session.query(db.Accession).count()
     session.commit()
 
+    total_count = session.query(db.Accession).count()
     return jsonify({
         'inserted_rows': insert_count,
         'total_rows': total_count,
@@ -114,6 +114,7 @@ def show_jobs():
 
 
 @bp.route('/split/', methods=['POST'])
+@bp.route('/dl/', methods=['POST'])
 def start_split_job():
     """Get a job id and mark it as "running" in the DB
     returns: a job JSON file"""
@@ -122,6 +123,7 @@ def start_split_job():
     # get an item where state = new and update its state
     acc = session.query(db.Accession)\
         .filter_by(state='new')\
+        .with_for_update(skip_locked=True)\
         .first()
 
     if acc is None:
@@ -134,6 +136,7 @@ def start_split_job():
 
     session.add(acc)
     response = acc.to_dict()
+    response["id"] = acc.acc_id
     session.commit()
 
     response['action'] = 'process'
@@ -143,6 +146,7 @@ def start_split_job():
     return jsonify(response)
 
 @bp.route('/split/<acc_id>', methods=['POST'])
+@bp.route('/dl/<acc_id>', methods=['POST'])
 def finish_split_job(acc_id):
     """Mark a split job as finished, setting off N alignment jobs.
 
@@ -172,13 +176,17 @@ def finish_split_job(acc_id):
     if state == "terminated":
         state = "new"
 
+    if state == "done":
+        state = "split_done"
+
     # Update the accessions table
     if state not in ('new', 'split_err', 'split_done'):
-        abort(400)
+        raise ValueError("Invalid State {}".format(state))
 
     session = db.get_session()
     acc = session.query(db.Accession)\
         .filter_by(acc_id=int(acc_id))\
+        .with_for_update(skip_locked=True)\
         .one()
 
     if acc.state != 'splitting':
@@ -204,14 +212,11 @@ def finish_split_job(acc_id):
 
     acc.blocks = blocks
     session.add(acc)
-
-    row_count = session.query(db.Block).count()
     session.commit()
 
     return jsonify({
         'result': 'success',
         'inserted_rows': blocks,
-        'total_rows': row_count,
     })
 
 @bp.route('/align/', methods=['POST'])
@@ -221,30 +226,32 @@ def start_align_job():
     returns: a job JSON file"""
     session = db.get_session()
     # get an item where state = new and update its state
-    query = session.query(db.Block, db.Accession)\
+    block = session.query(db.Block)\
         .filter(db.Block.state == 'new')\
-        .filter(db.Block.acc_id == db.Accession.acc_id)\
+        .with_for_update(skip_locked=True)\
         .first()
 
-    if query is None:
+    if block is None:
         # TODO: If we got no results, then could be:
         #    * Waiting for split nodes: hang tight
         #    * No more work: shutdown
         return jsonify({'action': 'wait'})
-
-    block, acc = query
 
     block.state = 'aligning'
     block.align_start_time = datetime.now()
     block.align_end_time = None
     block.align_worker = request.args.get("worker_id")
     session.add(block)
-
-    response = block.to_dict()
-    response.update(acc.to_dict())
     session.commit()
 
-    # TODO Move these into the database
+    response = block.to_dict()
+
+    acc = session.query(db.Accession)\
+        .filter_by(acc_id=block.acc_id)\
+        .one()
+
+    response.update(acc.to_dict())
+    response["id"] = block.block_id
     response['align_args'] = db.get_config_val("ALIGN_ARGS")
     response['genome'] = db.get_config_val("GENOME")
     response['action'] = "process"
@@ -269,47 +276,26 @@ def finish_align_job(block_id):
     block = session.query(db.Block).filter_by(block_id=block_id).one()
     block.state = state
     block.align_end_time = datetime.now()
+    session.commit()
 
-    # Check the other blocks---are there any waiting or running still?
-    state_counts_q = session.query(db.Block.state,
-                                   func.count(db.Block.block_id))\
-        .filter(db.Block.acc_id == block.acc_id)\
-        .group_by(db.Block.state)\
-        .all()
+    return jsonify({
+        'result': 'success'
+    })
 
-    state_counts = {k: 0 for k in db.BLOCK_STATES}
-    state_counts.update(state_counts_q)
-
-    if state_counts['new'] > 0 or state_counts['aligning'] > 0:
-        # This is not the last block
-        session.commit()
-        return jsonify({
-            'result': 'success'
-        })
-    elif state_counts['fail'] > 0:
-        # :(  TODO What to do here?  Ideally we move Accession into a failed
-        # state when a single align fails, so this should be no-op?
-        session.commit()
-        return jsonify({
-            'result': 'success'
-        })
-    else:
-        # All blocks are done.  Move Accession into the merge_wait state.
-        accession = session.query(db.Accession)\
-            .filter(db.Accession.acc_id == block.acc_id)\
-            .one()
-        accession.state = 'merge_wait'
-        session.commit()
-        return jsonify({
-            'result': 'success',
-        })
 
 @bp.route('/merge/', methods=['POST'])
 def start_merge_job():
     session = db.get_session()
-    # Get an Acc where all blocks have been aligned.
+    # Exclude accs with blocks in "new" or "fail" state
+    exclude_accs = session.query(db.Block.acc_id)\
+        .distinct()\
+        .filter_by(state="new")\
+        .subquery()
+
     acc = session.query(db.Accession)\
-        .filter_by(state='merge_wait')\
+        .filter_by(state="split_done")\
+        .filter(~(db.Accession.acc_id.in_(exclude_accs)))\
+        .with_for_update(skip_locked=True)\
         .first()
 
     if acc is None:
@@ -321,10 +307,11 @@ def start_merge_job():
     acc.merge_end_time = None
     acc.merge_worker = request.args.get("worker_id")
     session.add(acc)
-    response = acc.to_dict()
     session.commit()
-    response['action'] = 'process'
 
+    response = acc.to_dict()
+    response["id"] = acc.acc_id
+    response['action'] = 'process'
     response['merge_args'] = db.get_config_val("MERGE_ARGS")
 
     # Send the response as JSON
@@ -335,14 +322,18 @@ def finish_merge_job(acc_id):
     state = request.args.get('state')
 
     if state == "terminated":
-        state = "merge_wait"
+        state = "split_done"
 
-    if state not in ('merge_wait', 'merge_err', 'merge_done'):
+    if state == "done":
+        state = "merge_done"
+
+    if state not in ('split_done', 'merge_err', 'merge_done'):
         abort(400)
 
     session = db.get_session()
     acc = session.query(db.Accession)\
         .filter_by(acc_id=int(acc_id))\
+        .with_for_update(skip_locked=True)\
         .one()
 
     if acc.state != 'merging':

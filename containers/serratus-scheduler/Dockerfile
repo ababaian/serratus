@@ -3,7 +3,7 @@ FROM ubuntu
 RUN apt-get update -yq
 RUN apt-get install -yqq python3-pip
 
-RUN pip3 install flask sqlalchemy gunicorn prometheus_client boto3
+RUN pip3 install flask sqlalchemy gunicorn prometheus_client boto3 psycopg2-binary
 
 # Run Python in UTF-8 mode
 ENV FLASK_APP=flask_app

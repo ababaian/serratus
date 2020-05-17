@@ -28,7 +28,7 @@ class Accession(Base, Dicter):
     __tablename__ = 'acc'
 
     acc_id = Column(Integer, primary_key=True)
-    state = Column(Enum(name='state', *ACC_STATES), index=True)
+    state = Column(Enum(name='acc_state', *ACC_STATES), index=True)
 
     contains_paired = Column(Boolean)
     contains_unpaired = Column(Boolean)
@@ -49,7 +49,7 @@ class Block(Base, Dicter):
     __tablename__ = 'blocks'
 
     block_id = Column(Integer, primary_key=True)
-    state = Column(Enum(name='state', *BLOCK_STATES), index=True)
+    state = Column(Enum(name='blk_state', *BLOCK_STATES), index=True)
     acc_id = Column(Integer, ForeignKey('acc.acc_id'))
     n = Column(Integer)
 
@@ -83,16 +83,16 @@ class Config(Base):
     key = Column(String, primary_key=True)
     value = Column(JSON)
 
-def get_engine(echo=False, engine=[]):
+def get_engine(engine=[]):
     if not engine:
-        path = 'sqlite:///' + current_app.config['DATABASE']
-        engine.append(create_engine(path, echo=echo))
+        path = 'postgresql://postgres@localhost:5432/postgres'
+        engine.append(create_engine(path, echo=False))
 
     return engine[0]
 
 def get_session():
     if 'session' not in g:
-        g.session = sessionmaker(bind=get_engine())()
+        g.session = sessionmaker(bind=get_engine())(expire_on_commit=False)
     return g.session
 
 
@@ -131,7 +131,7 @@ def get_config_val(key):
 
 def init_db():
     """Clear the existing data and create new tables."""
-    engine = get_engine(echo=False)
+    engine = get_engine()
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     update_config(CONFIG_DEFAULT, create=True)
