@@ -1,6 +1,4 @@
-import click
 from flask import Blueprint, current_app, g, send_file, jsonify, request
-from flask.cli import with_appcontext
 
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, JSON, ForeignKey, Boolean, Enum, DateTime, String
@@ -83,9 +81,10 @@ class Config(Base):
     key = Column(String, primary_key=True)
     value = Column(JSON)
 
+
 def get_engine(engine=[]):
     if not engine:
-        path = 'postgresql://postgres@localhost:5432/postgres'
+        path = current_app.config["DATABASE"]
         engine.append(create_engine(path, echo=False))
 
     return engine[0]
@@ -96,22 +95,36 @@ def get_session():
     return g.session
 
 
-def teardown_session(e=None):
+def teardown_session(err=None):
     session = g.pop('session', None)
 
     if session is not None:
         session.close()
 
 
-def update_config(data, create=True):
+def create_config(data):
+    """Load default configuration values into the DB, iff they don't exist there yet"""
     session = get_session()
     for key, value in data.items():
-        row = session.query(Config).filter_by(key=key).one_or_none()
+        row = session.query(Config)\
+            .filter_by(key=key)\
+            .with_for_update()\
+            .one_or_none()
+
         if row is None:
-            if create:
-                row = Config(key=key)
-            else:
-                raise ValueError("Invalid key: {}".format(key))
+            session.add(Config(key=key, value=value))
+            session.commit()
+
+
+def update_config(data):
+    """Load updated config into the DB.  If keys don't exist, raise a ValueError()"""
+    session = get_session()
+    for key, value in data.items():
+        row = session.query(Config)\
+            .filter_by(key=key)\
+            .one_or_none()
+        if row is None:
+            raise ValueError("Invalid key: {}".format(key))
         row.value = value
         session.add(row)
     session.commit()
@@ -129,40 +142,38 @@ def get_config_val(key):
     return row.value
 
 
-def init_db():
+def init_db(reset=False):
     """Clear the existing data and create new tables."""
     engine = get_engine()
-    Base.metadata.drop_all(engine)
+    if reset:
+        Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
-    update_config(CONFIG_DEFAULT, create=True)
+    create_config(CONFIG_DEFAULT)
 
 @bp.route('', methods=['GET'])
 def dump_db_sqlite():
     """Get a full copy of the SQLite database file"""
-    return send_file(current_app.config['DATABASE'],
-                     mimetype="application/x-sqlite3",
-                     as_attachment=True,
-                     attachment_filename='dump.sqlite')
+    # TODO: Convert -> CSV then load that into a newly created SQLite DB.
+    raise NotImplementedError()
+    #return send_file(database_file,
+    #                 mimetype="application/x-sqlite3",
+    #                 as_attachment=True,
+    #                 attachment_filename='dump.sqlite')
 
 @bp.route('', methods=['PUT'])
 def load_db_sqlite():
     """Replace the DB with a given SQLite file"""
+    init_db(reset=True)
+
     if not request.data:
-        init_db()
         return jsonify('Database reset to initial state')
 
-    # Do I have to delete and replace my engine object?
-    with open(current_app.config['DATABASE'], 'wb') as f:
-        f.write(request.data)
+    raise NotImplementedError()
+    # TODO: Convert -> CSV then load the CSV into postgres.
+    #with open(current_app.config['DATABASE'], 'wb') as f:
+    #    f.write(request.data)
 
     return jsonify("Database replaced")
 
-@click.command('init-db')
-@with_appcontext
-def init_db_command():
-    init_db()
-    click.echo('Initialized the database.')
-
 def init_app(app):
     app.teardown_appcontext(teardown_session)
-    app.cli.add_command(init_db_command)

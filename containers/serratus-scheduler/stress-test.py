@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Stress tester for the scheduler"""
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Manager
 import random
 import string
 import sys
@@ -9,7 +9,7 @@ import time
 
 import requests
 
-BLOCKS = 200
+BLOCKS = 10
 
 def load_sch(sch, csv, lines):
     """Load some test data into the scheduler"""
@@ -35,18 +35,10 @@ def serratus_worker(sch, q, type_, params=()):
             break
 
         job_id = res["id"]
-        q.put(res["acc_id"])
+        q.append(res["acc_id"])
 
         # Do nothing, and send the response.
         res2 = requests.post("http://{}/jobs/{}/{}".format(sch, type_, job_id), params=end_params)
-
-
-def iterqueue(q):
-    try:
-        while True:
-            yield q.get_nowait()
-    except queue.Empty:
-        pass
 
 
 def main():
@@ -55,33 +47,29 @@ def main():
 
     load_sch(sch, csv, int(lines))
 
-    dl_q = Queue()
-    al_q = Queue()
-    mg_q = Queue()
+    manager = Manager()
+    dl_jobs = manager.list()
+    al_jobs = manager.list()
+    mg_jobs = manager.list()
 
     argses = (
-        (sch, dl_q, "dl", {"N_unpaired": BLOCKS}),
-        (sch, al_q, "align"),
-        (sch, mg_q, "merge"),
+        (sch, dl_jobs, "dl", {"N_unpaired": BLOCKS}),
+        (sch, al_jobs, "align"),
+        (sch, mg_jobs, "merge"),
     )
 
-    start = time.monotonic()
     # Create fake instances of all 3 types.
     procs = []
     for args in argses:
-        for _ in range(10):
+        start = time.monotonic()
+        for _ in range(30):
             p = Process(target=serratus_worker, args=args)
             p.start()
             procs.append(p)
 
         for p in procs:
             p.join()
-
-    print("Total time: {}s".format(time.monotonic() - start))
-
-    dl_jobs = list(iterqueue(dl_q))
-    al_jobs = list(iterqueue(al_q))
-    mg_jobs = list(iterqueue(mg_q))
+        print("Total {} time: {}s".format(args[2], time.monotonic() - start))
 
     # Uniqueness and completeness
     assert len(set(dl_jobs)) == int(lines)

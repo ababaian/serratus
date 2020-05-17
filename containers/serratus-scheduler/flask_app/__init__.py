@@ -35,7 +35,7 @@ def create_app(test_config=None):
     """
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
-        DATABASE=os.path.join(app.instance_path, 'scheduler.sqlite'),
+        DATABASE="postgresql://postgres@localhost:5432/postgres",
         AWS_REGION="us-east-1",
     )
 
