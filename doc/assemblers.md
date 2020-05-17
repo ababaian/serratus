@@ -55,3 +55,9 @@ Type: De-novo metagenomic
 Code: https://github.com/loneknightpy/idba
 Paper: doi: 10.1093/bioinformatics/bts174
 Comments: Anecdotally (i.e. in my own experience) works well for viral genome assembly. Also positively reviewed in the review paper above.
+
+**metaviralSPAdes**
+Type: De-novo metagenomic
+Code: https://github.com/ablab/spades/tree/metaviral_publication, https://github.com/ablab/viralVerify/, https://github.com/ablab/viralComplete/
+Paper: https://academic.oup.com/bioinformatics/advance-article-abstract/doi/10.1093/bioinformatics/btaa490/5837667?redirectedFrom=fulltext
+Comments: Recently published (May 15, 2020.) Has some tools for viral contig classification/validation.
