@@ -191,14 +191,11 @@ WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
 
 # Download pan-genome summary data
-if [ ! -f $BASEDIR/acc_len_taxid.txt ]; then
-  aws s3 cp s3://serratus-public/seq/"$GENOME"/acc_len_taxid.txt $BASEDIR/
-fi
-if [ ! -f $BASEDIR/taxid_desc.txt ]; then
-  aws s3 cp s3://serratus-public/seq/"$GENOME"/taxid_desc.txt $BASEDIR/
+if [ ! -f $BASEDIR/"$GENOME".sumzer.tsv ]; then
+  aws s3 cp s3://serratus-public/seq/"$GENOME"/"$GENOME".sumzer.tsv $BASEDIR/
 fi
 
-cp $BASEDIR/*.txt $WORKDIR # copy summarizer tables into runid
+cp $BASEDIR/"$GENOME".sumzer.tsv $WORKDIR/ # copy summarizer tables into runid
 
 S3_BAM=s3://$S3_BUCKET/bam-blocks/$SRA
 S3_FQ=s3://$S3_BUCKET/fq-blocks/$SRA
@@ -241,7 +238,7 @@ aws s3 cp --recursive $S3_BAM ./
 # RUN MERGE ===============================================
 echo "  Running -- run_merge.sh --"
 echo ""
-bash $BASEDIR/run_merge.sh -s $SRA -b "*bam"
+bash $BASEDIR/run_merge.sh -s $SRA -b "*bam" -x $GENOME
 
 
 # RUN UPLOAD ==============================================

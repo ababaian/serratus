@@ -146,7 +146,10 @@ fi
 OUTBAM="$SRA.bam"
 
 # Command to run summarizer script
-summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout $SRA.th"
+sumzer="$GENOME.sumzer.tsv"
+# usage: serratus_summarizer_flom.py InputSamFileName MetaTsvFilename SummaryFileName OutputSamFileName
+#summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout $SRA.th"
+summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout"
 
 # Create tmp list of bam files to merge
 ls $BAMREGEX > bam.list
