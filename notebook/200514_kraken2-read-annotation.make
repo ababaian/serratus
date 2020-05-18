@@ -34,6 +34,7 @@ export PATH
 
 #### Targets:
 
+### Install Dependencies:
 install-packages:
 	sudo apt-get install libxml-libxml-perl curl
 
@@ -45,6 +46,11 @@ install-sra-toolkit:
 	sudo ./setup-apt.sh
 
 
+### Data:
 stage-samples:
 	mkdir -p $(DATA_DIR)/samples
 	aws s3 cp s3://sra-pub-run-2/SRR11728619/SRR11728619.2 $(DATA_DIR)/samples/
+
+### Run Kraken2 on ERR2756788 'Frankie':
+run-kraken2-frankie:
+	date; time ~/repos/snap-express/third-party/bin/kraken2 --paired --report profile.kraken2 --use-names --db /media/storage/kraken2-db --threads `nproc` /media/storage/assembly/ERR2756788_1.fastq /media/storage/assembly/ERR2756788_2.fastq > classified-reads.kraken2.txt ; echo $?; date
