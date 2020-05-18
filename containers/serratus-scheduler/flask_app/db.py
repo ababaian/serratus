@@ -1,3 +1,5 @@
+import os
+
 from flask import Blueprint, current_app, g, send_file, jsonify, request
 
 from sqlalchemy import create_engine
@@ -177,3 +179,5 @@ def load_db_sqlite():
 
 def init_app(app):
     app.teardown_appcontext(teardown_session)
+    app.before_first_request(init_db)
+

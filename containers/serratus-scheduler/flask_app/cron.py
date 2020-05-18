@@ -1,13 +1,22 @@
-import os
+"""Cron system, runs periodic database cleanup jobs.
+
+Run with `flask-3 cron`
+"""
 import time
 import math
 from threading import Thread
 
+import boto3
+import click
+from flask import current_app
+from flask.cli import with_appcontext
 from prometheus_client import Gauge
 from sqlalchemy import or_
-import boto3
 
-from . import db, jobs
+from . import db
+
+class BotoBug1592(Exception):
+    """See https://github.com/boto/boto3/issues/1592"""
 
 def get_asg_name(autoscaling, pattern):
     """Look through all available ASGs to find one matching a pattern"""
@@ -57,51 +66,58 @@ def set_asg_size(
 
 
 def adjust_autoscaling_loop(app):
-    autoscaling = boto3.client('autoscaling', region_name=app.config["AWS_REGION"])
+    time.sleep(10) # Give postgres a few seconds to start
+    try:
+        autoscaling = boto3.client('autoscaling', region_name=app.config["AWS_REGION"])
+    except KeyError:
+        raise BotoBug1592()
     dl_asg = get_asg_name(autoscaling, "serratus-dl")
     align_asg = get_asg_name(autoscaling, "serratus-align")
     merge_asg = get_asg_name(autoscaling, "serratus-merge")
 
     while True:
         virt_asg = False
-        with app.app_context():
-            config = dict(db.get_config())
+        try:
+            with app.app_context():
+                config = dict(db.get_config())
 
-            session = db.get_session()
-            num_dl_jobs = session.query(db.Accession)\
-                .filter(or_(db.Accession.state == "new",
-                            db.Accession.state == "splitting"))\
-                .count()
+                session = db.get_session()
+                num_dl_jobs = session.query(db.Accession)\
+                    .filter(or_(db.Accession.state == "new",
+                                db.Accession.state == "splitting"))\
+                    .count()
 
-            num_align_jobs = session.query(db.Block)\
-                .filter(or_(db.Block.state == "new",
-                            db.Block.state == "aligning"))\
-                .count()
+                num_align_jobs = session.query(db.Block)\
+                    .filter(or_(db.Block.state == "new",
+                                db.Block.state == "aligning"))\
+                    .count()
 
-            num_merge_jobs = session.query(db.Accession)\
-                .filter(or_(db.Accession.state == "merge_wait",
-                            db.Accession.state == "merging"))\
-                .count()
+                num_merge_jobs = session.query(db.Accession)\
+                    .filter(or_(db.Accession.state == "merge_wait",
+                                db.Accession.state == "merging"))\
+                    .count()
 
-        virt_max = config["VIRTUAL_ASG_MAX_INCREASE"]
-        if config["DL_SCALING_ENABLE"]:
-            constant = float(config["DL_SCALING_CONSTANT"])
-            max_ = int(config["DL_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
-                autoscaling, dl_asg, constant, max_, num_dl_jobs, "dl", virt_max,
-            )
-        if config["ALIGN_SCALING_ENABLE"]:
-            constant = float(config["ALIGN_SCALING_CONSTANT"])
-            max_ = int(config["ALIGN_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
-                autoscaling, align_asg, constant, max_, num_align_jobs, "align", virt_max,
-            )
-        if config["MERGE_SCALING_ENABLE"]:
-            constant = float(config["MERGE_SCALING_CONSTANT"])
-            max_ = int(config["MERGE_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
-                autoscaling, merge_asg, constant, max_, num_merge_jobs, "merge", virt_max,
-            )
+            virt_max = config["VIRTUAL_ASG_MAX_INCREASE"]
+            if config["DL_SCALING_ENABLE"]:
+                constant = float(config["DL_SCALING_CONSTANT"])
+                max_ = int(config["DL_SCALING_MAX"])
+                virt_asg = virt_asg or set_asg_size(
+                    autoscaling, dl_asg, constant, max_, num_dl_jobs, "dl", virt_max,
+                )
+            if config["ALIGN_SCALING_ENABLE"]:
+                constant = float(config["ALIGN_SCALING_CONSTANT"])
+                max_ = int(config["ALIGN_SCALING_MAX"])
+                virt_asg = virt_asg or set_asg_size(
+                    autoscaling, align_asg, constant, max_, num_align_jobs, "align", virt_max,
+                )
+            if config["MERGE_SCALING_ENABLE"]:
+                constant = float(config["MERGE_SCALING_CONSTANT"])
+                max_ = int(config["MERGE_SCALING_MAX"])
+                virt_asg = virt_asg or set_asg_size(
+                    autoscaling, merge_asg, constant, max_, num_merge_jobs, "merge", virt_max,
+                )
+        except BotoBug1592:
+            print("Boto Bug 1592 in adjust_autoscaling_loop")
 
         scale_interval = int(config["SCALING_INTERVAL"])
         virt_interval = int(config["VIRTUAL_SCALING_INTERVAL"])
@@ -113,20 +129,101 @@ def adjust_autoscaling_loop(app):
             time.sleep(scale_interval)
 
 
+def get_running_instances():
+    try:
+        ec2 = boto3.client('ec2', region_name=current_app.config["AWS_REGION"])
+    except KeyError:
+        raise BotoBug1592()
+    """Get a list of all EC2 instance IDs currently running"""
+    for r in ec2.describe_instances()["Reservations"]:
+        for instance in r["Instances"]:
+            if instance["State"]["Name"] == "running":
+                yield instance["InstanceId"]
+
+
+def worker_to_instance_id(worker_id):
+    # Example worker_id: "i-0a9a0d75781577180-7"
+    # Desired instance id: "i-0a9a0d75781577180"
+    return "-".join(worker_id.split("-")[:-1])
+
+
+def check_and_clear(instances, table, active_state, new_state, name):
+    """Check and reset jobs of a given type."""
+    session = db.get_session()
+    missing_instances = list()
+
+    accessions = session.query(table)\
+        .filter(table.state == active_state)\
+        .with_for_update()\
+        .all()
+
+    count = 0
+    for accession in accessions:
+        if name == "dl":
+            worker_id = accession.split_worker
+        elif name == "merge":
+            worker_id = accession.merge_worker
+        elif name == "align":
+            worker_id = accession.align_worker
+        else:
+            raise AssertionError("Invalid job type {}".format(name))
+
+        instance_id = worker_to_instance_id(worker_id)
+
+        if instance_id not in instances:
+            accession.state = new_state
+            missing_instances.append(instance_id)
+            count += 1
+
+
+    if missing_instances:
+        print("Reset jobs on {} {} instances, which were terminated:"
+              .format(len(missing_instances), name))
+        for instance in missing_instances:
+            print("   {}".format(instance))
+
+    if count:
+        session.commit()
+
+    return count
+
+def clear_terminated_jobs():
+    """Reset all jobs (dl, align, merge) which is in the running state but
+    where the instance no longer exists.
+
+    This should run inside of a session context, since the current DB doesn't
+    handle transactions well.  What we should do is implement a global DB lock
+    but I would need to test how that impacts performance."""
+    instances = set(get_running_instances())
+
+    check_and_clear(instances, db.Accession, 'splitting', 'new', "dl")
+    check_and_clear(instances, db.Accession, 'merging', 'merge_wait', "merge")
+    check_and_clear(instances, db.Block, 'aligning', 'new', "align")
+
+
 def clean_terminated_jobs_loop(app):
+    time.sleep(10) # Give postgres a few seconds to start
     while True:
         with app.app_context():
-            jobs.clear_terminated_jobs()
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
+            try:
+                clear_terminated_jobs()
+            except BotoBug1592:
+                print("Boto Bug 1592 in clean_terminated_jobs_loop")
+
         print("clear_terminated_jobs() finished.  Running again in {} seconds"
               .format(clear_interval))
         time.sleep(clear_interval)
 
 
+@click.command('cron')
+@with_appcontext
+def cron():
+    print("Creating background processes")
+    app = current_app._get_current_object()
+    Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
+    Thread(target=adjust_autoscaling_loop, args=(app,)).start()
+
 def register(app):
-    # Prevent this scheduler from running two instances in debug mode.
-    # See https://stackoverflow.com/a/25519547 for details
-    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        print("Creating new process")
-        Thread(target=clean_terminated_jobs_loop, args=(app,), daemon=True).start()
-        Thread(target=adjust_autoscaling_loop, args=(app,), daemon=True).start()
+    app.cli.add_command(cron)
+
