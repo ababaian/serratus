@@ -22,126 +22,45 @@ variable "instance_type" {
   default = "t3.nano"
 }
 
-data "aws_ami" "ecs" {
-  most_recent = true
-  owners      = ["591542846629"] # Amazon
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-ecs-hvm-*"]
-  }
-
-  filter {
-    name   = "architecture"
-    values = ["x86_64"]
-  }
+variable "dockerhub_account" {
+  description = "Docker Hub account to pull from"
+  type        = string
 }
 
 data "aws_region" "current" {}
 
 // RESOURCES ==============================================
 
-# Give our instance the set of permissions required to act as an ECS node.
-resource "aws_iam_instance_profile" "monitor" {
-  name = "profile-serratus-monitor"
-  role = aws_iam_role.instance_role.name
-}
+module "ecs_cluster" {
+  source = "../ecs_cluster"
 
-resource aws_instance "monitor" {
-  ami = data.aws_ami.ecs.id
+  name = "monitor"
   instance_type = var.instance_type
-  instance_initiated_shutdown_behavior = "terminate"
-  vpc_security_group_ids               = var.security_group_ids
-  key_name                             = var.key_name
-  iam_instance_profile                 = aws_iam_instance_profile.monitor.name
-
-  tags = {
-    "Name": "serratus-monitor"
-    "project": "serratus"
-    "component": "serratus-monitor"
-  }
-
-  user_data = <<-EOF
-    #cloud-config
-    write_files:
-      - path: /etc/ecs/ecs.config
-        content: |
-          ECS_CLUSTER=${aws_ecs_cluster.monitor.name}
-          ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true
-    # Download and run node exporter, so this instance can monitor itself.
-    # For the other, we'll use a custom AMI which has the exporter built
-    # in.
-    bootcmd:
-      - [ "curl", "-sL", "https://github.com/prometheus/node_exporter/releases/download/v1.0.0-rc.0/node_exporter-1.0.0-rc.0.linux-amd64.tar.gz", "-o", "node_exporter.tgz" ]
-      - [ "tar", "-xvzf", "node_exporter.tgz" ]
-      - [ "systemd-run", "node_exporter-1.0.0-rc.0.linux-amd64/node_exporter" ]
-  EOF
+  security_group_ids = var.security_group_ids
+  key_name = var.key_name
 }
 
 resource "aws_eip" "monitor" {
-  instance = aws_instance.monitor.id
+  instance = module.ecs_cluster.instance.id
   vpc      = true
 
   tags = {
     "project": "serratus"
-    "component": "serratus-monitor"
+    "component": "serratus-scheduler"
   }
 }
 
-resource aws_ecs_cluster "monitor" {
-  name = "serratus-monitor"
-}
-
-resource "aws_iam_role" "instance_role" {
-  name = "SerratusEcsInstanceRole"
-
-  assume_role_policy = <<-EOF
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Action": "sts:AssumeRole",
-          "Principal": {
-            "Service": "ec2.amazonaws.com"
-          },
-          "Effect": "Allow",
-          "Sid": ""
-        }
-      ]
-    }
-  EOF
-}
-
-# Allows this EC2 instance to act as an ECS agent
-resource "aws_iam_role_policy_attachment" "instance_attachment" {
-  role       = aws_iam_role.instance_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
-}
-
-resource "aws_iam_role" "task_role" {
-  name = "SerratusIamRole-monitor"
-
-  assume_role_policy = <<-EOF
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Action": "sts:AssumeRole",
-          "Principal": {
-            "Service": "ecs-tasks.amazonaws.com"
-          },
-          "Effect": "Allow",
-          "Sid": ""
-        }
-      ]
-    }
-  EOF
+# Provides read-only access to EC2 "Describe" functions, ELB, Autoscaling,
+# and Cloudwatch
+resource "aws_iam_role_policy_attachment" "attachment" {
+  role       = module.ecs_cluster.task_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
 }
 
 # Also allow the container to load cloudwatch metrics
 resource "aws_iam_role_policy" "cloudwatch" {
   name = "CloudwatchGetMetrics"
-  role = aws_iam_role.task_role.id
+  role = module.ecs_cluster.task_role.id
 
   policy = <<-EOF
     {
@@ -159,13 +78,6 @@ resource "aws_iam_role_policy" "cloudwatch" {
   EOF
 }
 
-# Provides read-only access to EC2 "Describe" functions, ELB, Autoscaling,
-# and Cloudwatch
-resource "aws_iam_role_policy_attachment" "attachment" {
-  role       = aws_iam_role.task_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
-}
-
 resource "aws_cloudwatch_log_group" "g" {
   name = "serratus-monitor"
 }
@@ -174,10 +86,11 @@ resource "aws_cloudwatch_log_group" "g" {
 resource aws_ecs_task_definition "monitor" {
   family = "monitor"
   container_definitions = templatefile("../monitoring/monitor-task-definition.json", {
+    dockerhub_account  = var.dockerhub_account
     sched_ip = var.scheduler_ip,
     aws_region = data.aws_region.current.name
   })
-  task_role_arn = aws_iam_role.task_role.arn
+  task_role_arn = module.ecs_cluster.task_role.arn
   network_mode = "host"
 
   volume {
@@ -193,7 +106,7 @@ resource aws_ecs_task_definition "monitor" {
 
 resource aws_ecs_service "monitor" {
   name = "serratus-monitor"
-  cluster = aws_ecs_cluster.monitor.id
+  cluster = module.ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.monitor.arn
 
   # "Daemon" indicates that only one can be running at a time.  If we use the

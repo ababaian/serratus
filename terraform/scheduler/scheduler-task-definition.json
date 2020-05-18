@@ -1,0 +1,67 @@
+[
+  {
+    "name": "postgres",
+    "image": "postgres",
+    "memoryReservation": 128,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 5432,
+        "hostPort": 5432
+      }
+    ],
+    "mountPoints": [{
+      "sourceVolume": "postgres-data",
+      "containerPath": "/var/lib/postgresql/data"
+    }],
+    "environment": [
+      { "name": "POSTGRES_PASSWORD", "value": "${pg_password}" }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-scheduler",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "postgres"
+      }
+    }
+  },
+  {
+    "name": "flask",
+    "image": "${dockerhub_account}/serratus-scheduler",
+    "command": ["-w", "${workers}"],
+    "cpu": 256,
+    "memoryReservation": 128,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 8000,
+        "hostPort": 8000
+      }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-scheduler",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "flask_app"
+      }
+    }
+  },
+  {
+    "name": "cron",
+    "image": "${dockerhub_account}/serratus-scheduler",
+    "cpu": 256,
+    "memoryReservation": 128,
+    "essential": true,
+    "entrypoint": ["flask", "cron"],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-scheduler",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "cron"
+      }
+    }
+  }
+]

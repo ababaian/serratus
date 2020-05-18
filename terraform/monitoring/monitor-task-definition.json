@@ -1,7 +1,7 @@
 [
   {
     "name": "prometheus",
-    "image": "jefftaylor42/serratus-prometheus",
+    "image": "${dockerhub_account}/serratus-prometheus",
     "memoryReservation": 128,
     "essential": true,
     "portMappings": [
@@ -31,7 +31,7 @@
   },
   {
     "name": "grafana",
-    "image": "jefftaylor42/serratus-grafana",
+    "image": "${dockerhub_account}/serratus-grafana",
     "cpu": 256,
     "memoryReservation": 128,
     "essential": true,

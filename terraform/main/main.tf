@@ -92,6 +92,7 @@ module "scheduler" {
   instance_type      = "c5.large"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
+  flask_workers      = 5 # (2*CPU)+1, according to https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
 }
 
 // Cluster monitor
@@ -101,6 +102,7 @@ module "monitoring" {
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
+  dockerhub_account  = var.dockerhub_account
   instance_type      = "r5.large"
 }
 
@@ -249,6 +251,9 @@ output "help" {
 
 output "scheduler_dns" {
   value = module.scheduler.public_dns
+}
+output "scheduler_pg_password" {
+  value = module.scheduler.pg_password
 }
 
 output "monitor_dns" {
