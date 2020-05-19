@@ -41,3 +41,9 @@ date; time make -f notebook/200518_ta_tblastx-reads.make stage-on-s3;
 echo $?; date
 ```
 
+# Results
+
+Took 78 minutes to run on 72 cores, processing a protein database of
+~1.9M, and 7.5G of FASTA-formatted reads. Resulted in ~377M of
+compressed BLAST format 7 output, with 5,391,653 hits. Memory
+utilization was negligible.
