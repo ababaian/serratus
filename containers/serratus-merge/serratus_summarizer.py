@@ -163,9 +163,10 @@ OtherMapped = 0
 SumL = 0
 MaxL = 0
 for Line in fIn:
+	fOut.write(Line)
 	# Ignore SAM headers
-	if Line.startswith('@'):
-		continue
+	# if Line.startswith('@'):
+		# continue
 
 	# Wrap everything in a try-except block because
 	# the summarizer MUST not crash the pipeline!
@@ -186,7 +187,6 @@ for Line in fIn:
 
 		if Fam == COV_FAM:
 			CovMapped += 1
-			fOut.write(Line)
 		else:
 			OtherMapped += 1
 
