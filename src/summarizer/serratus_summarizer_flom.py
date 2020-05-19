@@ -164,8 +164,8 @@ SumL = 0
 MaxL = 0
 for Line in fIn:
 	# Ignore SAM headers
-	if Line.startswith('@'):
-		continue
+	# if Line.startswith('@'):
+		# continue
 
 	# Wrap everything in a try-except block because
 	# the summarizer MUST not crash the pipeline!
