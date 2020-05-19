@@ -163,6 +163,7 @@ OtherMapped = 0
 SumL = 0
 MaxL = 0
 for Line in fIn:
+	fOut.write(Line)
 	# Ignore SAM headers
 	# if Line.startswith('@'):
 		# continue
@@ -186,7 +187,6 @@ for Line in fIn:
 
 		if Fam == COV_FAM:
 			CovMapped += 1
-			fOut.write(Line)
 		else:
 			OtherMapped += 1
 
