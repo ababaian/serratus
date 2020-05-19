@@ -5,6 +5,7 @@
 
 import sys
 import os
+import re
 
 # **************************************************
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -15,44 +16,48 @@ import os
 # **************************************************
 RAISEX = False
 
-COV_BINS = 32
-PAN_GENOME = "_mega_"
-MIN_LENGTH = 1000
+CVG_BINS = 32
+COV_PAN_GENOME =    "Cov___Pan"
+OTHER_PAN_GENOME = "Other_Pan"
+COV_FAM = "Coronaviridae"
 
-InputFileName = sys.argv[1]
-SummaryFileName = sys.argv[2]
-OutputFileName = sys.argv[3]
-TinyhitFileName = None
+SAMInputFileName = sys.argv[1]
+MetaFileName = sys.argv[2]
+SummaryFileName = sys.argv[3]
+SAMOutputFileName = sys.argv[4]
 
-if len(sys.argv) > 4:
-	TinyhitFileName = sys.argv[4]
-	try:
-		fTinyhit = open(TinyhitFileName, "w")
-	except:
-		fTinyhit = None
-
-Dir = os.getenv("SUMZER_DIR", ".")
-if not Dir.endswith('/'):
-	Dir += "/"
-
-AccLenTaxFileName = Dir + "acc_len_taxid.txt"
-TaxDescFileName = Dir + "taxid_desc.txt"
-
-fIn = open(InputFileName)
+fIn = open(SAMInputFileName)
 fSum = open(SummaryFileName, "w")
-fOut = None
-if OutputFileName != "-":
-	fOut = open(OutputFileName, "w")
+fOut = open(SAMOutputFileName, "w")
+## fTinyhit  = open(TinyhitOutputFileName, "w")
 
 AccToTax = {}
+AccToName = {}
 AccToLen = {}
-TaxToDesc = {}
+AccToFam = {}
+
+#   0     1    2      3
+# Acc	Len	Name	Fam
+for Line in open(MetaFileName):
+	Fields = Line[:-1].split('\t')
+	Acc = Fields[0]
+	Len = int(Fields[1])
+	Name = Fields[2]
+	Fam = Fields[3]
+
+	AccToName[Acc] = Name
+	AccToLen[Acc] = Len
+	AccToFam[Acc] = Fam
+
 AccToSumBases = {}
 AccToSumBasesPctId = {}
 AccToCoverageVec = {}
 
-AccToCoverageVec[PAN_GENOME] = [0]*COV_BINS
-AccToLen[PAN_GENOME] = 30000
+AccToCoverageVec[COV_PAN_GENOME] = [0]*CVG_BINS
+AccToCoverageVec[OTHER_PAN_GENOME] = [0]*CVG_BINS
+
+CovSeqs = [ None ]*CVG_BINS
+OtherSeqs = [ None ]*CVG_BINS
 
 d = {}
 Order = []
@@ -134,20 +139,9 @@ def MakeCartoon(v):
 			s += 'O'
 	return s 
 
-for Line in open(AccLenTaxFileName):
-	Fields = Line[:-1].split('\t')
-	Acc = Fields[0]
-	Len = int(Fields[1])
-	Tax = Fields[2]
-	AccToTax[Acc] = Tax
-	AccToLen[Acc] = Len
-
-for Line in open(TaxDescFileName):
-	Fields = Line[:-1].split('\t')
-	if len(Fields) == 2:
-		Tax = Fields[0]
-		Desc = Fields[1]
-		TaxToDesc[Tax] = Desc
+def AllMatch(CIGAR):
+	M = re.match("[0-9]+M", CIGAR)
+	return M != None
 
 AccToHits = {}
 
@@ -161,22 +155,18 @@ def AddHit(Acc, TBin, L, PctId):
 		AccToHits[Acc] = 1
 		AccToSumBases[Acc] = L
 		AccToSumBasesPctId[Acc] = L*PctId
-		AccToCoverageVec[Acc] = [0]*COV_BINS
+		AccToCoverageVec[Acc] = [0]*CVG_BINS
 		AccToCoverageVec[Acc][TBin] += 1
 
-Mapped = 0
-Unmapped = 0
+CovMapped = 0
+OtherMapped = 0
 SumL = 0
 MaxL = 0
-ShortHits = 0
 for Line in fIn:
-	# Echo stdin to stdout, like tee
-	if fOut != None:
-		fOut.write(Line)
-
+	fOut.write(Line)
 	# Ignore SAM headers
-	if Line.startswith('@'):
-		continue
+	# if Line.startswith('@'):
+		# continue
 
 	# Wrap everything in a try-except block because
 	# the summarizer MUST not crash the pipeline!
@@ -187,11 +177,19 @@ for Line in fIn:
 		# ReadLabel = Fields[0]
 		Flags = int(Fields[1])
 		if (Flags & 0x4) == 0x4:
-			Unmapped += 1
 			continue
 
-		Mapped += 1
 		Acc = Fields[2]
+		try:
+			Fam = AccToFam[Acc]
+		except:
+			Fam = None
+
+		if Fam == COV_FAM:
+			CovMapped += 1
+		else:
+			OtherMapped += 1
+
 		TPos = int(Fields[3])
 		# MAPQ = Fields[4]
 		CIGAR = Fields[5]
@@ -226,8 +224,8 @@ for Line in fIn:
 					NM = None
 				break
 
-		if fTinyhit != None:
-			print(Acc + "\t" + str(TPos) + "\t" + str(L) + "\t" + str(NM) + "\t" + EE, file=fTinyhit)
+		## if fTinyhit != None:
+			## print(Acc + "\t" + str(TPos) + "\t" + str(L) + "\t" + str(NM) + "\t" + EE, file=fTinyhit)
 
 		PctId = 0
 		if NM != None and L > 0:
@@ -236,30 +234,34 @@ for Line in fIn:
 		TL = None
 		try:
 			TL = AccToLen[Acc]
-			TBin = ((TPos-1)*COV_BINS)//TL
+			TBin = ((TPos-1)*CVG_BINS)//TL
 			if TBin < 0:
 				TBin = 0
-			if TBin >= COV_BINS:
-				TBin = COV_BINS - 1
+			if TBin >= CVG_BINS:
+				TBin = CVG_BINS - 1
 		except:
 			TBin = 0
 
-		AddHit(Acc, TBin, L, PctId)
-		if TL != None:
-			if TL >= MIN_LENGTH:
-				AddHit(PAN_GENOME, TBin, L, PctId)
+		if CIGAR.find("S") < 0:
+			AddHit(Acc, TBin, L, PctId)
+			if Fam == COV_FAM:
+				AddHit(COV_PAN_GENOME, TBin, L, PctId)
 			else:
-				ShortHits += 1
+				AddHit(OTHER_PAN_GENOME, TBin, L, PctId)
+
+		if AllMatch(CIGAR):
+			SEQ = Fields[9]
+			if Fam == COV_FAM:
+				if CovSeqs[TBin] == None:
+					CovSeqs[TBin] = SEQ
+			else:
+				if OtherSeqs[TBin] == None:
+					OtherSeqs[TBin] = SEQ
 
 	except:
 		if RAISEX:
 			raise
 		pass
-
-if Mapped > 0:
-	MeanL = SumL//Mapped
-else:
-	MeanL = 0
 
 def GetCovFract(v):
 	N = len(v)
@@ -280,67 +282,96 @@ for Acc in Accs:
 
 Order = GetOrder(AccToCovFract)
 
-TopAcc = "?"
+def IsPan(Acc):
+	return Acc.find("_Pan") >= 0
+
+TopCovAcc = None
+TopOtherAcc = None
 for k in Order:
 	Acc = Accs[k]
-	if Acc != PAN_GENOME:
-		TopAcc = Acc
-		break
+	try:
+		Fam = AccToFam[Acc]
+	except:
+		Fam = None
+	if Fam == None:
+		continue
 
-PanCartoon = MakeCartoon(AccToCoverageVec[PAN_GENOME])
-PanCovFract = GetCovFract(AccToCoverageVec[PAN_GENOME])
+	if Fam == COV_FAM and TopCovAcc == None:
+		TopCovAcc = Acc
+	if Fam != COV_FAM and TopOtherAcc == None:
+		TopOtherAcc = Acc
 
-try:
-	PanSumBases = AccToSumBases[PAN_GENOME]
-except:
-	PanSumBases = 0
+CovPanCartoon = MakeCartoon(AccToCoverageVec[COV_PAN_GENOME])
+OtherPanCartoon = MakeCartoon(AccToCoverageVec[OTHER_PAN_GENOME])
 
-try:
-	PanSumBasesPctId = AccToSumBasesPctId[PAN_GENOME]
-except:
-	PanSumBasesPctId = 0
-
-PanCovPct = PanCovFract*100.0
-PanPctId = 0.0
-if PanSumBasesPctId > 0:
-	PanPctId = PanSumBasesPctId/PanSumBases
+CovPanCovFract = GetCovFract(AccToCoverageVec[COV_PAN_GENOME])
+OtherPanCovFract = GetCovFract(AccToCoverageVec[OTHER_PAN_GENOME])
 
 try:
-	TopTax = AccToTax[TopAcc]
+	CovPanSumBases = AccToSumBases[COV_PAN_GENOME]
 except:
-	TopTax = "?"
+	CovPanSumBases = 0
+
 try:
-	TopDesc = TaxToDesc[TopTax]
+	CovPanSumBasesPctId = AccToSumBasesPctId[COV_PAN_GENOME]
 except:
-	TopDesc = "?"
+	CovPanSumBasesPctId = 0
 
-Score = PanCovPct
+try:
+	OtherPanSumBases = AccToSumBases[OTHER_PAN_GENOME]
+except:
+	OtherPanSumBases = 0
 
-s = "score=%.1f;" % Score
-s += "pctid=%.1f;" % PanPctId
-s += "pancov=%s;" % PanCartoon
-s += "topacc=%s;" % TopAcc
-s += "topdesc=%s;" % TopDesc
+try:
+	OtherPanSumBasesPctId = AccToSumBasesPctId[OTHER_PAN_GENOME]
+except:
+	OtherPanSumBasesPctId = 0
 
+CovPanCovPct = CovPanCovFract*100.0
+CovPanPctId = 0.0
+if CovPanSumBasesPctId > 0:
+	CovPanPctId = CovPanSumBasesPctId/CovPanSumBases
+
+OtherPanCovPct = OtherPanCovFract*100.0
+OtherPanPctId = 0.0
+if OtherPanSumBasesPctId > 0:
+	OtherPanPctId = OtherPanSumBasesPctId/OtherPanSumBases
+
+try:
+	TopCovName = AccToName[TopCovAcc]
+except:
+	TopCovName = "?"
+
+try:
+	TopOtherName = AccToName[TopOtherAcc]
+except:
+	TopOtherName = "?"
+
+CovScore = CovPanCovPct
+OtherScore = OtherPanCovPct
+
+s = "cov_score=%.1f;" % CovScore
+s += "mapped=%d;" % CovMapped
+s += "pctid=%.1f;" % CovPanPctId
+s += "pan=%s;" % CovPanCartoon
+s += "topacc=%s;" % TopCovAcc
+s += "topname=%s;" % TopCovName
 print(s, file=fSum)
 
-print("pancovpct=%.3g;" % PanCovPct, file=fSum)
-print("unmapped=%d;" % Unmapped, file=fSum)
-print("mapped=%d;" % Mapped, file=fSum)
-print("short_hits=%d;" % ShortHits, file=fSum)
-print("mean_aln_length=%d;" % MeanL, file=fSum)
-print("max_aln_length=%d;" % MaxL, file=fSum)
+s = "other_score=%.1f;" % OtherScore
+s += "mapped=%d;" % OtherMapped
+s += "pctid=%.1f;" % OtherPanPctId
+s += "pan=%s;" % OtherPanCartoon
+s += "topacc=%s;" % TopOtherAcc
+s += "topname=%s;" % TopOtherName
+print(s, file=fSum)
 
 def GetOutputLine(Acc):
 	Hits = AccToHits[Acc]
 	try:
-		Tax = AccToTax[Acc]
+		Name = AccToName[Acc]
 	except:
-		Tax = "?"
-	try:
-		Desc = TaxToDesc[Tax]
-	except:
-		Desc = "?"
+		Name = "?"
 	try:
 		Len = AccToLen[Acc]
 	except:
@@ -365,16 +396,27 @@ def GetOutputLine(Acc):
 		s += "len=" + str(Len) + ";"
 		s += "hits=%d;" % Hits
 		s += "depth=%.3g;" % Depth
-		s += "tax=%s;" % Tax
 		s += "coverage=" + Cartoon + ";"
-	s += "desc=%s;" % Desc
+	s += "name=%s;" % Name
 	return s
 
 for i in Order:
 	Acc = Accs[i]
-	if Acc == PAN_GENOME:
+	if IsPan(Acc):
 		continue
 	s = GetOutputLine(Acc)
 	print(s, file=fSum)
+
+for i in range(0, CVG_BINS):
+	Seq = CovSeqs[i]
+	if Seq != None:
+		print(">Cov.%d" % (i+1), file=fSum)
+		print(Seq, file=fSum)
+
+for i in range(0, CVG_BINS):
+	Seq = OtherSeqs[i]
+	if Seq != None:
+		print(">Other.%d" % (i+1), file=fSum)
+		print(Seq, file=fSum)
 
 fSum.close()

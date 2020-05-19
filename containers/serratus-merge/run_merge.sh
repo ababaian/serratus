@@ -53,6 +53,7 @@ function usage {
 # Run Parameters
 BAMREGEX='*.bam'
 SRA=''
+GENOME=''
 
 # Merge Options
 THREADS='1'
@@ -67,7 +68,8 @@ MERGE_ARGS=''
 BASEDIR="/home/serratus"
 OUTNAME="$SRA"
 
-while getopts b:s:nifrM:d:o:h FLAG; do
+
+while getopts b:s:nifrM:d:o:x:h FLAG; do
   case $FLAG in
     # Scheduler Options -----
     u)
@@ -75,6 +77,9 @@ while getopts b:s:nifrM:d:o:h FLAG; do
       ;;
     k)
       S3_BUCKET=$OPTARG
+      ;;
+    x)
+      GENOME=$OPTARG
       ;;
     # Merge Options ---------
     n)
@@ -141,11 +146,13 @@ fi
 OUTBAM="$SRA.bam"
 
 # Command to run summarizer script
-summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $SRA.summary /dev/stdout"
+sumzer="$GENOME.sumzer.tsv"
+# usage: serratus_summarizer_flom.py InputSamFileName MetaTsvFilename SummaryFileName OutputSamFileName
+#summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout $SRA.th"
+summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout"
 
 # Create tmp list of bam files to merge
 ls $BAMREGEX > bam.list
-
 
 if [[ "$SORT" = true ]]
 then
