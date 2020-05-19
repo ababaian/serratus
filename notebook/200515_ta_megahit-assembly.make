@@ -1,4 +1,4 @@
-### Automating the comparison of Kraken, kallisto, and snap-express
+
 
 #### Assumptions:
 ## * sudo apt-get install make
@@ -33,7 +33,7 @@ INSTALL_DIR ?= $(CURDIR)/third-party
 LD_LIBRARY_PATH = /usr/local/lib
 export LD_LIBRARY_PATH
 
-PATH := $(PATH):$(INSTALL_DIR)/MEGAHIT-1.2.9-Linux-x86_64-static/bin:$(INSTALL_DIR)/ncbi-blast-2.10.0+/bin
+PATH := $(PATH):$(INSTALL_DIR)/MEGAHIT-1.2.9-Linux-x86_64-static/bin:$(INSTALL_DIR)/ncbi-blast-2.10.0+/bin:$(INSTALL_DIR)/edirect
 export PATH
 
 
@@ -122,12 +122,17 @@ $(DATA_DIR)/SRR7287110_1.fastq:
 	cd $(DATA_DIR)
 	fastq-dump -I --split-files SRR7287110
 
+$(DATA_DIR)/SRR10829950_1.fastq:
+	mkdir -p $(DATA_DIR)
+	cd $(DATA_DIR)
+	fastq-dump -I --split-files SRR10829950
+
 $(DATA_DIR)/cov2m.fa:
 	aws s3 cp s3://serratus-public/seq/cov2m/cov2m.fa
 
 $(HOME)/.ncbirc:
-	@echo "[BLAST]" > .ncbirc
-	@echo "BLASTDB=$(DATA_DIR)/blastdbs" >> .ncbirc
+	@echo "[BLAST]" > $(HOME)/.ncbirc
+	@echo "BLASTDB=$(DATA_DIR)/../blastdbs" >> $(HOME)/.ncbirc
 
 update-blastdbs:
 	mkdir -p $(DATA_DIR)/../blastdbs
@@ -145,6 +150,7 @@ run-assembly: $(DATA_DIR)/ERR2756787_megahit/final.contigs.fa \
 		$(DATA_DIR)/ERR2756788_megahit/final.contigs.fa \
 		$(DATA_DIR)/SRR7287114_megahit/final.contigs.fa \
 		$(DATA_DIR)/SRR7287110_megahit/final.contigs.fa
+		$(DATA_DIR)/SRR10829950_megahit/final.contigs.fa
 
 $(DATA_DIR)/ERR2756788_megahit/final.contigs.fa: $(DATA_DIR)/ERR2756788_1.fastq
 	megahit -1 $(DATA_DIR)/ERR2756788_1.fastq \
@@ -176,14 +182,20 @@ $(DATA_DIR)/SRR7287110_megahit/final.contigs.fa: $(DATA_DIR)/SRR7287110_1.fastq
 		-o $(DATA_DIR)/SRR7287110_megahit \
 		--mem-flag 2
 
+$(DATA_DIR)/SRR10829950_megahit/final.contigs.fa: $(DATA_DIR)/SRR10829950_1.fastq
+	megahit -1 $(DATA_DIR)/SRR10829950_1.fastq \
+		-2 $(DATA_DIR)/SRR10829950_2.fastq \
+		-o $(DATA_DIR)/SRR10829950_megahit \
+		--mem-flag 2
 
+### Assembly Alignment:
 
 align-assembly: $(DATA_DIR)/ERR3569452.delta \
 	$(DATA_DIR)/ERR2756787.delta \
 	$(DATA_DIR)/ERR2756788.delta \
 	$(DATA_DIR)/SRR7287114.delta \
-	$(DATA_DIR)/SRR7287110.delta
-
+	$(DATA_DIR)/SRR7287110.delta \
+	$(DATA_DIR)/SRR10829950.delta
 
 $(DATA_DIR)/ERR3569452.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/ERR3569452_megahit/final.contigs.fa
 	cd $(DATA_DIR)
@@ -205,6 +217,10 @@ $(DATA_DIR)/SRR7287110.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/SRR7287110_megahi
 	cd $(DATA_DIR)
 	nucmer --prefix=SRR7287110 $^
 
+$(DATA_DIR)/SRR10829950.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/SRR10829950_megahit/final.contigs.fa
+	cd $(DATA_DIR)
+	nucmer --prefix=SRR10829950 $^
+
 
 ## This shows that k141_146741 wholly contains three fragments in cov2m, and is ~29k:
 show-coords:
@@ -214,6 +230,30 @@ show-coords:
 	show-coords -c -q -g -o -l -T ERR3569452.delta > ERR3569452-alignments.txt
 	show-coords -c -q -g -o -l -T SRR7287114.delta > SRR7287114-alignments.txt
 	show-coords -c -q -g -o -l -T SRR7287110.delta > SRR7287110-alignments.txt
+	show-coords -c -q -g -o -l -T SRR10829950.delta > SRR10829950-alignments.txt
+
+## Blast:
+
+$(DATA_DIR)/%/blast.tsv: $(DATA_DIR)/%_megahit/final.contigs.fa
+	cd $(DATA_DIR)
+	mkdir -p `dirname $@`
+	get_species_taxids.sh -t 10239 > virus-ids.txt
+	blastn -query $^ \
+		-db nt \
+		-evalue 1 \
+		-task blastn \
+		-dust yes \
+		-taxidlist virus-ids.txt \
+		-num_threads `nproc` \
+		-outfmt 7 \
+		> $@
+
+run-blast: $(DATA_DIR)/ERR2756788/blast.tsv
+
+
+
+
+### Utils:
 
 stage-results-to-s3:
 	cd $(DATA_DIR)
@@ -225,3 +265,4 @@ stage-results-to-s3:
 
 stage-alignment-reports:
 	cp $(DATA_DIR)/*-alignments.txt $(CURDIR)/notebook/200515_ta_megahit-assembly/
+
