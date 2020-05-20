@@ -67,9 +67,7 @@ $(DATA_DIR)/cov-hit-prots.fsa:
 	aws s3 cp s3://serratus-public/out/200505_zoonotic/summary/ERR2756788.summary .
 	awk -F';' '/^acc=/ {split($$1,parts,"="); if(parts[2] != "pan_genome") print parts[2]}' \
 		ERR2756788.summary \
-		> $@
-	epost -db nuccore \
-		-input /media/storage/tblastx/ERR2756788-accs.txt \
+	| epost -db nuccore \
 		-label coronaprot \
 		| elink -target protein \
 		| efetch -format fasta \
