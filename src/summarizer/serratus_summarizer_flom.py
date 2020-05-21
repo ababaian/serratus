@@ -185,6 +185,11 @@ for Line in fIn:
 		except:
 			Fam = None
 
+		##### START FRAGMENT HACK
+		if Acc.find(":") > 0:
+			Fam = COV_FAM
+		##### END FRAGMENT HACK
+
 		if Fam == COV_FAM:
 			CovMapped += 1
 		else:
@@ -241,6 +246,20 @@ for Line in fIn:
 				TBin = CVG_BINS - 1
 		except:
 			TBin = 0
+
+		###### FRAGMENT HACK ###########
+		try:
+			if Acc.find(":") > 0:
+				Fields = Acc.split(':')
+				Start = int(Fields[1])
+				TPos += Start
+				TL = 30000
+				TBin = ((TPos-1)*CVG_BINS)//TL
+				if TBin >= CVG_BINS:
+					TBin = CVG_BINS - 1
+		except:
+			pass
+		##### END FRAGMENT HACK ##########
 
 		if CIGAR.find("S") < 0:
 			AddHit(Acc, TBin, L, PctId)
