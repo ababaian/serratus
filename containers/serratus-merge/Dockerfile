@@ -37,6 +37,10 @@ COPY serratus-merge/*py ./
 #RUN curl https://serratus-public.s3.amazonaws.com/var/taxid_desc.txt > \
 #  ./taxid_desc.txt
 
+FROM amazonlinux:2 AS runtime
+
+COPY --from=build_base / /
+
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
