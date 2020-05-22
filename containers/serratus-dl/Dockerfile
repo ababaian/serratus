@@ -31,13 +31,12 @@ RUN yum install -y parallel procps-ng; echo will cite | parallel --citation 1>/d
 RUN wget --quiet https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}/sratoolkit.${SRATOOLKITVERSION}-centos_linux64.tar.gz &&\
     tar xzf sratoolkit.${SRATOOLKITVERSION}-centos_linux64.tar.gz &&\
     rm -f sratoolkit.${SRATOOLKITVERSION}-centos_linux64.tar.gz &&\
-    mv ./sratoolkit.${SRATOOLKITVERSION}-centos_linux64 /opt &&\
-    echo -e "export PATH=/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin:\$PATH" >\
-            /etc/profile.d/sratoolkit.sh &&\
-    chmod 755 /etc/profile.d/sratoolkit.sh &&\
+    mkdir -p /opt/sratools &&\
+    # Keep sratools grouped together, so its easy to copy them all out into the runtime
+    mv ./sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin/{vdb-config*,prefetch*,fastq-dump*,fasterq-dump*,sratools*} /opt/sratools &&\
+    # Install into /usr/local/bin for the rest of the build
+    cp -r /opt/sratools/* /usr/local/bin &&\
     mkdir /etc/ncbi
-
-ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 
 # GDC-CLIENT ===================================
 # RUN wget --quiet https://gdc.cancer.gov/system/files/authenticated%20user/0/gdc-client_v${GDCVERSION}_Ubuntu_x64.zip &&\
@@ -69,11 +68,22 @@ LABEL container.description="serratus: downloader and fq-splitter"
 LABEL software.license="GPLv3"
 LABEL tags="aws-cli, samtools, sra-toolkit, bvfilter"
 
-# set path for sra toolkit
-ENV SRATOOLKITVERSION='2.10.4'
-ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
+#samtools
+COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
 
-COPY --from=build_base / /
+#awscli and python deps
+COPY --from=build_base /usr/local/lib/python3.* /usr/local/lib/
+COPY --from=build_base /usr/local/lib64/python3.* /usr/local/lib64/
+COPY --from=build_base /usr/bin/python3* /usr/bin/
+COPY --from=build_base /usr/local/bin/aws /usr/local/bin/
+COPY --from=build_base /usr/local/bin/pip /usr/local/bin/
+
+# bvfilter
+COPY --from=build_base /usr/local/bin/bvfilter /usr/local/bin/
+
+# sratools
+COPY --from=build_base /root/.ncbi /root/.ncbi
+COPY --from=build_base /opt/sratools/ /usr/local/bin/
 
 #==========================================================
 # ENTRYPOINT ==============================================
