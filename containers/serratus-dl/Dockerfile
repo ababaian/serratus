@@ -14,13 +14,6 @@ ENV GDCVERSION='1.5.0'
 ENV BVVERSION='0.1'
 #ENV PICARDVERSION='2.22.0'
 
-# Additional Metadata
-LABEL container.type=${TYPE}
-LABEL container.version=${VERSION}
-LABEL container.description="serratus: downloader and fq-splitter"
-LABEL software.license="GPLv3"
-LABEL tags="aws-cli, samtools, sra-toolkit, bvfilter"
-
 #==========================================================
 # Dependencies ============================================
 #==========================================================
@@ -68,6 +61,17 @@ COPY worker.sh ./
 COPY serratus-dl/*sh ./
 
 FROM amazonlinux:2 AS runtime
+
+# Additional Metadata
+LABEL container.type=${TYPE}
+LABEL container.version=${VERSION}
+LABEL container.description="serratus: downloader and fq-splitter"
+LABEL software.license="GPLv3"
+LABEL tags="aws-cli, samtools, sra-toolkit, bvfilter"
+
+# set path for sra toolkit
+ENV SRATOOLKITVERSION='2.10.4'
+ENV PATH "$PATH:/opt/sratoolkit.${SRATOOLKITVERSION}-centos_linux64/bin"
 
 COPY --from=build_base / /
 
