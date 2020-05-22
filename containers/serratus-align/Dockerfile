@@ -70,6 +70,10 @@ WORKDIR /home/serratus
 COPY worker.sh ./
 COPY serratus-align/*sh ./
 
+FROM amazonlinux:2 AS runtime
+
+COPY --from=build_base / /
+
 #==========================================================
 # ENTRYPOINT ==============================================
 #==========================================================
