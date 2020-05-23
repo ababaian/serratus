@@ -55,10 +55,6 @@ COPY bin/bvfilter /usr/local/bin/
 COPY serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
 
-WORKDIR /home/serratus
-COPY worker.sh ./
-COPY serratus-dl/*sh ./
-
 FROM amazonlinux:2 AS runtime
 
 # Additional Metadata
@@ -68,22 +64,24 @@ LABEL container.description="serratus: downloader and fq-splitter"
 LABEL software.license="GPLv3"
 LABEL tags="aws-cli, samtools, sra-toolkit, bvfilter"
 
-#samtools
-COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
-
-#awscli and python deps
-COPY --from=build_base /usr/local/lib/python3.* /usr/local/lib/
-COPY --from=build_base /usr/local/lib64/python3.* /usr/local/lib64/
-COPY --from=build_base /usr/bin/python3* /usr/bin/
-COPY --from=build_base /usr/local/bin/aws /usr/local/bin/
-COPY --from=build_base /usr/local/bin/pip /usr/local/bin/
-
-# bvfilter
-COPY --from=build_base /usr/local/bin/bvfilter /usr/local/bin/
+# aws cli, plus dependencies
+RUN yum -y install ps jq python3 perl \
+ && alias python=python3 \
+ && curl -O https://bootstrap.pypa.io/get-pip.py \
+ && python3 get-pip.py \
+ && rm get-pip.py \
+ && pip install boto3 awscli
 
 # sratools
 COPY --from=build_base /root/.ncbi /root/.ncbi
 COPY --from=build_base /opt/sratools/ /usr/local/bin/
+
+# parallel
+COPY --from=build_base /usr/bin/parallel /usr/bin/
+
+WORKDIR /home/serratus
+COPY worker.sh ./
+COPY serratus-dl/*sh ./
 
 #==========================================================
 # ENTRYPOINT ==============================================
