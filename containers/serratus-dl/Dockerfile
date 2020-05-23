@@ -70,7 +70,8 @@ RUN yum -y install ps jq python3 perl \
  && curl -O https://bootstrap.pypa.io/get-pip.py \
  && python3 get-pip.py \
  && rm get-pip.py \
- && pip install boto3 awscli
+ && pip install boto3 awscli \
+ && yum clean all
 
 # sratools
 COPY --from=build_base /root/.ncbi /root/.ncbi
