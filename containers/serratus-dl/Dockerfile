@@ -64,6 +64,9 @@ LABEL container.description="serratus: downloader and fq-splitter"
 LABEL software.license="GPLv3"
 LABEL tags="aws-cli, sra-toolkit"
 
+# Environment setup
+ENV BASEDIR=/home/serratus
+
 # aws cli, plus dependencies
 RUN yum -y install ps jq python3 perl \
  && alias python=python3 \
