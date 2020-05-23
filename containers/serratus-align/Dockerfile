@@ -73,7 +73,7 @@ LABEL tags="aws-cli, samtools, bowtie2, magicblast, makeblatsdb, seqkit"
 # Environment setup
 ENV BASEDIR=/home/serratus
 
-RUN yum -y install perl jq flock unzip \
+RUN yum -y install perl jq unzip \
  && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
  && unzip awscliv2.zip \
  && ./aws/install \
@@ -90,6 +90,9 @@ COPY --from=build_base /opt/bowtie2-align/* /usr/local/bin/
 
 # samtools
 COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
+
+# flock
+COPY --from=build_base /usr/bin/flock /usr/bin/
 
 #==========================================================
 # Serratus Initialize =====================================
