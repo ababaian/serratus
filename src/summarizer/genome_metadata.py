@@ -4,6 +4,13 @@
 Example:
 time python ./genome_metadata.py < ../../flom2.fa.fai
 
+Output fields:
+1. NCBI Nucleotide accession
+2. NCBI Taxonomy  ID
+3. Length of sequence
+4. Family Taxon ID (if available)
+5. Family Taxon ID (if available)
+
 Note: sometimes a virus has unclear taxonomy, so there is no 'family' rank available in its lineage.
 
 '''
