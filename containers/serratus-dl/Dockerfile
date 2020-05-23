@@ -87,6 +87,9 @@ COPY --from=build_base /opt/sratools/ /usr/local/bin/
 COPY --from=build_base /usr/bin/parallel /usr/bin/
 # echo will cite | parallel --citation 1>/dev/null 2>/dev/null
 
+# flock
+COPY --from=build_base /usr/bin/flock /usr/bin/
+
 WORKDIR /home/serratus
 COPY worker.sh ./
 COPY serratus-dl/*sh ./
