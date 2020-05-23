@@ -80,7 +80,10 @@ RUN yum -y install perl jq flock unzip \
  && rm awscliv2.zip \
  && rm -r ./aws \
  && yum -y remove unzip \
- && yum clean all
+ && yum clean all \
+#   aws configuration
+ && aws configure set default.s3.multipart_threshold 4GB \
+ && aws configure set default.s3.multipart_chunksize 4GB
 
 # bowtie2
 COPY --from=build_base /opt/bowtie2-align/* /usr/local/bin/
