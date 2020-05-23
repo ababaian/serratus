@@ -70,12 +70,13 @@ LABEL container.description="serratus: alignment container"
 LABEL software.license="GPLv3"
 LABEL tags="aws-cli, samtools, bowtie2, magicblast, makeblatsdb, seqkit"
 
-RUN yum -y install python3 perl \
- && alias python=python3 \
- && curl -O https://bootstrap.pypa.io/get-pip.py \
- && python3 get-pip.py \
- && rm get-pip.py \
- && pip install boto3 awscli \
+RUN yum -y install perl unzip \
+ && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+ && unzip awscliv2.zip \
+ && ./aws/install \
+ && rm awscliv2.zip \
+ && rm -r ./aws \
+ && yum -y remove unzip \
  && yum clean all
 
 # bowtie2
