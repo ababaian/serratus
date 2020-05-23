@@ -73,7 +73,7 @@ LABEL tags="aws-cli, samtools, bowtie2, magicblast, makeblatsdb, seqkit"
 # Environment setup
 ENV BASEDIR=/home/serratus
 
-RUN yum -y install perl unzip \
+RUN yum -y install perl jq unzip \
  && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
  && unzip awscliv2.zip \
  && ./aws/install \
