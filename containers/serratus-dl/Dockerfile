@@ -10,15 +10,15 @@ ARG VERSION='0.1.4'
 # Software Information
 # ENV SAMTOOLSVERSION='1.10'  # from serratus-base
 ENV SRATOOLKITVERSION='2.10.4'
-ENV GDCVERSION='1.5.0'
-ENV BVVERSION='0.1'
+#ENV GDCVERSION='1.5.0'
+#ENV BVVERSION='0.1'
 #ENV PICARDVERSION='2.22.0'
 
 #==========================================================
 # Dependencies ============================================
 #==========================================================
 # Libraries for serratus-downloader scripts
-RUN yum -y install pigz
+#RUN yum -y install pigz
 
 # EPEL + Parallel
 RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
@@ -45,7 +45,7 @@ RUN wget --quiet https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}
 #    mv gdc-client /usr/local/bin/
 
 # BVFILTER =====================================
-COPY bin/bvfilter /usr/local/bin/
+#COPY bin/bvfilter /usr/local/bin/
 
 #==========================================================
 # Serratus Initialize =====================================
@@ -62,7 +62,7 @@ LABEL container.type=${TYPE}
 LABEL container.version=${VERSION}
 LABEL container.description="serratus: downloader and fq-splitter"
 LABEL software.license="GPLv3"
-LABEL tags="aws-cli, samtools, sra-toolkit, bvfilter"
+LABEL tags="aws-cli, sra-toolkit"
 
 # aws cli, plus dependencies
 RUN yum -y install ps jq python3 perl \
@@ -78,6 +78,7 @@ COPY --from=build_base /opt/sratools/ /usr/local/bin/
 
 # parallel
 COPY --from=build_base /usr/bin/parallel /usr/bin/
+# echo will cite | parallel --citation 1>/dev/null 2>/dev/null
 
 WORKDIR /home/serratus
 COPY worker.sh ./
