@@ -11,10 +11,10 @@ if [ ! -x "$2" ]; then
 fi
 TYPE="$1"; shift
 
-if [ "$TYPE" = "merge" ]; then
-    # protect from termination
-    touch running.merge
-fi
+#if [ "$TYPE" = "merge" ]; then
+#    # protect from termination
+#    touch running.merge
+#fi
 
 if [ -z "$SCHEDULER" ]; then
     echo Please set SCHEDULER environment variable.

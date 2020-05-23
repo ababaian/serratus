@@ -324,7 +324,7 @@ def start_merge_job():
     response = acc.to_dict()
     session.commit()
     response['action'] = 'process'
-
+    response['genome'] = db.get_config_val("GENOME")
     response['merge_args'] = db.get_config_val("MERGE_ARGS")
 
     # Send the response as JSON
