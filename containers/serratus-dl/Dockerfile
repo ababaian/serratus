@@ -74,7 +74,10 @@ RUN yum -y install ps jq python3 perl \
  && python3 get-pip.py \
  && rm get-pip.py \
  && pip install boto3 awscli \
- && yum clean all
+ && yum clean all \
+#   aws configuration
+ && aws configure set default.s3.multipart_threshold 4GB \
+ && aws configure set default.s3.multipart_chunksize 4GB
 
 # sratools
 COPY --from=build_base /root/.ncbi /root/.ncbi
