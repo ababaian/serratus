@@ -10,12 +10,14 @@ import time
 import requests
 
 BLOCKS = 10
+THREADS = 100
+
 
 def load_sch(sch, csv, lines):
     """Load some test data into the scheduler"""
     # Reset db
     requests.put("http://{}/db".format(sch))
-    data = "\n".join(open(csv).readlines()[:lines+1])
+    data = "\n".join(open(csv).readlines()[: lines + 1])
     requests.post("http://{}/jobs/add_sra_run_info/data.csv".format(sch), data=data)
 
 
@@ -29,16 +31,20 @@ def serratus_worker(sch, q, type_, params=()):
 
     while True:
         # Get a job
-        res = requests.post('http://{}/jobs/{}/'.format(sch, type_), params=start_params).json()
+        res = requests.post(
+            "http://{}/jobs/{}/".format(sch, type_), params=start_params
+        ).json()
 
-        if res['action'] == "wait":
+        if res["action"] == "wait":
             break
 
         job_id = res["id"]
         q.append(res["acc_id"])
 
         # Do nothing, and send the response.
-        res2 = requests.post("http://{}/jobs/{}/{}".format(sch, type_, job_id), params=end_params)
+        res2 = requests.post(
+            "http://{}/jobs/{}/{}".format(sch, type_, job_id), params=end_params
+        )
 
 
 def main():
@@ -62,7 +68,7 @@ def main():
     procs = []
     for args in argses:
         start = time.monotonic()
-        for _ in range(30):
+        for _ in range(THREADS):
             p = Process(target=serratus_worker, args=args)
             p.start()
             procs.append(p)

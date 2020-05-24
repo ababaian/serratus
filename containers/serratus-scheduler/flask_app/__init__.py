@@ -2,6 +2,7 @@
 them information about work that needs doing."""
 import os
 import json
+import subprocess
 import time
 
 from flask import Flask, jsonify, request, current_app, redirect, url_for
@@ -10,18 +11,34 @@ from prometheus_client import Summary
 from . import db, jobs, metrics, cron
 
 FLASK_REQUEST_SUMMARY = Summary(
-    'flask_request_latency_seconds', 'Flask Request Latency',
-    ['method', 'endpoint']
+    "flask_request_latency_seconds", "Flask Request Latency", ["method", "endpoint"]
 )
+
 
 def before_request():
     request.start_time = time.time()
 
+
 def after_request(response):
     request_latency = time.time() - request.start_time
-    FLASK_REQUEST_SUMMARY.labels(request.method, request.url_rule).observe(request_latency)
+    FLASK_REQUEST_SUMMARY.labels(request.method, request.url_rule).observe(
+        request_latency
+    )
 
     return response
+
+
+def wait_postgres(app):
+    cmd = ["pg_isready", "-d", app.config["DATABASE"]]
+    while True:
+        ret = subprocess.call(cmd)
+        if ret == 0:
+            break
+        elif ret in (1, 2):
+            time.sleep(5)
+            continue
+        else:
+            raise IOError("Invalid database command: {}".format(cmd))
 
 
 def create_app(test_config=None):
@@ -40,7 +57,7 @@ def create_app(test_config=None):
     )
 
     if test_config is None:
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_pyfile("config.py", silent=True)
     else:
         app.config.from_mapping(test_config)
 
@@ -49,25 +66,26 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    @app.route('/status')
+    @app.route("/status")
     def status():
-        return jsonify({'status': 'up'})
+        return jsonify({"status": "up"})
 
-    @app.route('/config', methods=["GET", "PUT"])
+    @app.route("/config", methods=["GET", "PUT"])
     def config():
         if request.method == "PUT":
             db.update_config(json.loads(request.data))
         return jsonify(dict(db.get_config()))
 
-    @app.route('/')
+    @app.route("/")
     def root():
-        return redirect(url_for('jobs.show_jobs'))
+        return redirect(url_for("jobs.show_jobs"))
 
     app.register_blueprint(db.bp)
     app.register_blueprint(jobs.bp)
     app.register_blueprint(metrics.bp)
-    db.init_app(app)
+    wait_postgres(app)
 
+    db.init_app(app)
     cron.register(app)
 
     app.before_request(before_request)

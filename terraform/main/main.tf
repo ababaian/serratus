@@ -200,6 +200,8 @@ resource "local_file" "create_tunnel" {
     echo "    localhost:9090 -- prometheus"
     ssh -Nf -L 8000:localhost:8000 ec2-user@${module.scheduler.public_dns}
     echo "    localhost:8000 -- scheduler"
+    ssh -Nf -L 5432:localhost:5432 ec2-user@${module.scheduler.public_dns}
+    echo "    localhost:5432 -- postgres"
   EOF
 }
 
