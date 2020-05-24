@@ -1,9 +1,9 @@
-FROM ubuntu
+FROM alpine:3.11
 
-RUN apt-get update -yq
-RUN apt-get install -yqq python3-pip
-
-RUN pip3 install flask sqlalchemy gunicorn prometheus_client boto3 psycopg2-binary
+RUN apk add \
+        python3 postgresql-client py3-flask py3-sqlalchemy py3-gunicorn \
+        py3-prometheus-client py3-psycopg2 && \
+    pip3 install boto3 # boto3 not in 3.11
 
 # Run Python in UTF-8 mode
 ENV FLASK_APP=flask_app
