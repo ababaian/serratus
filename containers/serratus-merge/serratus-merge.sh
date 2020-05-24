@@ -191,8 +191,8 @@ WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
 
 # Download pan-genome summary data
-if [ ! -f $BASEDIR/"$GENOME".sumzer.tsv ]; then
-  aws s3 cp s3://serratus-public/seq/"$GENOME"/"$GENOME".sumzer.tsv $BASEDIR/
+if [ ! -f "$BASEDIR/$GENOME.sumzer.tsv" ]; then
+  aws s3 cp "s3://serratus-public/seq/$GENOME/$GENOME.sumzer.tsv" $BASEDIR/
 fi
 
 cp $BASEDIR/"$GENOME".sumzer.tsv $WORKDIR/ # copy summarizer tables into runid
