@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+    echo "Usage: $0 <SRA> <Genome>"
+    echo 'Run the container with docker run <img> run <SRA> <Genome>'
+    exit 1
+fi
+
+SRA=$1
+GENOME=$2
+
+# May be overridden via environment
+FQMAX=${FQMAX:-100000000}
+
+aws s3 cp --recursive s3://serratus-public/seq/$GENOME/ .
+
+# Prefetch the data before processing
+# This should be VERY fast, and will cause fastq-dump to have
+# smoother CPU usage in the end.
+prefetch $SRA
+
+# Create some named pipes for fastq-dump to put its data into.
+fastq-dump -X -100000000 -Z $SRA \
+ | bowtie2 -x $GENOME --very-sensitive-local --no-unal -U /dev/stdin \
+ | python3 summarizer.py /dev/stdin $GENOME.sumzer.tsv $SRA.summary /dev/stdout \
+ | samtools view -b > out.bam
+
+# Stream both bowtie flavors into s3
+S3_OUT="serratus-batch-$(date +%s).bam"
+aws s3 cp s3://public-data/testing-batch-outs/${S3_OUT} ./out.bam
