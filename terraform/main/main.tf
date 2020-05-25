@@ -170,7 +170,7 @@ module "merge" {
   // TODO: the credentials are not properly set-up to
   //       upload to serratus-public, requires a *Object policy
   //       on the bucket.
-  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200505_zoonotic"
+  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200523_zoo4"
 }
 
 // RESOURCES ##############################
