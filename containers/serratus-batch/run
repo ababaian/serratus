@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 2 && $# -ne 3 ]]; then
     echo "Usage: $0 <SRA> <Genome>"
     echo 'Run the container with docker run <img> run <SRA> <Genome>'
     exit 1
@@ -10,15 +10,34 @@ fi
 SRA=$1
 GENOME=$2
 
+# Optional
+set +u
+OUT_BUCKET=$3
+set -u
+
 # May be overridden via environment
 FQMAX=${FQMAX:-100000000}
 
-aws s3 cp --recursive s3://serratus-public/seq/$GENOME/ .
+# To pre-cache a genome, run the container with a shell command, pre-download 
+# the GENOME, and commit it
+### docker run -ti --rm -e ... serratus-batch /bin/sh
+### ## aws s3 cp ...
+### ... different shell ...
+### docker ps
+### ... find container name (ex boring_wozniack) ...
+### docker commit boring_wozniack serratus-batch:<tag_name>
+### ... container shell ...
+### exit
+### ... next time ...
+### serratus run -ti --rm -e ... serratus-batch:<tag_name> run <SRA> <Index>
+stat $GENOME* 2>&1 > /dev/null \
+ || aws s3 cp --recursive s3://serratus-public/seq/$GENOME/ .
 
 # Prefetch the data before processing
 # This should be VERY fast, and will cause fastq-dump to have
 # smoother CPU usage in the end.
-prefetch $SRA
+stat $SRA 2>&1 > /dev/null \
+ || prefetch $SRA
 
 # Create some named pipes for fastq-dump to put its data into.
 fastq-dump -X -100000000 -Z $SRA \
@@ -26,6 +45,12 @@ fastq-dump -X -100000000 -Z $SRA \
  | python3 summarizer.py /dev/stdin $GENOME.sumzer.tsv $SRA.summary /dev/stdout \
  | samtools view -b > out.bam
 
-# Stream both bowtie flavors into s3
-S3_OUT="serratus-batch-$(date +%s).bam"
-aws s3 cp s3://public-data/testing-batch-outs/${S3_OUT} ./out.bam
+if [[ -z ${OUT_BUCKET} ]]; then
+    cat out.bam
+else
+    # Stream both bowtie flavors into s3
+    S3_OUT="serratus-batch-$(date +%s).bam"
+    mv ./out.bam ${S3_OUT}
+    echo "Copying file '${S3_OUT}' to '${OUT_BUCKET}'"
+    aws s3 cp ${OUT_BUCKET} ${S3_OUT}
+fi
