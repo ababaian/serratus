@@ -38,7 +38,7 @@ ENV BASEDIR=/home/serratus
 
 # aws cli, plus dependencies
 # -merge has its own python dependency, so do a full python/pip install
-RUN yum -y install python3 perl \
+RUN yum -y install python3 perl ps jq \
  && alias python=python3 \
  && curl -O https://bootstrap.pypa.io/get-pip.py \
  && python3 get-pip.py \
