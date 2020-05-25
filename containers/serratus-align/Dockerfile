@@ -1,6 +1,5 @@
 FROM serratus-base:latest AS build_base
 
-
 # Software Information
 # ENV SAMTOOLSVERSION='1.10' # from serratus-base
 ENV BOWTIEVERSION='2.4.1'
@@ -61,7 +60,7 @@ FROM amazonlinux:2 AS runtime
 #==========================================================
 # Container Information
 ARG TYPE='aligner'
-ARG VERSION='0.1.4'
+ARG VERSION='0.3.0'
 
 # Additional Metadata
 LABEL container.type=${TYPE}

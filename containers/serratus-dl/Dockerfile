@@ -5,7 +5,7 @@ FROM serratus-base:latest AS build_base
 #==========================================================
 # Container Information
 ARG TYPE='downloader'
-ARG VERSION='0.1.4'
+ARG VERSION='0.3.0'
 
 # Software Information
 # ENV SAMTOOLSVERSION='1.10'  # from serratus-base

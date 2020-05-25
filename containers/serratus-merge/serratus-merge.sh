@@ -8,8 +8,8 @@ set -eu
 # AMI : aami-0fdf24f2ce3c33243
 # login: ec2-user@<ipv4>
 # base: 50 Gb
-PIPE_VERSION="0.1.4"
-CONTAINER_VERSION='serratus-merge:0.1.4'
+PIPE_VERSION="0.3.0"
+CONTAINER_VERSION='serratus-merge:0.3.0'
 
 # Usage
 function usage {
