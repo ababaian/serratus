@@ -149,7 +149,7 @@ OUTBAM="$SRA.bam"
 sumzer="$GENOME.sumzer.tsv"
 
 # Meta-data header for summary file
-SUMZER_COMMENT=$(echo sra="$SRA",genome="$GENOME",date=$(date +%y%m%d-%R))
+export SUMZER_COMMENT=$(echo sra="$SRA",genome="$GENOME",date=$(date +%y%m%d-%R))
 
 # Summary Comment / Meta-data
 # usage: serratus_summarizer_flom.py InputSamFileName MetaTsvFilename SummaryFileName OutputSamFileName

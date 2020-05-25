@@ -24,7 +24,7 @@ MetaFileName = sys.argv[2]
 SummaryFileName = sys.argv[3]
 SAMOutputFileName = sys.argv[4]
 
-SUMZER_COMMENT = os.getenv("SUMZER_COMMENT", None)
+SUMZER_COMMENT = os.getenv("SUMZER_COMMENT", "")
 SUMZER_COMMENT = SUMZER_COMMENT.replace(";", "&")
 
 fIn = open(SAMInputFileName)
