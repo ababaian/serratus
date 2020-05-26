@@ -24,8 +24,9 @@ MetaFileName = sys.argv[2]
 SummaryFileName = sys.argv[3]
 SAMOutputFileName = sys.argv[4]
 
-SUMZER_COMMENT = os.getenv("SUMZER_COMMENT", "")
-SUMZER_COMMENT = SUMZER_COMMENT.replace(";", "&")
+SUMZER_COMMENT = os.getenv("SUMZER_COMMENT", None)
+if SUMZER_COMMENT != None:
+	SUMZER_COMMENT = SUMZER_COMMENT.replace(";", "&")
 
 fIn = open(SAMInputFileName)
 fSum = open(SummaryFileName, "w")
@@ -71,7 +72,6 @@ for Line in open(MetaFileName):
 AccToSumBases = {}
 AccToSumBasesPctId = {}
 AccToCoverageVec = {}
-
 for Fam in Fams:
 	AccToCoverageVec[Fam] = [0]*CVG_BINS
 
@@ -176,13 +176,11 @@ def AddHit(Acc, TBin, L, PctId, SoftClipped):
 		AccToCoverageVec[Acc] = [0]*CVG_BINS
 		AccToCoverageVec[Acc][TBin] = 1
 
-	if SoftClipped:
-		return
-
-	try:
-		AccToGlbs[Acc] += 1
-	except:
-		AccToGlbs[Acc] = 1
+	if not SoftClipped:
+		try:
+			AccToGlbs[Acc] += 1
+		except:
+			AccToGlbs[Acc] = 1
 
 	try:
 		AccToSumBases[Acc] += L
@@ -226,8 +224,8 @@ for Line in fIn:
 		except:
 			Fam = None
 
-		if Fam == COV_FAM:
-			CovMapped += 1
+		#if Fam == COV_FAM:
+		#	CovMapped += 1
 
 		TPos = int(Fields[3])
 		# MAPQ = Fields[4]
@@ -276,14 +274,26 @@ for Line in fIn:
 		except:
 			TL = None
 
-		PBin = None
 		if TL != None:
 			TBin = GetBin(TPos, TL)
 			AddHit(Acc, TBin, TL, PctId, SoftClipped)
 
-		if Fam != None and Offset != None and PL != None:
-			PBin = GetBin(TPos + Offset, PL)
-			AddHit(Fam, PBin, PL, PctId, SoftClipped)
+		try:
+			Desc = AccToName[Acc]
+			IsComplete = (Desc.find("omplete genome") > 0)
+		except:
+			IsComplete = False
+
+		PBin = None
+		if Fam != None:
+			if IsComplete:
+				PBin = GetBin(TPos, TL)
+			elif Offset != None and PL != None:
+				PBin = GetBin(TPos + Offset, PL)
+			elif TL != None:
+				PBin = GetBin(TPos, TL)
+			if PBin != None:
+				AddHit(Fam, PBin, PL, PctId, SoftClipped)
 
 		if Fam != None:
 			try:
@@ -317,7 +327,7 @@ def GetCovFract(Acc):
 			n += 1
 	return float(n)/N
 
-Accs = list(AccToGlbs.keys())
+Accs = list(AccToAlns.keys())
 
 AccToCovFract = {}
 for Acc in Accs:
@@ -326,75 +336,18 @@ for Acc in Accs:
 
 AccOrder = GetOrder(AccToCovFract)
 
-TopCovAcc = None
-TopOtherAcc = None
-for k in AccOrder:
-	Acc = Accs[k]
-	try:
-		Fam = AccToFam[Acc]
-	except:
-		Fam = None
-	if Fam == None:
-		continue
-
-	if Fam == COV_FAM and TopCovAcc == None:
-		TopCovAcc = Acc
-	if Fam != COV_FAM and TopOtherAcc == None:
-		TopOtherAcc = Acc
-
-try:
-	CovHits = AccToGlbs[COV_FAM]
-except:
-	CovHits = 0
-
-CovPanCartoon = MakeCartoon(COV_FAM)
-CovPanCovFract = GetCovFract(COV_FAM)
-
-try:
-	CovPanSumBases = AccToSumBases[COV_FAM]
-except:
-	CovPanSumBases = 0
-
-try:
-	CovPanSumBasesPctId = AccToSumBasesPctId[COV_FAM]
-except:
-	CovPanSumBasesPctId = 0
-
-CovPanCovPct = CovPanCovFract*100.0
-CovPanPctId = 0.0
-if CovPanSumBasesPctId > 0:
-	CovPanPctId = CovPanSumBasesPctId/CovPanSumBases
-
-try:
-	TopCovName = AccToName[TopCovAcc]
-except:
-	TopCovName = "?"
-
-CovScore = CovPanCovPct
-if CovHits < 10 or CovPanCovPct < 5:
-	CovScore = 1
-
 if SUMZER_COMMENT != None:
 	s = "SUMZER_COMMENT=" + SUMZER_COMMENT + ";"
 	print(s, file=fSum)
 
-s = "cov_score=%.0f;" % CovScore
-s += "aln=%d;" % CovMapped
-s += "glb=%d;" % CovHits
-s += "pctid=%.1f;" % CovPanPctId
-s += "pan=%s;" % CovPanCartoon
-s += "top=%s;" % TopCovAcc
-s += "topname=%s;" % TopCovName
-print(s, file=fSum)
-
 def GetOutputLineFam(Fam):
 	try:
-		Alns = AccToAlns[Acc]
+		Alns = AccToAlns[Fam]
 	except:
 		Alns = 0
 
 	try:
-		Glbs = AccToGlbs[Acc]
+		Glbs = AccToGlbs[Fam]
 	except:
 		Glbs = 0
 
@@ -424,9 +377,6 @@ def GetOutputLineFam(Fam):
 		TopName = "?"
 
 	Score = 100.0*CovFract
-	if Glbs < 10 or Score < 5:
-		Score = 1
-
 	s = "family=" + Fam + ";"
 	s += "score=%.0f;" % Score
 	s += "pctid=%.0f;" % PctId
