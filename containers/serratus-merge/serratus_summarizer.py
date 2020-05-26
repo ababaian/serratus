@@ -40,6 +40,7 @@ AccToOffset = {}
 AccToPanLength = {}
 
 FamToAccToCount = {}
+FamToPL = {}
 
 #   0     1    2      3		4		5
 # Acc	Len	Name	Fam		Offset	Pan-genome length
@@ -64,6 +65,7 @@ for Line in open(MetaFileName):
 	AccToFam[Acc] = Fam
 	AccToOffset[Acc] = Offset
 	AccToPanLength[Acc] = PanLength
+	FamToPL[Fam] = PanLength
 
 	if Fam not in Fams:
 		Fams.append(Fam)
@@ -356,6 +358,11 @@ def GetOutputLineFam(Fam):
 	except:
 		Alns = 0
 
+	try:
+		PL = FamToPL[Fam]
+	except:
+		PL = None
+
 	SumBases = AccToSumBases[Fam]
 	SumBasesPctId = AccToSumBasesPctId[Fam]
 	PctId = 0
@@ -375,6 +382,10 @@ def GetOutputLineFam(Fam):
 		TopName = AccToName[TopAcc]
 	except:
 		TopName = "?"
+	try:
+		TopLen = AccToLen[TopAcc]
+	except:
+		TopLen = None
 
 	Score = 100.0*CovFract
 	s = "family=" + Fam + ";"
@@ -382,9 +393,15 @@ def GetOutputLineFam(Fam):
 	s += "pctid=%.0f;" % PctId
 	s += "aln=%d;" % Alns
 	s += "glb=%d;" % Glbs
+	if PL != None:
+		s += "panlen=%d;" % PL
 	s += "cvg=" + Cartoon + ";"
 	s += "top=" + TopAcc + ";"
 	s += "topaln=" + str(TopHits) + ";"
+	if TopLen == None:
+		s += "toplen=?;"
+	else:
+		s += "toplen=%d;" % TopLen
 	s += "topname=" + TopName + ";"
 	return s
 
@@ -427,6 +444,8 @@ def GetOutputLine(Acc):
 	s += "pctid=%.1f;" % PctId
 	s += "aln=%d;" % Alns
 	s += "glb=%d;" % Glbs
+	if Len != None:
+		s += "len=%d;" % Len
 	try:
 		Fam = AccToFam[Acc]
 	except:
