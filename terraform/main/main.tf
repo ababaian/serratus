@@ -103,7 +103,7 @@ module "monitoring" {
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
   dockerhub_account  = var.dockerhub_account
-  instance_type      = "r5.large"
+  instance_type      = "r5.xlarge"
 }
 
 // Serratus-dl
@@ -111,13 +111,13 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 250
+  max_size           = 300
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
   instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
-  volume_size        = 50 // Mitigate the storage leak in fastq-dump
+  volume_size        = 200 // Mitigate the storage leak in fastq-dump
   spot_price         = 0.05
 
   s3_bucket          = module.work_bucket.name
@@ -136,7 +136,7 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 750
+  max_size           = 1200
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large" # c5.large
@@ -156,11 +156,11 @@ module "merge" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 30
+  max_size           = 50
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
-  volume_size        = 50 // prevent disk overflow via samtools sort
+  volume_size        = 200 // prevent disk overflow via samtools sort
   spot_price         = 0.04
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "bam-blocks"
@@ -172,7 +172,7 @@ module "merge" {
   // TODO: the credentials are not properly set-up to
   //       upload to serratus-public, requires a *Object policy
   //       on the bucket.
-  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200525_zoo5"
+  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200528_viro"
 }
 
 // RESOURCES ##############################
