@@ -10,10 +10,20 @@ import boto3
 import click
 from flask import current_app
 from flask.cli import with_appcontext
-from prometheus_client import Gauge
+from prometheus_client import Gauge, start_http_server, CollectorRegistry
 from sqlalchemy import or_
 
 from . import db
+
+CRON_REGISTRY = CollectorRegistry()
+
+# Usage note: Prometheus requires special treatment if run with multiprocessing.
+asg_desired_size_gauge = Gauge(
+    "asg_desired_size", "Desired size of ASGs", ["asg"], registry=CRON_REGISTRY
+)
+asg_virt_size_gauge = Gauge(
+    "asg_virt_size", "Desired size of ASGs", ["asg"], registry=CRON_REGISTRY
+)
 
 
 def get_asg_name(autoscaling, pattern):
@@ -25,11 +35,6 @@ def get_asg_name(autoscaling, pattern):
             if pattern in name:
                 return name
     raise RuntimeError('No ASG named "{}"'.format(pattern))
-
-
-# Usage note: Prometheus requires special treatment if run with multiprocessing.
-asg_desired_size_gauge = Gauge("asg_desired_size", "Desired size of ASGs", ["asg"])
-asg_virt_size_gauge = Gauge("asg_virt_size", "Desired size of ASGs", ["asg"])
 
 
 def set_asg_size(
@@ -255,6 +260,7 @@ def clean_terminated_jobs_loop(app):
 def cron():
     print("Creating background processes")
     app = current_app._get_current_object()
+    start_http_server(9101, registry=CRON_REGISTRY)
     Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
     Thread(target=adjust_autoscaling_loop, args=(app,)).start()
 

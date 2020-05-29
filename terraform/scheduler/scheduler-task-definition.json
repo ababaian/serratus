@@ -54,6 +54,12 @@
     "cpu": 256,
     "memoryReservation": 128,
     "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 9101,
+        "hostPort": 9101
+      }
+    ],
     "entrypoint": ["flask", "cron"],
     "logConfiguration": {
       "logDriver": "awslogs",

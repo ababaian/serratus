@@ -22,5 +22,7 @@ scrape_configs:
   - job_name: 'scheduler'
     scrape_interval: 15s
     static_configs:
-      - targets: ['scheduler:8000']
+      - targets:
+        - 'scheduler:8000'
+        - 'scheduler:9101'
 
