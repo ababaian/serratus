@@ -10,7 +10,7 @@ scrape_configs:
   - job_name: 'ec2'
     scrape_interval: 60s
     ec2_sd_configs:
-      - refresh_interval: 300s
+      - refresh_interval: 120s
         region: us-east-1
         port: 9100
     relabel_configs:
