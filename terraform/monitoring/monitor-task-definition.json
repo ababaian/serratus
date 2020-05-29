@@ -16,6 +16,11 @@
         "ipAddress": "${sched_ip}"
       }
     ],
+    "ulimits": [{
+      "name": "nofile",
+      "softLimit": 1048576,
+      "hardLimit": 1048576
+    }],
     "mountPoints": [{
       "sourceVolume": "prometheus-data",
       "containerPath": "/prometheus"
