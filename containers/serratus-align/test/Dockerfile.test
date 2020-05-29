@@ -1,0 +1,6 @@
+FROM serratus-align:test
+
+COPY ./serratus-align/test/test_align.sh /
+
+ENTRYPOINT [""]
+CMD ["bash", "/test_align.sh" ]

@@ -236,7 +236,7 @@ def start_merge_job():
     response = acc.to_dict()
     response["id"] = acc.acc_id
     response['action'] = 'process'
-    response['merge_args'] = db.get_config_val("MERGE_ARGS")
+    response['genome'] = db.get_config_val("GENOME")
 
     # Send the response as JSON
     return jsonify(response)

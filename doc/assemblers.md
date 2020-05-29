@@ -39,19 +39,26 @@ Paper: doi: https://doi.org/10.1101/701607
 Comments: Isoform assembly maybe an unnecessary feature, but our datasets are expected to be transciptomic.
 
 **SPAdes**
-Type: De-novo genomic / transcriptomic / metagenomic (different varieties exist - rnaSPAdes, SPAdes meta etc.)
-Code: https://github.com/ablab/spades
-Paper: doi: 10.1089/cmb.2012.0021
+Type: De-novo genomic / transcriptomic / metagenomic (different varieties exist - rnaSPAdes, SPAdes meta etc.)  
+Code: https://github.com/ablab/spades  
+Paper: doi: 10.1089/cmb.2012.0021  
+
 Comments: Well-supported and generally robust assembler. SPAdes meta was highlighted in the review article at the top of the document ("Choice of assembly software has a critical impact on virome characterisation") as performing "consistently well".
 
 **Megahit**
-Type: De-novo genomic / metagenomic
-Code: https://github.com/voutcn/megahit
-Paper: doi: 10.1093/bioinformatics/btv033
+Type: De-novo genomic / metagenomic  
+Code: https://github.com/voutcn/megahit  
+Paper: doi: 10.1093/bioinformatics/btv033  
 Comments: Very memory-efficient.
 
 **IDBA**
-Type: De-novo metagenomic
-Code: https://github.com/loneknightpy/idba
-Paper: doi: 10.1093/bioinformatics/bts174
+Type: De-novo metagenomic  
+Code: https://github.com/loneknightpy/idba  
+Paper: doi: 10.1093/bioinformatics/bts174  
 Comments: Anecdotally (i.e. in my own experience) works well for viral genome assembly. Also positively reviewed in the review paper above.
+
+**metaviralSPAdes**
+Type: De-novo metagenomic  
+Code: https://github.com/ablab/spades/tree/metaviral_publication, https://github.com/ablab/viralVerify/, https://github.com/ablab/viralComplete/  
+Paper: https://academic.oup.com/bioinformatics/advance-article-abstract/doi/10.1093/bioinformatics/btaa490/5837667?redirectedFrom=fulltext  
+Comments: Recently published (May 15, 2020.) Has some tools for viral contig classification/validation.

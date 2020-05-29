@@ -25,6 +25,17 @@ LABEL tags="aws-cli, samtools"
 # Install Software ========================================
 #==========================================================
 
+#RUN curl https://serratus-public.s3.amazonaws.com/var/acc_len_taxid.txt > \
+#  ./acc_len_taxid.txt
+#RUN curl https://serratus-public.s3.amazonaws.com/var/taxid_desc.txt > \
+#  ./taxid_desc.txt
+
+FROM amazonlinux:2 AS runtime
+
+ENV BASEDIR=/home/serratus
+
+COPY --from=build_base / /
+
 #==========================================================
 # Serratus Initialize =====================================
 #==========================================================
@@ -32,10 +43,6 @@ WORKDIR /home/serratus
 COPY worker.sh ./
 COPY serratus-merge/*sh ./
 COPY serratus-merge/*py ./
-RUN curl https://serratus-public.s3.amazonaws.com/var/acc_len_taxid.txt > \
-  ./acc_len_taxid.txt
-RUN curl https://serratus-public.s3.amazonaws.com/var/taxid_desc.txt > \
-  ./taxid_desc.txt
 
 #==========================================================
 # ENTRYPOINT ==============================================

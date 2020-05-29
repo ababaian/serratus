@@ -1,11 +1,5 @@
 FROM serratus-base:latest AS build_base
 
-#==========================================================
-# Container Meta-data =====================================
-#==========================================================
-# Container Information
-ARG TYPE='aligner'
-ARG VERSION='0.1.4'
 
 # Software Information
 # ENV SAMTOOLSVERSION='1.10' # from serratus-base
@@ -14,12 +8,6 @@ ENV GATKVERSION='4.1.5.0'
 ENV BWAVERSION='0.7.17'
 #ENV MBVERSION='1.5.0'
 
-# Additional Metadata
-LABEL container.type=${TYPE}
-LABEL container.version=${VERSION}
-LABEL container.description="serratus: alignment container"
-LABEL software.license="GPLv3"
-LABEL tags="aws-cli, samtools, bowtie2, magicblast, makeblatsdb, seqkit"
 
 #==========================================================
 # Dependencies ============================================
@@ -62,6 +50,49 @@ RUN wget https://github.com/shenwei356/seqkit/releases/download/v0.12.0/seqkit_l
   tar -xvf seqkit* && mv seqkit /usr/local/bin/ &&\
   rm seqkit_linux*
 
+# Set up only the bowtie2 binaries we need
+RUN mkdir -p /opt/bowtie2-align \
+ && cp /usr/local/bin/{bowtie2,bowtie2-align-s} /opt/bowtie2-align
+
+FROM amazonlinux:2 AS runtime
+
+#==========================================================
+# Container Meta-data =====================================
+#==========================================================
+# Container Information
+ARG TYPE='aligner'
+ARG VERSION='0.1.4'
+
+# Additional Metadata
+LABEL container.type=${TYPE}
+LABEL container.version=${VERSION}
+LABEL container.description="serratus: alignment container"
+LABEL software.license="GPLv3"
+LABEL tags="aws-cli, samtools, bowtie2, magicblast, makeblatsdb, seqkit"
+
+# Environment setup
+ENV BASEDIR=/home/serratus
+
+RUN yum -y install perl jq unzip \
+ && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+ && unzip awscliv2.zip \
+ && ./aws/install \
+ && rm awscliv2.zip \
+ && rm -r ./aws \
+ && yum -y remove unzip \
+ && yum clean all \
+#   aws configuration
+ && aws configure set default.s3.multipart_threshold 4GB \
+ && aws configure set default.s3.multipart_chunksize 4GB
+
+# bowtie2
+COPY --from=build_base /opt/bowtie2-align/* /usr/local/bin/
+
+# samtools
+COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
+
+# flock
+COPY --from=build_base /usr/bin/flock /usr/bin/
 
 #==========================================================
 # Serratus Initialize =====================================
