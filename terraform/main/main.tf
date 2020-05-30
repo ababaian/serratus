@@ -193,15 +193,13 @@ resource "local_file" "create_tunnel" {
   content = <<-EOF
     #!/bin/bash
     set -eu
+    ssh -Nf -L 3000:localhost:3000 -L 9090:localhost:9090 ec2-user@${module.monitoring.public_dns}
+    ssh -Nf -L 8000:localhost:8000 -L 5432:localhost:5432 ec2-user@${module.scheduler.public_dns}
     echo "Tunnels created:"
-    ssh -Nf -L 3000:localhost:3000 ec2-user@${module.monitoring.public_dns}
-    echo "    localhost:3000 -- grafana"
-    ssh -Nf -L 9090:localhost:9090 ec2-user@${module.monitoring.public_dns}
-    echo "    localhost:9090 -- prometheus"
-    ssh -Nf -L 8000:localhost:8000 ec2-user@${module.scheduler.public_dns}
-    echo "    localhost:8000 -- scheduler"
-    ssh -Nf -L 5432:localhost:5432 ec2-user@${module.scheduler.public_dns}
-    echo "    localhost:5432 -- postgres"
+    echo "    localhost:3000 = grafana"
+    echo "    localhost:9090 = prometheus"
+    echo "    localhost:5432 = postgres"
+    echo "    localhost:8000 = scheduler"
   EOF
 }
 
