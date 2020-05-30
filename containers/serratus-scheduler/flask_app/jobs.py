@@ -1,6 +1,8 @@
+import csv
+import io
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request, abort, render_template, current_app
+from flask import Blueprint, jsonify, request, abort, render_template
 
 from . import db
 
@@ -9,7 +11,6 @@ bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 @bp.route('/add_sra_run_info/<filename>', methods=['POST'])
 def add_sra_runinfo(filename):
     ## Read the CSV into the DB
-    import csv, io
     insert_count = 0
     session = db.get_session()
 
@@ -210,10 +211,10 @@ def finish_align_job(block_id):
 @bp.route('/merge/', methods=['POST'])
 def start_merge_job():
     session = db.get_session()
-    # Exclude accs with blocks in "new" or "fail" state
+    # Exclude accs with blocks in "new", "fail", or in progress state.
     exclude_accs = session.query(db.Block.acc_id)\
         .distinct()\
-        .filter_by(state="new")\
+        .filter(db.Block.state.in_(("new", "fail", "aligning")))\
         .subquery()
 
     acc = session.query(db.Accession)\
