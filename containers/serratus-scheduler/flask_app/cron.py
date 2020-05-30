@@ -97,9 +97,16 @@ def adjust_autoscaling_loop(app):
                 .count()
             )
 
+            exclude_accs = (
+                session.query(db.Block.acc_id)
+                .distinct()
+                .filter(db.Block.state.in_(("new", "fail", "aligning")))
+                .subquery()
+            )
             num_merge_jobs = (
                 session.query(db.Accession)
                 .filter(db.Accession.state == "split_done")
+                .filter(~(db.Accession.acc_id.in_(exclude_accs)))
                 .count()
             )
 
