@@ -1,18 +1,16 @@
 global:
   scrape_interval: 15s
-  external_labels:
-    monitor: 'codelab-monitor'
 
 scrape_configs:
   - job_name: 'prometheus'
-    scrape_interval: 5s
+    scrape_interval: 15s
     static_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'ec2'
-    scrape_interval: 5s
+    scrape_interval: 60s
     ec2_sd_configs:
-      - refresh_interval: 60s
+      - refresh_interval: 120s
         region: us-east-1
         port: 9100
     relabel_configs:
@@ -24,5 +22,7 @@ scrape_configs:
   - job_name: 'scheduler'
     scrape_interval: 15s
     static_configs:
-      - targets: ['scheduler:8000']
+      - targets:
+        - 'scheduler:8000'
+        - 'scheduler:9101'
 

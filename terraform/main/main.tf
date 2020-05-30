@@ -92,6 +92,7 @@ module "scheduler" {
   instance_type      = "c5.large"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
+  flask_workers      = 5 # (2*CPU)+1, according to https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
 }
 
 // Cluster monitor
@@ -101,6 +102,7 @@ module "monitoring" {
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
+  dockerhub_account  = var.dockerhub_account
   instance_type      = "r5.xlarge"
 }
 
@@ -109,21 +111,20 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 300
+  max_size           = 5000
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
-  instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
-  volume_size        = 200 // Mitigate the storage leak in fastq-dump
-  spot_price         = 0.05
+  instance_type      = "r5.xlarge" // Mitigate the memory leak in fastq-dump
+  volume_size        = 300 // Mitigate the storage leak in fastq-dump
+  spot_price         = 0.10
 
   s3_bucket          = module.work_bucket.name
   s3_prefix          = "fq-blocks"
 
   image_name         = "serratus-dl"
   dockerhub_account  = var.dockerhub_account
-  workers            = 2
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
   options            = "-k ${module.work_bucket.name}"
@@ -134,11 +135,11 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 1200
+  max_size           = 5000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "c5.large" # c5.large
-  spot_price         = 0.04
+  instance_type      = "c5.xlarge" # c5.large
+  spot_price         = 0.10
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "fq-blocks"
   s3_prefix          = "bam-blocks"
@@ -154,12 +155,12 @@ module "merge" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 50
+  max_size           = 5000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
   volume_size        = 200 // prevent disk overflow via samtools sort
-  spot_price         = 0.04
+  spot_price         = 0.05
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "bam-blocks"
   s3_prefix          = "out"
@@ -191,13 +192,13 @@ resource "local_file" "create_tunnel" {
   content = <<-EOF
     #!/bin/bash
     set -eu
+    ssh -Nf -L 3000:localhost:3000 -L 9090:localhost:9090 ec2-user@${module.monitoring.public_dns}
+    ssh -Nf -L 8000:localhost:8000 -L 5432:localhost:5432 ec2-user@${module.scheduler.public_dns}
     echo "Tunnels created:"
-    ssh -Nf -L 3000:localhost:3000 ec2-user@${module.monitoring.public_dns}
-    echo "    localhost:3000 -- grafana"
-    ssh -Nf -L 9090:localhost:9090 ec2-user@${module.monitoring.public_dns}
-    echo "    localhost:9090 -- prometheus"
-    ssh -Nf -L 8000:localhost:8000 ec2-user@${module.scheduler.public_dns}
-    echo "    localhost:8000 -- scheduler"
+    echo "    localhost:3000 = grafana"
+    echo "    localhost:9090 = prometheus"
+    echo "    localhost:5432 = postgres"
+    echo "    localhost:8000 = scheduler"
   EOF
 }
 
@@ -249,6 +250,9 @@ output "help" {
 
 output "scheduler_dns" {
   value = module.scheduler.public_dns
+}
+output "scheduler_pg_password" {
+  value = module.scheduler.pg_password
 }
 
 output "monitor_dns" {
