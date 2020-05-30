@@ -38,14 +38,7 @@ def get_asg_name(autoscaling, pattern):
 
 
 def set_asg_size(
-    autoscaling,
-    asg_name,
-    constant,
-    max_,
-    num_jobs,
-    name,
-    virt_max_increase,
-    _virt_sizes={},
+    autoscaling, constant, max_, num_jobs, name, virt_max_increase, _virt_sizes={},
 ):
     true_desired_size = min(max_, math.ceil(constant * num_jobs))
 
@@ -63,6 +56,7 @@ def set_asg_size(
     asg_desired_size_gauge.labels(name).set(true_desired_size)
     asg_virt_size_gauge.labels(name).set(asg_desired_size)
 
+    asg_name = get_asg_name(autoscaling, "serratus-" + name)
     try:
         autoscaling.set_desired_capacity(
             AutoScalingGroupName=asg_name, DesiredCapacity=asg_desired_size,
@@ -82,9 +76,6 @@ def adjust_autoscaling_loop(app):
     autoscaling = boto3.session.Session().client(
         "autoscaling", region_name=app.config["AWS_REGION"]
     )
-    dl_asg = get_asg_name(autoscaling, "serratus-dl")
-    align_asg = get_asg_name(autoscaling, "serratus-align")
-    merge_asg = get_asg_name(autoscaling, "serratus-merge")
 
     while True:
         virt_asg = False
@@ -117,31 +108,19 @@ def adjust_autoscaling_loop(app):
             constant = float(config["DL_SCALING_CONSTANT"])
             max_ = int(config["DL_SCALING_MAX"])
             virt_asg = virt_asg or set_asg_size(
-                autoscaling, dl_asg, constant, max_, num_dl_jobs, "dl", virt_max,
+                autoscaling, constant, max_, num_dl_jobs, "dl", virt_max,
             )
         if config["ALIGN_SCALING_ENABLE"]:
             constant = float(config["ALIGN_SCALING_CONSTANT"])
             max_ = int(config["ALIGN_SCALING_MAX"])
             virt_asg = virt_asg or set_asg_size(
-                autoscaling,
-                align_asg,
-                constant,
-                max_,
-                num_align_jobs,
-                "align",
-                virt_max,
+                autoscaling, constant, max_, num_align_jobs, "align", virt_max,
             )
         if config["MERGE_SCALING_ENABLE"]:
             constant = float(config["MERGE_SCALING_CONSTANT"])
             max_ = int(config["MERGE_SCALING_MAX"])
             virt_asg = virt_asg or set_asg_size(
-                autoscaling,
-                merge_asg,
-                constant,
-                max_,
-                num_merge_jobs,
-                "merge",
-                virt_max,
+                autoscaling, constant, max_, num_merge_jobs, "merge", virt_max,
             )
 
         scale_interval = int(config["SCALING_INTERVAL"])
