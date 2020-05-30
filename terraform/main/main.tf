@@ -111,21 +111,20 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 300
+  max_size           = 5000
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
-  instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
-  volume_size        = 200 // Mitigate the storage leak in fastq-dump
-  spot_price         = 0.05
+  instance_type      = "r5.xlarge" // Mitigate the memory leak in fastq-dump
+  volume_size        = 300 // Mitigate the storage leak in fastq-dump
+  spot_price         = 0.10
 
   s3_bucket          = module.work_bucket.name
   s3_prefix          = "fq-blocks"
 
   image_name         = "serratus-dl"
   dockerhub_account  = var.dockerhub_account
-  workers            = 2
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
   options            = "-k ${module.work_bucket.name}"
@@ -136,11 +135,11 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 1200
+  max_size           = 5000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "c5.large" # c5.large
-  spot_price         = 0.04
+  instance_type      = "c5.xlarge" # c5.large
+  spot_price         = 0.10
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "fq-blocks"
   s3_prefix          = "bam-blocks"
@@ -156,12 +155,12 @@ module "merge" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 50
+  max_size           = 5000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
   volume_size        = 200 // prevent disk overflow via samtools sort
-  spot_price         = 0.04
+  spot_price         = 0.05
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "bam-blocks"
   s3_prefix          = "out"
