@@ -18,7 +18,7 @@ For GroupB, with the high coverage, the virus identified was **porcine epidemic 
  
 For GroupA, with the lower coverage, most viral contigs were from an *avian infectious bronchitis virus*. I have posted 37 contigs that BLASTed to that genome [here](https://drive.google.com/open?id=1GDpCeJyQxKx9lsw2VPtv5e_FvMS5fh4P). These contigs do not fully cover the genome but are found across most of it: 
 
-![contig coverage over NC_001451.1](../img/markdown/groupA_contigs_on_NC001451.1.png)
+![contig coverage over NC_001451.1](groupA_contigs_on_NC001451.1.png)
 
 As this was exploratory work, I did not have time to make a nice Nextflow or Snakemake workflow, so I will just give the individual steps below.
 
