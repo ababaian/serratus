@@ -89,10 +89,10 @@ module "scheduler" {
   
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
-  instance_type      = "c5.large"
+  instance_type      = "c5.xlarge"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
-  flask_workers      = 5 # (2*CPU)+1, according to https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
+  flask_workers      = 7 # (2*CPU)+1, according to https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
 }
 
 // Cluster monitor
@@ -117,7 +117,7 @@ module "download" {
   security_group_ids = [aws_security_group.internal.id]
 
   instance_type      = "r5.xlarge" // Mitigate the memory leak in fastq-dump
-  volume_size        = 300 // Mitigate the storage leak in fastq-dump
+  volume_size        = 200 // Mitigate the storage leak in fastq-dump
   spot_price         = 0.10
 
   s3_bucket          = module.work_bucket.name
@@ -171,7 +171,7 @@ module "merge" {
   // TODO: the credentials are not properly set-up to
   //       upload to serratus-public, requires a *Object policy
   //       on the bucket.
-  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200528_viro"
+  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200530_hu1"
 }
 
 // RESOURCES ##############################
