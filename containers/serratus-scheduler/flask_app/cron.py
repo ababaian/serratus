@@ -108,12 +108,7 @@ def adjust_autoscaling_loop(app):
 
             num_merge_jobs = (
                 session.query(db.Accession)
-                .filter(
-                    or_(
-                        db.Accession.state == "merge_wait",
-                        db.Accession.state == "merging",
-                    )
-                )
+                .filter(db.Accession.state == "split_done")
                 .count()
             )
 
