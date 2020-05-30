@@ -1,148 +1,81 @@
+import csv
+import io
 from datetime import datetime
 
-import boto3
-from flask import Blueprint, jsonify, request, abort, render_template, current_app
-from sqlalchemy import func
+from flask import Blueprint, jsonify, request, abort, render_template
 
 from . import db
 
-bp = Blueprint('jobs', __name__, url_prefix='/jobs')
-
-def get_running_instances():
-    """Get a list of all EC2 instance IDs currently running"""
-    ec2 = boto3.client('ec2', region_name=current_app.config["AWS_REGION"])
-    for r in ec2.describe_instances()["Reservations"]:
-        for instance in r["Instances"]:
-            if instance["State"]["Name"] == "running":
-                yield instance["InstanceId"]
+bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 
 
-def worker_to_instance_id(worker_id):
-    # XXX: Some IDIOT decided to mush together the instance ID and thread
-    # ID into a single string, so now we'll have to take them apart.  I
-    # wonder who that could've been...
-    # Example worker_id: "i-0a9a0d75781577180-7"
-    # Desired instance id: "i-0a9a0d75781577180"
-    return "-".join(worker_id.split("-")[:-1])
-
-
-def check_and_clear(instances, table, active_state, new_state, name):
-    """Check and reset jobs of a given type."""
-    session = db.get_session()
-    missing_instances = list()
-
-    accessions = session.query(table)\
-        .filter(table.state == active_state)\
-        .all()
-
-    count = 0
-    for accession in accessions:
-        if name == "dl":
-            worker_id = accession.split_worker
-        elif name == "merge":
-            worker_id = accession.merge_worker
-        elif name == "align":
-            worker_id = accession.align_worker
-        else:
-            raise AssertionError("Invalid job type {}".format(name))
-
-        instance_id = worker_to_instance_id(worker_id)
-
-        if instance_id not in instances:
-            accession.state = new_state
-            missing_instances.append(instance_id)
-            count += 1
-
-
-    if missing_instances:
-        print("Reset jobs on {} {} instances, which were terminated:"
-              .format(len(missing_instances), name))
-        for instance in missing_instances:
-            print("   {}".format(instance))
-
-    if count:
-        session.commit()
-
-    return count
-
-@bp.route('/clear_terminated', methods=['PUT'])
-def clear_terminated_jobs():
-    """Reset all jobs (dl, align, merge) which is in the running state but
-    where the instance no longer exists.
-
-    This should run inside of a session context, since the current DB doesn't
-    handle transactions well.  What we should do is implement a global DB lock
-    but I would need to test how that impacts performance."""
-    instances = set(get_running_instances())
-
-    dl = check_and_clear(instances, db.Accession, 'splitting', 'new', "dl")
-    merge = check_and_clear(instances, db.Accession, 'merging', 'merge_wait', "merge")
-    align = check_and_clear(instances, db.Block, 'aligning', 'new', "align")
-
-    return jsonify({"dl": dl, "merge": merge, "align": align})
-
-
-@bp.route('/add_sra_run_info/<filename>', methods=['POST'])
+@bp.route("/add_sra_run_info/<filename>", methods=["POST"])
 def add_sra_runinfo(filename):
     ## Read the CSV into the DB
-    import csv, io
     insert_count = 0
     session = db.get_session()
 
     csv_data = io.StringIO(request.data.decode())
     for line in csv.DictReader(csv_data):
         insert_count += 1
-        acc = db.Accession(state='new', sra_run_info=line)
+        acc = db.Accession(state="new", sra_run_info=line)
         session.add(acc)
 
-    total_count = session.query(db.Accession).count()
     session.commit()
 
-    return jsonify({
-        'inserted_rows': insert_count,
-        'total_rows': total_count,
-    })
+    total_count = session.query(db.Accession).count()
+    return jsonify({"inserted_rows": insert_count, "total_rows": total_count,})
 
-@bp.route('/', methods=['GET'])
+
+@bp.route("/", methods=["GET"])
 def show_jobs():
     session = db.get_session()
     accs = session.query(db.Accession).all()
-    blocks = session.query(db.Block, db.Accession)\
-        .filter(db.Block.acc_id == db.Accession.acc_id)\
+    blocks = (
+        session.query(db.Block, db.Accession)
+        .filter(db.Block.acc_id == db.Accession.acc_id)
         .all()
-    return render_template('job_list.html', accs=accs, blocks=blocks)
+    )
+    return render_template("job_list.html", accs=accs, blocks=blocks)
 
 
-@bp.route('/split/', methods=['POST'])
+@bp.route("/split/", methods=["POST"])
+@bp.route("/dl/", methods=["POST"])
 def start_split_job():
     """Get a job id and mark it as "running" in the DB
     returns: a job JSON file"""
     session = db.get_session()
 
     # get an item where state = new and update its state
-    acc = session.query(db.Accession)\
-        .filter_by(state='new')\
+    acc = (
+        session.query(db.Accession)
+        .filter_by(state="new")
+        .with_for_update(skip_locked=True)
         .first()
+    )
 
     if acc is None:
-        return jsonify({'action': 'wait'})
+        return jsonify({"action": "wait"})
 
-    acc.state = 'splitting'
+    acc.state = "splitting"
     acc.split_start_time = datetime.now()
     acc.split_end_time = None
     acc.split_worker = request.args.get("worker_id")
 
     session.add(acc)
     response = acc.to_dict()
+    response["id"] = acc.acc_id
     session.commit()
 
-    response['action'] = 'process'
-    response['split_args'] = db.get_config_val("DL_ARGS")
+    response["action"] = "process"
+    response["split_args"] = db.get_config_val("DL_ARGS")
 
     # Send the response as JSON
     return jsonify(response)
 
-@bp.route('/split/<acc_id>', methods=['POST'])
+
+@bp.route("/split/<acc_id>", methods=["POST"])
+@bp.route("/dl/<acc_id>", methods=["POST"])
 def finish_split_job(acc_id):
     """Mark a split job as finished, setting off N alignment jobs.
 
@@ -162,34 +95,40 @@ def finish_split_job(acc_id):
     Terminated node (please redo this work):
         http://scheduler/jobs/split/1?state=new
     """
-    state = request.args.get('state')
+    state = request.args.get("state")
     try:
-        n_unpaired = int(request.args.get('N_unpaired', 0))
-        n_paired = int(request.args.get('N_paired', 0))
+        n_unpaired = int(request.args.get("N_unpaired", 0))
+        n_paired = int(request.args.get("N_paired", 0))
     except TypeError:
         abort(400)
 
     if state == "terminated":
         state = "new"
 
+    if state == "done":
+        state = "split_done"
+
     # Update the accessions table
-    if state not in ('new', 'split_err', 'split_done'):
-        abort(400)
+    if state not in ("new", "split_err", "split_done"):
+        raise ValueError("Invalid State {}".format(state))
 
     session = db.get_session()
-    acc = session.query(db.Accession)\
-        .filter_by(acc_id=int(acc_id))\
+    acc = (
+        session.query(db.Accession)
+        .filter_by(acc_id=int(acc_id))
+        .with_for_update(skip_locked=True)
         .one()
+    )
 
-    if acc.state != 'splitting':
+    if acc.state != "splitting":
         abort(400)
     acc.state = state
     acc.split_end_time = datetime.now()
 
-    if state in ('new', 'split_err'):
+    if state in ("new", "split_err"):
         # Not ready to process more
         session.commit()
-        return jsonify({'result': 'success'})
+        return jsonify({"result": "success"})
 
     acc.contains_paired = n_paired > 0
     acc.contains_unpaired = n_unpaired > 0
@@ -199,65 +138,62 @@ def finish_split_job(acc_id):
 
     # Insert N align jobs into the alignment table.
     for i in range(int(blocks)):
-        block = db.Block(state='new', acc_id=acc.acc_id, n=i)
+        block = db.Block(state="new", acc_id=acc.acc_id, n=i)
         session.add(block)
 
     acc.blocks = blocks
     session.add(acc)
-
-    row_count = session.query(db.Block).count()
     session.commit()
 
-    return jsonify({
-        'result': 'success',
-        'inserted_rows': blocks,
-        'total_rows': row_count,
-    })
+    return jsonify({"result": "success", "inserted_rows": blocks,})
 
-@bp.route('/align/', methods=['POST'])
+
+@bp.route("/align/", methods=["POST"])
 def start_align_job():
     """Get a job id and mark it as "running" in the DB
 
     returns: a job JSON file"""
     session = db.get_session()
     # get an item where state = new and update its state
-    query = session.query(db.Block, db.Accession)\
-        .filter(db.Block.state == 'new')\
-        .filter(db.Block.acc_id == db.Accession.acc_id)\
+    block = (
+        session.query(db.Block)
+        .filter(db.Block.state == "new")
+        .with_for_update(skip_locked=True)
         .first()
+    )
 
-    if query is None:
+    if block is None:
         # TODO: If we got no results, then could be:
         #    * Waiting for split nodes: hang tight
         #    * No more work: shutdown
-        return jsonify({'action': 'wait'})
+        return jsonify({"action": "wait"})
 
-    block, acc = query
-
-    block.state = 'aligning'
+    block.state = "aligning"
     block.align_start_time = datetime.now()
     block.align_end_time = None
     block.align_worker = request.args.get("worker_id")
     session.add(block)
-
-    response = block.to_dict()
-    response.update(acc.to_dict())
     session.commit()
 
-    # TODO Move these into the database
-    response['align_args'] = db.get_config_val("ALIGN_ARGS")
-    response['genome'] = db.get_config_val("GENOME")
-    response['action'] = "process"
+    response = block.to_dict()
+
+    acc = session.query(db.Accession).filter_by(acc_id=block.acc_id).one()
+
+    response.update(acc.to_dict())
+    response["id"] = block.block_id
+    response["align_args"] = db.get_config_val("ALIGN_ARGS")
+    response["genome"] = db.get_config_val("GENOME")
+    response["action"] = "process"
 
     # Send the response as JSON
     return jsonify(response)
 
 
-@bp.route('/align/<block_id>', methods=['POST'])
+@bp.route("/align/<block_id>", methods=["POST"])
 def finish_align_job(block_id):
     """Finished job, block_id is the same parameter from the start_job,
     state is one of (new, done, fail)"""
-    state = request.args.get('state')
+    state = request.args.get("state")
 
     if state == "terminated":
         state = "new"
@@ -269,89 +205,75 @@ def finish_align_job(block_id):
     block = session.query(db.Block).filter_by(block_id=block_id).one()
     block.state = state
     block.align_end_time = datetime.now()
+    session.commit()
 
-    # Check the other blocks---are there any waiting or running still?
-    state_counts_q = session.query(db.Block.state,
-                                   func.count(db.Block.block_id))\
-        .filter(db.Block.acc_id == block.acc_id)\
-        .group_by(db.Block.state)\
-        .all()
+    return jsonify({"result": "success"})
 
-    state_counts = {k: 0 for k in db.BLOCK_STATES}
-    state_counts.update(state_counts_q)
 
-    if state_counts['new'] > 0 or state_counts['aligning'] > 0:
-        # This is not the last block
-        session.commit()
-        return jsonify({
-            'result': 'success'
-        })
-    elif state_counts['fail'] > 0:
-        # :(  TODO What to do here?  Ideally we move Accession into a failed
-        # state when a single align fails, so this should be no-op?
-        session.commit()
-        return jsonify({
-            'result': 'success'
-        })
-    else:
-        # All blocks are done.  Move Accession into the merge_wait state.
-        accession = session.query(db.Accession)\
-            .filter(db.Accession.acc_id == block.acc_id)\
-            .one()
-        accession.state = 'merge_wait'
-        session.commit()
-        return jsonify({
-            'result': 'success',
-        })
-
-@bp.route('/merge/', methods=['POST'])
+@bp.route("/merge/", methods=["POST"])
 def start_merge_job():
     session = db.get_session()
-    # Get an Acc where all blocks have been aligned.
-    acc = session.query(db.Accession)\
-        .filter_by(state='merge_wait')\
+    # Exclude accs with blocks in "new", "fail", or in progress state.
+    exclude_accs = (
+        session.query(db.Block.acc_id)
+        .distinct()
+        .filter(db.Block.state.in_(("new", "fail", "aligning")))
+        .subquery()
+    )
+
+    acc = (
+        session.query(db.Accession)
+        .filter_by(state="split_done")
+        .filter(~(db.Accession.acc_id.in_(exclude_accs)))
+        .with_for_update(skip_locked=True)
         .first()
+    )
 
     if acc is None:
         # TODO: Think about this behaviour
-        return jsonify({'action': 'wait'})
+        return jsonify({"action": "wait"})
 
-    acc.state = 'merging'
+    acc.state = "merging"
     acc.merge_start_time = datetime.now()
     acc.merge_end_time = None
     acc.merge_worker = request.args.get("worker_id")
     session.add(acc)
-    response = acc.to_dict()
     session.commit()
-    response['action'] = 'process'
-    response['genome'] = db.get_config_val("GENOME")
-    response['merge_args'] = db.get_config_val("MERGE_ARGS")
+
+    response = acc.to_dict()
+    response["id"] = acc.acc_id
+    response["action"] = "process"
+    response["genome"] = db.get_config_val("GENOME")
 
     # Send the response as JSON
     return jsonify(response)
 
-@bp.route('/merge/<acc_id>', methods=['POST'])
+
+@bp.route("/merge/<acc_id>", methods=["POST"])
 def finish_merge_job(acc_id):
-    state = request.args.get('state')
+    state = request.args.get("state")
 
     if state == "terminated":
-        state = "merge_wait"
+        state = "split_done"
 
-    if state not in ('merge_wait', 'merge_err', 'merge_done'):
+    if state == "done":
+        state = "merge_done"
+
+    if state not in ("split_done", "merge_err", "merge_done"):
         abort(400)
 
     session = db.get_session()
-    acc = session.query(db.Accession)\
-        .filter_by(acc_id=int(acc_id))\
+    acc = (
+        session.query(db.Accession)
+        .filter_by(acc_id=int(acc_id))
+        .with_for_update(skip_locked=True)
         .one()
+    )
 
-    if acc.state != 'merging':
+    if acc.state != "merging":
         abort(400)
 
     acc.state = state
     acc.merge_end_time = datetime.now()
     session.commit()
-    return jsonify({
-        'result': 'success'
-    })
-
+    return jsonify({"result": "success"})

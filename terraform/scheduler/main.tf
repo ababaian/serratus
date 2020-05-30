@@ -1,6 +1,9 @@
 ///////////////////////////////////////////////////////////
 // SCHEDULER MODULE
 ///////////////////////////////////////////////////////////
+
+provider random {}
+
 // VARIABLES ##############################
 
 variable "scheduler_port" {
@@ -28,6 +31,10 @@ variable "security_group_ids" {
   default = []
 }
 
+variable "flask_workers" {
+  type = number
+}
+
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["self"]
@@ -40,14 +47,33 @@ data "aws_ami" "amazon_linux_2" {
 
 data "aws_region" "current" {}
 
-module "iam_role" {
-  source = "../iam_role"
-  name   = "scheduler"
+
+// RESOURCES ##############################
+
+module "ecs_cluster" {
+  source = "../ecs_cluster"
+
+  name = "scheduler"
+  instance_type = var.instance_type
+  security_group_ids = var.security_group_ids
+  key_name = var.key_name
+}
+
+# Give the scheduler an Elastic-IP so we can destroy and recreate it without
+# Also destroying everything that depends on its IP.
+resource "aws_eip" "sch" {
+  instance = module.ecs_cluster.instance.id
+  vpc      = true
+
+  tags = {
+    "project": "serratus"
+    "component": "serratus-scheduler"
+  }
 }
 
 resource "aws_iam_role_policy" "scheduler" {
   name = "DescribeInstances-scheduler"
-  role = module.iam_role.role.id
+  role = module.ecs_cluster.task_role.id
 
   policy = <<EOF
 {
@@ -67,57 +93,53 @@ resource "aws_iam_role_policy" "scheduler" {
 EOF
 }
 
-// RESOURCES ##############################
-
 resource "aws_cloudwatch_log_group" "scheduler" {
-  name = "scheduler"
+  name = "serratus-scheduler"
 }
 
-# Give the scheduler an Elastic-IP so we can destroy and recreate it without
-# Also destroying everything that depends on its IP.
-resource "aws_eip" "sch" {
-  instance = aws_instance.scheduler.id
-  vpc      = true
 
-  tags = {
-    "project": "serratus"
-    "component": "serratus-scheduler"
+resource "random_password" "pg_password" {
+  length = 16
+  special = false
+}
+
+resource aws_ecs_task_definition "scheduler" {
+  family = "scheduler"
+  container_definitions = templatefile("../scheduler/scheduler-task-definition.json", {
+    dockerhub_account  = var.dockerhub_account
+    sched_port = var.scheduler_port,
+    aws_region = data.aws_region.current.name
+    log_group  = aws_cloudwatch_log_group.scheduler.name
+    pg_password = random_password.pg_password.result
+    workers    = var.flask_workers
+  })
+  task_role_arn = module.ecs_cluster.task_role.arn
+  network_mode = "host"
+
+  volume {
+    name = "postgres-data"
+
+    docker_volume_configuration {
+      scope = "shared"
+      autoprovision = true
+      driver = "local"
+    }
   }
 }
 
-resource "aws_instance" "scheduler" {
-  ami                                  = data.aws_ami.amazon_linux_2.id
-  instance_initiated_shutdown_behavior = "terminate"
-  instance_type                        = var.instance_type
-  vpc_security_group_ids               = var.security_group_ids
-  key_name                             = var.key_name
-  iam_instance_profile                 = module.iam_role.instance_profile.name
-  monitoring                           = false
+resource aws_ecs_service "scheduler" {
+  name = "serratus-scheduler"
+  cluster = module.ecs_cluster.cluster.id
+  task_definition = aws_ecs_task_definition.scheduler.arn
 
-  user_data = <<-EOF
-              #!/bin/bash
-              instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-              hostname serratus-scheduler
-              docker run -d -p "${var.scheduler_port}":8000 \
-                --log-driver=awslogs \
-                --log-opt awslogs-region="${data.aws_region.current.name}" \
-                --log-opt awslogs-group="${aws_cloudwatch_log_group.scheduler.name}" \
-                --log-opt awslogs-stream="$instance_id" \
-                --name sch \
-                ${var.dockerhub_account}/serratus-scheduler
-              EOF
-
-  tags = {
-    "Name": "serratus-scheduler"
-    "project": "serratus"
-    "component": "serratus-scheduler"
-  }
+  # TODO: Allow this to scale-out to many instances.
+  scheduling_strategy = "DAEMON"
 }
 
 // OUTPUT ##############################
 
 output "private_ip" {
-  value = aws_instance.scheduler.private_ip
+  value = module.ecs_cluster.instance.private_ip
 }
 
 output "public_ip" {
@@ -126,5 +148,9 @@ output "public_ip" {
 
 output "public_dns" {
   value = aws_eip.sch.public_dns
+}
+
+output "pg_password" {
+  value = random_password.pg_password.result
 }
 
