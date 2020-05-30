@@ -210,7 +210,7 @@ def clear_terminated_jobs():
     instances = set(get_running_instances())
 
     check_and_clear(instances, db.Accession, "splitting", "new", "dl")
-    check_and_clear(instances, db.Accession, "merging", "merge_wait", "merge")
+    check_and_clear(instances, db.Accession, "merging", "split_done", "merge")
     check_and_clear(instances, db.Block, "aligning", "new", "align")
 
 

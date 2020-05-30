@@ -20,7 +20,6 @@ ACC_STATES = (
     "new",
     "splitting",
     "split_done",
-    "merge_wait",
     "merging",
     "merge_done",
     "split_err",
