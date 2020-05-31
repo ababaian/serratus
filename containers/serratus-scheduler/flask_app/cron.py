@@ -78,7 +78,6 @@ def adjust_autoscaling_loop(app):
     )
 
     while True:
-        virt_asg = False
         with app.app_context():
             config = dict(db.get_config())
 
@@ -114,25 +113,25 @@ def adjust_autoscaling_loop(app):
         if config["DL_SCALING_ENABLE"]:
             constant = float(config["DL_SCALING_CONSTANT"])
             max_ = int(config["DL_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
+            virt_dl = set_asg_size(
                 autoscaling, constant, max_, num_dl_jobs, "dl", virt_max,
             )
         if config["ALIGN_SCALING_ENABLE"]:
             constant = float(config["ALIGN_SCALING_CONSTANT"])
             max_ = int(config["ALIGN_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
+            virt_align = set_asg_size(
                 autoscaling, constant, max_, num_align_jobs, "align", virt_max,
             )
         if config["MERGE_SCALING_ENABLE"]:
             constant = float(config["MERGE_SCALING_CONSTANT"])
             max_ = int(config["MERGE_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
+            virt_merge = set_asg_size(
                 autoscaling, constant, max_, num_merge_jobs, "merge", virt_max,
             )
 
         scale_interval = int(config["SCALING_INTERVAL"])
         virt_interval = int(config["VIRTUAL_SCALING_INTERVAL"])
-        if virt_asg:
+        if virt_dl or virt_align or virt_merge:
             print(
                 "virtual autoscaling finished.  Running again in {} seconds".format(
                     virt_interval
@@ -149,10 +148,10 @@ def adjust_autoscaling_loop(app):
 
 
 def get_running_instances():
+    """Get a list of all EC2 instance IDs currently running"""
     ec2 = boto3.session.Session().client(
         "ec2", region_name=current_app.config["AWS_REGION"]
     )
-    """Get a list of all EC2 instance IDs currently running"""
     for r in ec2.describe_instances()["Reservations"]:
         for instance in r["Instances"]:
             if instance["State"]["Name"] == "running":
