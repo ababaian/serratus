@@ -43,15 +43,15 @@ export PATH
 # 	SRR7287114 \
 # 	SRR7287110 \
 # 	SRR10829950 \
+#	SRR924370 \
+#	SRR11616465
 
-SRA-list := \
-	SRR924370 \
-	SRR11616465
+SRA_LIST := SRR10951638 SRR10951639 SRR10951640 SRR10951641 SRR10951642 SRR10951643 SRR10951644 SRR10951645 SRR10951646 SRR10951647 SRR10951648 SRR10951649 SRR10951650 SRR10951651 SRR10951652 SRR10951653 SRR10951666 SRR10951667 SRR10951668 SRR10951669 SRR10951670 SRR10951671 SRR10951672 SRR10951673 SRR10951674 SRR10951675 SRR10951676 SRR10951677 SRR10951678 SRR10951679 SRR10951680 SRR10951681 SRR10951682 SRR10951684 SRR10951685 SRR10951686 SRR10951687 SRR10951654 SRR10951655 SRR10951657 SRR10951658 SRR10951659 SRR10951660 SRR10951661 SRR10951662 SRR10951663 SRR10951664 SRR10951665 SRR10951656 SRR10951683
 
-SRAs := $(shell echo $(SRA-list) | tr ' ' '\n')
+SRAs := $(shell echo $(SRA_LIST) | tr ' ' '\n')
 
-SRA-flags  := $(addsuffix .txt, $(addprefix $(DATA_DIR)/, $(SRAs)))
-SRA-fastqs := $(addsuffix _1.fastq, $(addprefix $(DATA_DIR)/, $(SRAs)))
+SRA-flags  := $(addsuffix .txt, $(addprefix $(DATA_DIR)/fastq/, $(SRAs)))
+SRA-fastqs := $(addsuffix _1.fastq, $(addprefix $(DATA_DIR)/fastq/, $(SRAs)))
 SRA-assemblies := $(addsuffix _megahit/final.contigs.fa, $(addprefix $(DATA_DIR)/, $(SRAs)))
 SRA-alignments := $(addsuffix .delta, $(addprefix $(DATA_DIR)/, $(SRAs)))
 SRA-align-reports:= $(addsuffix .delta, $(addprefix $(DATA_DIR)/, $(SRAs)))
@@ -60,6 +60,7 @@ SRA-align-reports:= $(addsuffix .delta, $(addprefix $(DATA_DIR)/, $(SRAs)))
 
 ### Debug:
 print-env:
+	echo $(SRA_LIST)
 	echo $(SRAs)
 	echo $(SRA-fastqs)
 	echo $(SRA-flags)
@@ -126,14 +127,20 @@ $(INSTALL_DIR)/eggnog-mapper:
 
 ### Stage Data:
 setup-runs:
-	mkdir -p $(DATA_DIR)
+	mkdir -p $(DATA_DIR)/fastq
 	touch $(SRA-flags)
+
+
+stage-pig-data:
+	mkdir -p $(DATA_DIR)/pigpen
+	cd $(DATA_DIR)/pigpen
+	prefetch `esearch -db sra -query PRJNA602689 | efetch -format uid`
 
 stage-data: $(DATA_DIR)/cov2m.fa $(HOME)/.ncbirc $(SRA-fastqs)
 
 $(DATA_DIR)/%_1.fastq: $(DATA_DIR)/%.txt
-	mkdir -p $(DATA_DIR)	
-	cd $(DATA_DIR)
+	mkdir -p $(DATA_DIR)/fastq	
+	cd $(DATA_DIR)/fastq
 	fastq-dump -I --split-files --skip-technical $(basename $(notdir $^))
 	if [ -e $(basename $(notdir $^))_3.fastq ]
 	then
@@ -144,35 +151,6 @@ $(DATA_DIR)/%_1.fastq: $(DATA_DIR)/%.txt
 		mv $(basename $(notdir $^))_4.fastq $(basename $(notdir $^))_2.fastq
 	fi
 
-# $(DATA_DIR)/ERR2756788_1.fastq:
-# 	mkdir -p $(DATA_DIR)
-# 	cd $(DATA_DIR)
-# 	fastq-dump -I --split-files ERR2756788
-
-# $(DATA_DIR)/ERR2756787_1.fastq:
-# 	mkdir -p $(DATA_DIR)
-# 	cd $(DATA_DIR)
-# 	fastq-dump -I --split-files ERR2756787
-
-# $(DATA_DIR)/ERR3569452_1.fastq:
-# 	mkdir -p $(DATA_DIR)
-# 	cd $(DATA_DIR)
-# 	fastq-dump -I --split-files ERR3569452
-
-# $(DATA_DIR)/SRR7287114_1.fastq:
-# 	mkdir -p $(DATA_DIR)
-# 	cd $(DATA_DIR)
-# 	fastq-dump -I --split-files SRR7287114
-
-# $(DATA_DIR)/SRR7287110_1.fastq:
-# 	mkdir -p $(DATA_DIR)
-# 	cd $(DATA_DIR)
-# 	fastq-dump -I --split-files SRR7287110
-
-# $(DATA_DIR)/SRR10829950_1.fastq:
-# 	mkdir -p $(DATA_DIR)
-# 	cd $(DATA_DIR)
-# 	fastq-dump -I --split-files SRR10829950
 
 $(DATA_DIR)/cov2m.fa:
 	aws s3 cp s3://serratus-public/seq/cov2m/cov2m.fa $(DATA_DIR)/cov2m.fa
@@ -207,41 +185,6 @@ $(DATA_DIR)/%_megahit/final.contigs.fa: $(DATA_DIR)/%_1.fastq
 			--mem-flag 2
 	fi
 
-# $(DATA_DIR)/ERR2756788_megahit/final.contigs.fa: $(DATA_DIR)/ERR2756788_1.fastq
-# 	megahit -1 $(DATA_DIR)/ERR2756788_1.fastq \
-# 		-2 $(DATA_DIR)/ERR2756788_2.fastq \
-# 		-o $(DATA_DIR)/megahit_out \
-# 		--mem-flag 2
-
-# $(DATA_DIR)/ERR2756787_megahit/final.contigs.fa: $(DATA_DIR)/ERR2756787_1.fastq
-# 	megahit -1 $(DATA_DIR)/ERR2756787_1.fastq \
-# 		-2 $(DATA_DIR)/ERR2756787_2.fastq \
-# 		-o $(DATA_DIR)/ERR2756787_megahit \
-# 		--mem-flag 2
-
-# $(DATA_DIR)/ERR3569452_megahit/final.contigs.fa: $(DATA_DIR)/ERR3569452_1.fastq
-# 	megahit -1 $(DATA_DIR)/ERR3569452_1.fastq \
-# 		-2 $(DATA_DIR)/ERR3569452_2.fastq \
-# 		-o $(DATA_DIR)/ERR3569452_megahit \
-# 		--mem-flag 2
-
-# $(DATA_DIR)/SRR7287114_megahit/final.contigs.fa: $(DATA_DIR)/SRR7287114_1.fastq
-# 	megahit -1 $(DATA_DIR)/SRR7287114_1.fastq \
-# 		-2 $(DATA_DIR)/SRR7287114_2.fastq \
-# 		-o $(DATA_DIR)/SRR7287114_megahit \
-# 		--mem-flag 2
-
-# $(DATA_DIR)/SRR7287110_megahit/final.contigs.fa: $(DATA_DIR)/SRR7287110_1.fastq
-# 	megahit -1 $(DATA_DIR)/SRR7287110_1.fastq \
-# 		-2 $(DATA_DIR)/SRR7287110_2.fastq \
-# 		-o $(DATA_DIR)/SRR7287110_megahit \
-# 		--mem-flag 2
-
-# $(DATA_DIR)/SRR10829950_megahit/final.contigs.fa: $(DATA_DIR)/SRR10829950_1.fastq
-# 	megahit -1 $(DATA_DIR)/SRR10829950_1.fastq \
-# 		-2 $(DATA_DIR)/SRR10829950_2.fastq \
-# 		-o $(DATA_DIR)/SRR10829950_megahit \
-# 		--mem-flag 2
 
 ### Assembly Alignment:
 
@@ -251,29 +194,6 @@ $(DATA_DIR)/%.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/%_megahit/final.contigs.fa
 	cd $(DATA_DIR)
 	nucmer --delta=$@ $^
 
-# $(DATA_DIR)/ERR3569452.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/ERR3569452_megahit/final.contigs.fa
-# 	cd $(DATA_DIR)
-# 	nucmer --prefix=ERR3569452 $^
-
-# $(DATA_DIR)/ERR2756787.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/ERR2756787_megahit/final.contigs.fa
-# 	cd $(DATA_DIR)
-# 	nucmer --prefix=ERR2756787 $^
-
-# $(DATA_DIR)/ERR2756788.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/ERR2756788_megahit/final.contigs.fa
-# 	cd $(DATA_DIR)
-# 	nucmer --prefix=ERR2756788 $^
-
-# $(DATA_DIR)/SRR7287114.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/SRR7287114_megahit/final.contigs.fa
-# 	cd $(DATA_DIR)
-# 	nucmer --prefix=SRR7287114 $^
-
-# $(DATA_DIR)/SRR7287110.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/SRR7287110_megahit/final.contigs.fa
-# 	cd $(DATA_DIR)
-# 	nucmer --prefix=SRR7287110 $^
-
-# $(DATA_DIR)/SRR10829950.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/SRR10829950_megahit/final.contigs.fa
-# 	cd $(DATA_DIR)
-# 	nucmer --prefix=SRR10829950 $^
 
 
 ## This shows that k141_146741 wholly contains three fragments in cov2m, and is ~29k:

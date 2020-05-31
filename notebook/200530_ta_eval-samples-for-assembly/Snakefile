@@ -1,0 +1,30 @@
+from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
+
+S3_URI="serratus-public/out/200528_viro/"
+
+SRA_runs=['SRR10873780', 'SRR10873977', 'SRR10873981', 'SRR10875097', 'SRR057897', 'SRR5447167', 'SRR057912', 'SRR057914', 'SRR057896', 'SRR5351754', 'SRR5383919']
+
+S3 = S3RemoteProvider()
+
+# rule fetch_bam:
+#     input:
+#         S3.remote(expand("{s3_uri}bam/{sample}.bam", s3_uri=S3_URI, sample=SRA_runs), keep_local=True),
+#         S3.remote(expand("{s3_uri}summary/{sample}.summary", s3_uri=S3_URI, sample=SRA_runs), keep_local=True)
+
+
+rule sort_bam:
+    input:
+        S3.remote("serratus-public/out/200528_viro/bam/{sample}.bam", keep_local=True)
+    output:
+        sort="sorted_bam/{sample}.bam",
+	index="indexed_bam/{sample}.bam.bai"
+    shell:
+        """
+        samtools sort {input} > {output.sort}
+	samtools index {output.sort} > {output.index}
+        """
+
+# rule sort_bam:
+#     input:
+	
+        

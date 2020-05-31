@@ -74,3 +74,28 @@ test-mash-sensitivity:
 			> sim.cov.$${sim}.fq
 		time mash screen -p 2 cov2.fa.gz.msh sim.cov.$${sim}.fq 
 	done
+
+
+### Conda
+
+## I install it to /home/ubuntu/.miniconda3
+install-miniconda:
+	wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+	if [ `sha256sum Miniconda3-latest-Linux-x86_64.sh | cut -d' ' -f 1` == 957d2f0f0701c3d1335e3b39f235d197837ad69a944fa6f5d8ad2c686b69df3b ]
+	then
+		chmod 700 Miniconda3-latest-Linux-x86_64.sh
+		./Miniconda3-latest-Linux-x86_64.sh
+	fi
+
+#
+# To activate this environment, use
+#
+#     $ conda activate snakemake
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+install-snakemake:
+	conda install -c conda-forge mamba
+	mamba create -c conda-forge -c bioconda -n snakemake snakemake
