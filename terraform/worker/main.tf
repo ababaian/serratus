@@ -255,7 +255,7 @@ resource "aws_launch_configuration" "worker" {
               instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               hostname ${var.image_name}-$instance_id
               docker run -d \
-                --log-driver=none
+                --log-driver=none \
                 --name ${var.image_name} \
                 -e SCHEDULER=${var.scheduler} \
                 ${var.dockerhub_account}/${var.image_name} \
