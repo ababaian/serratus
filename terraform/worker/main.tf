@@ -255,15 +255,7 @@ resource "aws_launch_configuration" "worker" {
               instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               hostname ${var.image_name}-$instance_id
               docker run -d \
-              // Comment out to write logs to cloudwatch
                 --log-driver=none
-              // Un-comment to write logs to cloudwatch
-              /* 
-                --log-driver=awslogs \
-                --log-opt awslogs-region="${data.aws_region.current.name}" \
-                --log-opt awslogs-group="${aws_cloudwatch_log_group.g.name}" \
-                --log-opt awslogs-stream="$instance_id" \
-              */
                 --name ${var.image_name} \
                 -e SCHEDULER=${var.scheduler} \
                 ${var.dockerhub_account}/${var.image_name} \
