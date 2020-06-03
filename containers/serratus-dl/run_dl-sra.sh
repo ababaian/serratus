@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 set -eu
-# Max number of FQ reads to download per accession [100M reads]
+# Max number of FQ reads to download per accession [1B reads]
 # ~ 20 GB max
-FQMAX=${FQMAX:-100000000}
-# 4*Max number of FQ reads to partition per fq-block [250K reads * 4 lines]
-BLOCKSIZE=${BLOCKSIZE:-4000000}
+FQMAX=${FQMAX:-1000000000}
+# 4*Max number of FQ reads to partition per fq-block [1B, 250K reads * 4 lines]
+BLOCKSIZE=${BLOCKSIZE:-4000000000}
 BASEDIR=${BASEDIR:-.}
 
 while getopts n: FLAG; do
@@ -37,9 +37,9 @@ prefetch $SRA
 mkfifo "$FQ_1" "$FQ_2" "$FQ_3"
 fastq-dump -X $FQMAX --split-e $SRA & pid=$!
 
-S3_FQ1="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.1.fq.%010d"
-S3_FQ2="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.2.fq.%010d"
-S3_FQ3="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.3.fq.%010d"
+S3_FQ1="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.1.fq"
+S3_FQ2="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.2.fq"
+S3_FQ3="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.3.fq"
 
 # Stream those pipes into a parallel AWS upload.
 # TODO: there are 3 levels of concurrency here: with bash, parallel, and aws.
