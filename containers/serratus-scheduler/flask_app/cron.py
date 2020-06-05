@@ -109,41 +109,45 @@ def adjust_autoscaling_loop(app):
                 .count()
             )
 
-        virt_max = config["VIRTUAL_ASG_MAX_INCREASE"]
         if config["DL_SCALING_ENABLE"]:
             constant = float(config["DL_SCALING_CONSTANT"])
             max_ = int(config["DL_SCALING_MAX"])
             virt_dl = set_asg_size(
-                autoscaling, constant, max_, num_dl_jobs, "dl", virt_max,
+                autoscaling,
+                constant,
+                max_,
+                num_dl_jobs,
+                "dl",
+                int(config["DL_MAX_INCREASE"]),
             )
         if config["ALIGN_SCALING_ENABLE"]:
             constant = float(config["ALIGN_SCALING_CONSTANT"])
             max_ = int(config["ALIGN_SCALING_MAX"])
             virt_align = set_asg_size(
-                autoscaling, constant, max_, num_align_jobs, "align", virt_max,
+                autoscaling,
+                constant,
+                max_,
+                num_align_jobs,
+                "align",
+                int(config["ALIGN_MAX_INCREASE"]),
             )
         if config["MERGE_SCALING_ENABLE"]:
             constant = float(config["MERGE_SCALING_CONSTANT"])
             max_ = int(config["MERGE_SCALING_MAX"])
             virt_merge = set_asg_size(
-                autoscaling, constant, max_, num_merge_jobs, "merge", virt_max,
+                autoscaling,
+                constant,
+                max_,
+                num_merge_jobs,
+                "merge",
+                int(config["MERGE_MAX_INCREASE"]),
             )
 
         scale_interval = int(config["SCALING_INTERVAL"])
         virt_interval = int(config["VIRTUAL_SCALING_INTERVAL"])
         if virt_dl or virt_align or virt_merge:
-            print(
-                "virtual autoscaling finished.  Running again in {} seconds".format(
-                    virt_interval
-                )
-            )
             time.sleep(virt_interval)
         else:
-            print(
-                "ajust_autoscaling() finished.  Running again in {} seconds".format(
-                    scale_interval
-                )
-            )
             time.sleep(scale_interval)
 
 
