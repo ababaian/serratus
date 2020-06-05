@@ -171,7 +171,7 @@ def worker_to_instance_id(worker_id):
 def check_and_clear(instances, table, active_state, new_state, name):
     """Check and reset jobs of a given type."""
     session = db.get_session()
-    missing_instances = list()
+    missing_instances = set()
 
     accessions = (
         session.query(table).filter(table.state == active_state).with_for_update().all()
@@ -192,7 +192,7 @@ def check_and_clear(instances, table, active_state, new_state, name):
 
         if instance_id not in instances:
             accession.state = new_state
-            missing_instances.append(instance_id)
+            missing_instances.add(instance_id)
             count += 1
 
     if missing_instances:
@@ -201,7 +201,7 @@ def check_and_clear(instances, table, active_state, new_state, name):
                 len(missing_instances), name
             )
         )
-        for instance in missing_instances:
+        for instance in sorted(missing_instances):
             print("   {}".format(instance))
 
     if count:
@@ -231,11 +231,6 @@ def clean_terminated_jobs_loop(app):
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
             clear_terminated_jobs()
 
-        print(
-            "clear_terminated_jobs() finished.  Running again in {} seconds".format(
-                clear_interval
-            )
-        )
         time.sleep(clear_interval)
 
 
