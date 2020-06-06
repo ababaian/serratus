@@ -57,8 +57,6 @@ function main_loop {
 
 
     while true; do
-        echo "$WORKER_ID - Requesting job from Scheduler..."
-
         if [ -f "$BASEDIR/.shutdown-lock" ]
         then
             # Shutdown on another worker/thread is initiated.
@@ -89,7 +87,6 @@ function main_loop {
 
         case "$ACTION" in
           process)
-            echo "  $WORKER_ID - Process State received.  Running $@"
             retry_count=0 # reset retry counter
 
             export JOB_JSON WORKER_ID
@@ -120,8 +117,6 @@ function main_loop {
             unset JOB_ID
             ;;
           wait)
-            echo "  $WORKER_ID - Wait State received."
-
             # Worker punch-out
             if [ -f "running.$NWORKER" ]; then
                 rm -f running.$NWORKER
@@ -155,8 +150,6 @@ function main_loop {
             continue
             ;;
           retry)
-            echo "  $WORKER_ID - Scheduler not reached.  Waiting"
-
             if ls running* 1> /dev/null 2>&1; then
                 ## Other worker is not checked out
                 retry_count=0
@@ -169,10 +162,6 @@ function main_loop {
             continue
             ;;
           shutdown)
-            echo "  $WORKER_ID - Shutdown State received."
-
-            # This is not threadsafe!  For now let's just put it in a critical section.
-            # Using a recipe from "man flock" which appears to work.
             (
                 flock 200
 
@@ -196,9 +185,6 @@ function main_loop {
     done
 }
 
-echo "=========================================="
-echo "              SERRATUS  INIT              "
-echo "=========================================="
 cd $BASEDIR
 
 # AWS Internal check ------------
@@ -213,14 +199,8 @@ then
     # Paradox, can't terminate without credentials
     # --> solution: change default shutdown behavior
     #     to "terminate" in terraform for all ASG
-    #
 
     sudo shutdown
-
-    #aws ec2 terminate-instances \
-    # --region us-east-1 \
-    # --instance-ids $INSTANCE_ID
-
     false
     exit 0
 fi
@@ -242,7 +222,7 @@ function kill_workers {
     for i in $(seq 1 "$WORKERS"); do
         kill -USR1 ${worker[i]} 2>/dev/null || true
     done
-    
+
     exit 0
 }
 
