@@ -278,7 +278,7 @@ for Line in fIn:
 
 		if TL != None:
 			TBin = GetBin(TPos, TL)
-			AddHit(Acc, TBin, TL, PctId, SoftClipped)
+			AddHit(Acc, TBin, L, PctId, SoftClipped)
 
 		try:
 			Desc = AccToName[Acc]
