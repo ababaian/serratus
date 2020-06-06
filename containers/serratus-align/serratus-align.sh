@@ -162,9 +162,6 @@ if [ -z "$SCHEDULER" ]; then
     exit 1
 fi
 
-echo "=========================================="
-echo "                SERRATUS                  "
-echo "=========================================="
 cd $BASEDIR
 
 # Query for job --------------------------------------------
@@ -186,15 +183,13 @@ cd $BASEDIR
 # RGPO: Population / Experiment
 # RGPL: Platform [ILLUMINA]
 
-echo "$WORKER_ID - Requesting align job from Scheduler..."
-
 # Parse Job JSON for run parameters
 BLOCK_ID=$(echo $JOB_JSON | jq -r .block_id)
 
 # Set up a error trap.  If something goes wrong unexpectedly, this will send
 # a message to the scheduler before exiting.
 function error {
-    curl -s -X POST "$SCHEDULER/jobs/align/$BLOCK_ID?state=fail"
+    curl -s -X POST "$SCHEDULER/jobs/align/$BLOCK_ID?state=fail" > /dev/null
     exit 0 # Already told the calling script.
 }
 trap error ERR
@@ -227,35 +222,17 @@ WORKDIR=$BASEDIR/work/$RUNID
 mkdir -p $WORKDIR; cd $WORKDIR
 GENDIR=$BASEDIR/$GENOME
 
-echo "============================"
-echo "  serratus-align Pipeline   "
-echo "============================"
-echo " date:      $(date)"
-echo " version:   $PIPE_VERSION"
-echo " ami:       $AMI_VERSION"
-echo " container: $CONTAINER_VERSION"
-echo " run-id:    $RUNID"
-echo " sra:       $SRA"
-echo " block:     $BL_N"
-echo " genome:    $GENOME"
-echo " aligner:   $ALIGNER"
-echo " align arg: $ALIGN_ARGS"
-echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RGPL"
-
-
 # DOWNlOAD GENOME =========================================
 # This is not threadsafe!  For now let's just put it in a critical section.
 # Using a recipe from "man flock" which appears to work.
 (
     flock 200
-    if [ -d $GENDIR ]; then
-        echo "  $GENDIR found."
-    else
+    if [ ! -d $GENDIR ]; then
         echo "  $GENDIR not found. Attempting download from"
         echo "  s3://serratus-public/seq/$GENOME"
         mkdir -p $GENDIR; cd $GENDIR
 
-        aws s3 cp --recursive s3://serratus-public/seq/$GENOME/ $GENDIR/
+        aws s3 cp --only-show-errors --recursive s3://serratus-public/seq/$GENOME/ $GENDIR/
     fi
 
     # Link genome files to workdir
@@ -263,10 +240,8 @@ echo " rg:        --rglb $RGLB --rgid $RGID --rgsm $RGSM --rgpo $RGPO --rgpl $RG
     ln -s $GENDIR/* ./
 ) 200> "$BASEDIR/.genome-lock"
 
-if [ -e "$GENDIR/$GENOME.fa" ]
+if [ ! -e "$GENDIR/$GENOME.fa" ]
 then
-    echo "  genome download complete"
-else
     echo " ERROR: $GENOME.fa not found"
     false
     exit 1
@@ -276,16 +251,16 @@ fi
 
 if [[ "$PAIRED" = true ]]
 then
-  echo "  Downloading Paired-end fq-block data..."
-  aws s3 cp $S3_FQ1 ./
-  aws s3 cp $S3_FQ2 ./
+  # Download Paired-end fq-block data..."
+  aws s3 cp --only-show-errors $S3_FQ1 ./
+  aws s3 cp --only-show-errors $S3_FQ2 ./
 
   FQ1=$(basename $S3_FQ1)
   FQ2=$(basename $S3_FQ2)
 
 else
-  echo "  Downloading unpaired fq-block data..."
-  aws s3 cp $S3_FQ3 ./
+  # Download unpaired fq-block data..."
+  aws s3 cp --only-show-errors $S3_FQ3 ./
 
   FQ3=$(basename $S3_FQ3)
 fi
@@ -294,56 +269,31 @@ fi
 
 if [ "$ALIGNER" = "bowtie2" ]
 then 
-  echo "  Running -- run_bowtie2.sh --"
-
   if [[ "$PAIRED" = true ]]
   then
     # Paired-end read alignment -----------------
-    echo "  bash $BASEDIR/run_bowtie2.sh " &&\
-    echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
-    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
-    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
-
     bash $BASEDIR/run_bowtie2.sh \
       -1 $FQ1 -2 $FQ2 -x $GENOME \
       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   else
     # Single-end read alignment -----------------
-    echo "  bash $BASEDIR/run_bowtie2.sh " &&\
-    echo "    -0 $FQ3 -x $GENOME" &&\
-    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
-    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
-
     bash $BASEDIR/run_bowtie2.sh \
       -3 $FQ3 -x $GENOME \
       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   fi
-
 elif [ "$ALIGNER" = "bwa" ];
 then
-  echo "  Running -- run_bwa.sh --"
-
   if [[ "$PAIRED" = true ]]
   then
     # Paired-end read alignment -----------------
-    echo "  bash $BASEDIR/run_bwa.sh " &&\
-    echo "    -1 $FQ1 -2 $FQ2 -x $GENOME" &&\
-    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
-    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
-
     bash $BASEDIR/run_bwa.sh \
       -1 $FQ1 -2 $FQ2 -x $GENOME \
       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   else
     # Single-end read alignment -----------------
-    echo "  bash $BASEDIR/run_bwa.sh " &&\
-    echo "    -0 $FQ3 -x $GENOME" &&\
-    echo "    -o $SRA.$BL_N -p $THREADS -a $ALIGN_ARGS" &&\
-    echo "    -L $RGLB -I $RGID -S $RGSM -P $RGPO"
-
     bash $BASEDIR/run_bwa.sh \
       -3 $FQ3 -x $GENOME \
       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
@@ -356,31 +306,20 @@ else
 fi
 
 # RUN UPLOAD ==============================================
-echo "  Uploading bam-block data..."
-echo "  $SRA.$BL_N.bam"
-
-aws s3 cp $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
-
-echo "  Status: DONE"
+aws s3 cp --only-show-errors $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
 
 # CLEAN-UP ================================================
-# Update to scheduler -------------------------------------
-# ---------------------------------------------------------
 # Tell the scheduler we're done
-echo "  $WORKER_ID - Job $SRA is complete. Update scheduler."
-curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID?state=done"
+curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID?state=done" > /dev/null
 
 cd $BASEDIR; rm -rf $WORKDIR/*
 
 # Free up fq-blocks from s3
 if [[ "$PAIRED" = true ]]; then
-    aws s3 rm $S3_FQ1
-    aws s3 rm $S3_FQ2
+    aws s3 rm --only-show-errors $S3_FQ1
+    aws s3 rm --only-show-errors $S3_FQ2
 else
-    aws s3 rm $S3_FQ3
+    aws s3 rm --only-show-errors $S3_FQ3
 fi
 
-echo "============================"
-echo "======= RUN COMPLETE ======="
-echo "============================"
 exit 0
