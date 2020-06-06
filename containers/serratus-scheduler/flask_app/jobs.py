@@ -1,5 +1,6 @@
 import csv
 import io
+from itertools import islice
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request, abort, render_template
@@ -11,15 +12,28 @@ bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 
 @bp.route("/add_sra_run_info/<filename>", methods=["POST"])
 def add_sra_runinfo(filename):
-    ## Read the CSV into the DB
+    """Read the CSV into the DB.
+
+    TODO: Use the filename part of the URL to prevent the same file from
+    being uploaded multiple times.
+    """
     insert_count = 0
     session = db.get_session()
 
-    csv_data = io.StringIO(request.data.decode())
-    for line in csv.DictReader(csv_data):
-        insert_count += 1
-        acc = db.Accession(state="new", sra_run_info=line)
-        session.add(acc)
+    csv_data = csv.DictReader(map(lambda b: b.decode(), request.stream))
+    while True:
+        # Using bulk_insert_mappings, using the recipe recommended here:
+        # https://docs.sqlalchemy.org/en/13/faq/performance.html
+        mappings = [
+            dict(state="new", sra_run_info=line) for line in islice(csv_data, 10000)
+        ]
+
+        if not mappings:
+            break
+
+        session.bulk_insert_mappings(db.Accession, mappings)
+        insert_count += len(mappings)
+        print("Reading data... {}".format(insert_count))
 
     session.commit()
 
