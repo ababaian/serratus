@@ -1,5 +1,4 @@
 import csv
-import io
 from itertools import islice
 from datetime import datetime
 
@@ -130,7 +129,7 @@ def finish_split_job(acc_id):
     acc = (
         session.query(db.Accession)
         .filter_by(acc_id=int(acc_id))
-        .with_for_update(skip_locked=True)
+        .with_for_update()
         .one()
     )
 
@@ -191,6 +190,8 @@ def start_align_job():
 
     response = block.to_dict()
 
+    # Query acc *without* for_update, since we're just using it to get extra
+    # information about the block.
     acc = session.query(db.Accession).filter_by(acc_id=block.acc_id).one()
 
     response.update(acc.to_dict())
@@ -216,7 +217,7 @@ def finish_align_job(block_id):
         abort(400)
 
     session = db.get_session()
-    block = session.query(db.Block).filter_by(block_id=block_id).one()
+    block = session.query(db.Block).filter_by(block_id=block_id).with_for_update().one()
     block.state = state
     block.align_end_time = datetime.now()
     session.commit()
@@ -280,7 +281,7 @@ def finish_merge_job(acc_id):
     acc = (
         session.query(db.Accession)
         .filter_by(acc_id=int(acc_id))
-        .with_for_update(skip_locked=True)
+        .with_for_update()
         .one()
     )
 
