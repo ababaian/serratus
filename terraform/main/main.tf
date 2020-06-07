@@ -89,10 +89,10 @@ module "scheduler" {
   
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
-  instance_type      = "c5.xlarge"
+  instance_type      = "c5.2xlarge"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
-  flask_workers      = 9 # (2*CPU)+1, according to https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
+  flask_workers      = 17 # (2*CPU)+1, according to https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
 }
 
 // Cluster monitor
@@ -103,7 +103,7 @@ module "monitoring" {
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
   dockerhub_account  = var.dockerhub_account
-  instance_type      = "r5.xlarge"
+  instance_type      = "r5.2xlarge"
 }
 
 // Serratus-dl
@@ -135,7 +135,7 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 5000
+  max_size           = 10000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.xlarge" # c5.large
@@ -171,7 +171,7 @@ module "merge" {
   // TODO: the credentials are not properly set-up to
   //       upload to serratus-public, requires a *Object policy
   //       on the bucket.
-  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200530_hu1"
+  options            = "-k ${module.work_bucket.name} -b s3://serratus-public/out/200606_hu2"
 }
 
 // RESOURCES ##############################

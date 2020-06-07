@@ -266,6 +266,40 @@ resource "aws_launch_configuration" "worker" {
               EOF
 }
 
+// To enable Logging use this user_data
+/*  
+  user_data = <<-EOF
+              #!/bin/bash
+              export 
+              instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              hostname ${var.image_name}-$instance_id
+              docker run -d \
+                --log-driver=awslogs \
+                --log-opt awslogs-region="${data.aws_region.current.name}" \
+                --log-opt awslogs-group="${aws_cloudwatch_log_group.g.name}" \
+                --log-opt awslogs-stream="$instance_id" \
+                --name ${var.image_name} \
+                -e SCHEDULER=${var.scheduler} \
+                ${var.dockerhub_account}/${var.image_name} \
+                ${var.options}
+              EOF
+*/
+
+// To disable logging use this user data
+/*
+  user_data = <<-EOF
+              #!/bin/bash
+              export 
+              instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              hostname ${var.image_name}-$instance_id
+              docker run -d \
+                --log-driver=none \
+                --name ${var.image_name} \
+                -e SCHEDULER=${var.scheduler} \
+                ${var.dockerhub_account}/${var.image_name} \
+                ${var.options}
+              EOF
+*/
 
 // TODO: COOLDOWN POLICY NOT ATTACHED TO GROUP
 resource "aws_autoscaling_policy" "worker" {

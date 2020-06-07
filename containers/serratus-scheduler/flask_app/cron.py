@@ -78,7 +78,6 @@ def adjust_autoscaling_loop(app):
     )
 
     while True:
-        virt_asg = False
         with app.app_context():
             config = dict(db.get_config())
 
@@ -110,49 +109,53 @@ def adjust_autoscaling_loop(app):
                 .count()
             )
 
-        virt_max = config["VIRTUAL_ASG_MAX_INCREASE"]
         if config["DL_SCALING_ENABLE"]:
             constant = float(config["DL_SCALING_CONSTANT"])
             max_ = int(config["DL_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
-                autoscaling, constant, max_, num_dl_jobs, "dl", virt_max,
+            virt_dl = set_asg_size(
+                autoscaling,
+                constant,
+                max_,
+                num_dl_jobs,
+                "dl",
+                int(config["DL_MAX_INCREASE"]),
             )
         if config["ALIGN_SCALING_ENABLE"]:
             constant = float(config["ALIGN_SCALING_CONSTANT"])
             max_ = int(config["ALIGN_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
-                autoscaling, constant, max_, num_align_jobs, "align", virt_max,
+            virt_align = set_asg_size(
+                autoscaling,
+                constant,
+                max_,
+                num_align_jobs,
+                "align",
+                int(config["ALIGN_MAX_INCREASE"]),
             )
         if config["MERGE_SCALING_ENABLE"]:
             constant = float(config["MERGE_SCALING_CONSTANT"])
             max_ = int(config["MERGE_SCALING_MAX"])
-            virt_asg = virt_asg or set_asg_size(
-                autoscaling, constant, max_, num_merge_jobs, "merge", virt_max,
+            virt_merge = set_asg_size(
+                autoscaling,
+                constant,
+                max_,
+                num_merge_jobs,
+                "merge",
+                int(config["MERGE_MAX_INCREASE"]),
             )
 
         scale_interval = int(config["SCALING_INTERVAL"])
         virt_interval = int(config["VIRTUAL_SCALING_INTERVAL"])
-        if virt_asg:
-            print(
-                "virtual autoscaling finished.  Running again in {} seconds".format(
-                    virt_interval
-                )
-            )
+        if virt_dl or virt_align or virt_merge:
             time.sleep(virt_interval)
         else:
-            print(
-                "ajust_autoscaling() finished.  Running again in {} seconds".format(
-                    scale_interval
-                )
-            )
             time.sleep(scale_interval)
 
 
 def get_running_instances():
+    """Get a list of all EC2 instance IDs currently running"""
     ec2 = boto3.session.Session().client(
         "ec2", region_name=current_app.config["AWS_REGION"]
     )
-    """Get a list of all EC2 instance IDs currently running"""
     for r in ec2.describe_instances()["Reservations"]:
         for instance in r["Instances"]:
             if instance["State"]["Name"] == "running":
@@ -168,7 +171,7 @@ def worker_to_instance_id(worker_id):
 def check_and_clear(instances, table, active_state, new_state, name):
     """Check and reset jobs of a given type."""
     session = db.get_session()
-    missing_instances = list()
+    missing_instances = set()
 
     accessions = (
         session.query(table).filter(table.state == active_state).with_for_update().all()
@@ -189,7 +192,7 @@ def check_and_clear(instances, table, active_state, new_state, name):
 
         if instance_id not in instances:
             accession.state = new_state
-            missing_instances.append(instance_id)
+            missing_instances.add(instance_id)
             count += 1
 
     if missing_instances:
@@ -198,7 +201,7 @@ def check_and_clear(instances, table, active_state, new_state, name):
                 len(missing_instances), name
             )
         )
-        for instance in missing_instances:
+        for instance in sorted(missing_instances):
             print("   {}".format(instance))
 
     if count:
@@ -228,11 +231,6 @@ def clean_terminated_jobs_loop(app):
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
             clear_terminated_jobs()
 
-        print(
-            "clear_terminated_jobs() finished.  Running again in {} seconds".format(
-                clear_interval
-            )
-        )
         time.sleep(clear_interval)
 
 

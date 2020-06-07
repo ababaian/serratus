@@ -173,63 +173,19 @@ then
 fi
 
 # ALIGN ===================================================
-# Generate random alpha-numeric for run-id
-RUNID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1 )
-
-# Logging to STDOUT
-echo " -- bowtie2 Alignment Pipeline -- "
-echo " date:    $(date)"
-echo " version: $PIPE_VERSION "
-echo " output:  $OUTNAME"
-echo " run-id:  $RUNID"
-
-if [ $paired_run = "T" ]
-then
-  echo " type:    paired"
-  echo " fq1:     $FQ1"
-  echo " fq2:     $FQ2"
-  echo " output:  $OUTNAME.bam"
-else
-  echo " type:    single-end"
-  echo " fq3:     $FQ3"
-  echo " output:  $OUTNAME.bam"
-fi
-
-# ---------------------------
-
-echo " genome:  $GENOME"
-echo " bt2 arguments:   $ALIGN_ARG -p $THREADS"
-echo " Read Group LB:   $RGLB"
-echo "            ID:   $RGID"
-echo "            SM:   $RGSM"
-echo "            PO:   $RGPO"
-echo "            PL:   $RGPL"
-echo""
-echo 'Initializing ...'
-echo ""
 
 if [ $paired_run = "T" ]
 then
   # Paired Read Alignment
-  echo "bowtie2 $ALIGN_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x $GENOME -1 $FQ1 -2 $FQ2 | \\"
-  echo "samtools view -bS -G 12 - > "$OUTNAME".bam"
-
   # -G 12 excludes reads with both reads in pair unmapped
-  bowtie2 $ALIGN_ARG -p $THREADS \
+  bowtie2 --quiet $ALIGN_ARG -p $THREADS \
     --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
     --rg PL:$RGPL --rg PU:$RGPU \
     -x $GENOME -1 $FQ1 -2 $FQ2 | \
     samtools view -b -G 12 - > "$OUTNAME".bam
 
-  echo ""
-  echo "Alignment complete."
-
   if [ $DEBUG = "F" ]
   then
-    echo "clearing fq-files"
     # Clean-up FQ files to save space
     rm $FQ1 $FQ2
   fi
@@ -237,25 +193,15 @@ then
   
 else
   # Unpaired Read Alignment
-  echo "bowtie2 $ALIGN_ARG -p $THREADS \\"
-  echo "  --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \\"
-  echo "  --rg PL:$RGPL --rg PU:$RGPU \\"
-  echo "  -x $GENOME -U $FQ3 | \\"
-  echo "samtools view -bS - > aligned_unsorted.bam"
-
   # -F 4 will retain only mapped reads
-  bowtie2 $ALIGN_ARG -p $THREADS \
+  bowtie2 --quiet $ALIGN_ARG -p $THREADS \
     --rg-id $RGID --rg LB:$RGLB --rg SM:$RGSM \
     --rg PL:$RGPL --rg PU:$RGPU \
     -x $GENOME -U $FQ3 | \
     samtools view -b -F 4 - > "$OUTNAME".bam
 
-  echo ""
-  echo "Alignment complete."
-
     if [ $DEBUG = "F" ]
     then
-      echo "clearing fq-files"
       # Clean-up FQ
       rm $FQ3
     fi
