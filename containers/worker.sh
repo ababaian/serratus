@@ -195,7 +195,7 @@ function main_loop {
                 # yum -y install sudo shadow-utils util-linux
                 # sudo shutdown -h now
                 # sleep 300
-                
+
                 false
                 exit 0
 
@@ -242,36 +242,4 @@ for i in $(seq 1 "$WORKERS"); do
     main_loop "$i" "$@" & worker[i]=$!
 done
 
-
-# Possibly remove all code below here ------------
-
-function kill_workers {
-    for i in $(seq 1 "$WORKERS"); do
-        kill -USR1 ${worker[i]} 2>/dev/null || true
-    done
-
-    exit 0
-}
-
-# Send signal if docker is shutting down.
-trap kill_workers TERM
-
-## Spot Operations ===============================
-## Monitor AWS Cloudwatch for spot-termination signal
-## if Spot termination signal detected, proceed with
-## shutdown via SIGURS1 signal
-#
-# METADATA=http://169.254.169.254/latest/meta-data
-# while true; do
-#     # Note: this URL returns an HTML 404 page when there is no action.  Use
-#     # "curl -f" to mitigate that.
-#     INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
-#     if [ "$INSTANCE_ACTION" == "terminate" ]; then
-#         echo "SPOT TERMINATION SIGNAL RECEIEVED."
-#         echo "Initiating shutdown procedures for all workers"
-
-#         kill_workers
-#     fi
-
-#     sleep 5
-# done
+# :)
