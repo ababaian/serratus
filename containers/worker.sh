@@ -87,6 +87,7 @@ function main_loop {
 
         case "$ACTION" in
           process)
+            fail_count=$retry_count  # temporary holder for retry_counter
             retry_count=0 # reset retry counter
 
             export JOB_JSON WORKER_ID
@@ -110,8 +111,21 @@ function main_loop {
                 fi
             fi
 
+            # If `serratus-align.sh` fails
+            # it will `touch $RUN_FAIL`
+            RUN_FAIL="$BASEDIR"/"$NWORKER".fail
+            export RUN_FAIL
+
             # Run the target script.
             "$@" & wait
+
+            # If run-failed. Count the failure as a 
+            # 'retry_count' to initiate shut-down
+            #
+            if [ -e "$RUN_FAIL" ]; then
+                ((retry_count=fail_count+1))
+                rm $RUN_FAIL
+            fi
 
             # Unset job ID to prevent incorrect terminations
             unset JOB_ID
@@ -172,6 +186,16 @@ function main_loop {
                  --instance-ids $INSTANCE_ID
 
                 sleep 300
+
+                # TODO: Add a redundancy for shutdown
+                #       to work form inside the container
+                #
+                # Secondary back-up -- shutdown instance
+                # (set to "stopped" state" if terminate fails)
+                # yum -y install sudo shadow-utils util-linux
+                # sudo shutdown -h now
+                # sleep 300
+
                 false
                 exit 0
 
@@ -218,33 +242,4 @@ for i in $(seq 1 "$WORKERS"); do
     main_loop "$i" "$@" & worker[i]=$!
 done
 
-function kill_workers {
-    for i in $(seq 1 "$WORKERS"); do
-        kill -USR1 ${worker[i]} 2>/dev/null || true
-    done
-
-    exit 0
-}
-
-# Send signal if docker is shutting down.
-trap kill_workers TERM
-
-# Spot Operations ===============================
-# Monitor AWS Cloudwatch for spot-termination signal
-# if Spot termination signal detected, proceed with
-# shutdown via SIGURS1 signal
-
-METADATA=http://169.254.169.254/latest/meta-data
-while true; do
-    # Note: this URL returns an HTML 404 page when there is no action.  Use
-    # "curl -f" to mitigate that.
-    INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
-    if [ "$INSTANCE_ACTION" == "terminate" ]; then
-        echo "SPOT TERMINATION SIGNAL RECEIEVED."
-        echo "Initiating shutdown procedures for all workers"
-
-        kill_workers
-    fi
-
-    sleep 5
-done
+# :)

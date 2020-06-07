@@ -190,6 +190,7 @@ BLOCK_ID=$(echo $JOB_JSON | jq -r .block_id)
 # a message to the scheduler before exiting.
 function error {
     curl -s -X POST "$SCHEDULER/jobs/align/$BLOCK_ID?state=fail" > /dev/null
+    touch $RUN_FAIL
     exit 0 # Already told the calling script.
 }
 trap error ERR
@@ -232,8 +233,47 @@ GENDIR=$BASEDIR/$GENOME
         mkdir -p "$GENDIR"; cd "$GENDIR"
 
         aws s3 sync --only-show-errors "s3://serratus-public/seq/$GENOME/" "$GENDIR/"
+
+        # Check for Genome Fasta File
+        if [ ! -e "$GENDIR/$GENOME.fa" ]; then
+          echo " ERROR: Genome file $GENOME.fa not found"
+          echo "        in s3://serratus-public/seq/$GENOME/ "
+          false; exit 1
+
+        # Check for Genome Index (bowtie2) Files
+        elif [ ! -e "$GENEDIR/$GENOME.1.bt2" ]; then
+          echo " ERROR: bowtie2 genome index file $GENOME.1.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1
+        elif [ ! -e "$GENEDIR/$GENOME.2.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.2.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1
+        elif [ ! -e "$GENEDIR/$GENOME.3.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.3.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1    
+        elif [ ! -e "$GENEDIR/$GENOME.4.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.4.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1
+        elif [ ! -e "$GENEDIR/$GENOME.rev.1.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.rev.1.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1              
+        elif [ ! -e "$GENEDIR/$GENOME.rev.2.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.rev.2.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1              
+        fi
     fi
-) 200> "$BASEDIR/.genome-lock"
+) 200> "$BASEDIR/.genome-lock"  
 
 # Link genome files to workdir
 cd "$WORKDIR"
