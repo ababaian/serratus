@@ -24,6 +24,7 @@ ACC_STATES = (
     "merge_done",
     "split_err",
     "merge_err",
+    "hold",
 )
 
 bp = Blueprint("db", __name__, url_prefix="/db")
@@ -62,7 +63,7 @@ class Accession(Base, Dicter):
     merge_worker = Column(String)
 
 
-BLOCK_STATES = ("new", "aligning", "done", "fail")
+BLOCK_STATES = ("new", "aligning", "done", "fail", "hold")
 
 
 class Block(Base, Dicter):
