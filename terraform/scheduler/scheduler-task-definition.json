@@ -1,7 +1,7 @@
 [
   {
     "name": "postgres",
-    "image": "postgres",
+    "image": "serratus-scheduler-postgres",
     "memoryReservation": 128,
     "essential": true,
     "portMappings": [
