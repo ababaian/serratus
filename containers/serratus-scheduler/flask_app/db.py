@@ -166,6 +166,13 @@ def get_config_val(key):
     return row.value
 
 
+def enable_pg_stat_statements():
+    """Enable the postgres pg_stat_statement, which allows tracking statement
+    timings"""
+    with get_engine().connect() as con:
+        con.execute("CREATE EXTENSION IF NOT EXISTS pg_stat_statements;")
+
+
 def init_db(reset=False):
     """Clear the existing data and create new tables."""
     engine = get_engine()
@@ -173,6 +180,7 @@ def init_db(reset=False):
         Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     create_config(CONFIG_DEFAULT)
+    enable_pg_stat_statements()
 
 
 @bp.route("", methods=["GET"])
