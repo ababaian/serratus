@@ -70,7 +70,7 @@ class Block(Base, Dicter):
 
     block_id = Column(Integer, primary_key=True)
     state = Column(Enum(name="blk_state", *BLOCK_STATES), index=True)
-    acc_id = Column(Integer, ForeignKey("acc.acc_id"))
+    acc_id = Column(Integer, ForeignKey("acc.acc_id"), index=True)
     n = Column(Integer)
 
     align_start_time = Column(DateTime)
