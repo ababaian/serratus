@@ -7,7 +7,7 @@
 # base: 9 Gb
 #
 set -eu
-PIPE_VERSION="0.1.4"
+PIPE_VERSION="0.3.0"
 
 function usage {
   echo ""
@@ -147,6 +147,11 @@ OUTBAM="$SRA.bam"
 
 # Command to run summarizer script
 sumzer="$GENOME.sumzer.tsv"
+
+# Meta-data header for summary file
+export SUMZER_COMMENT=$(echo sra="$SRA",genome="$GENOME",date=$(date +%y%m%d-%R))
+
+# Summary Comment / Meta-data
 # usage: serratus_summarizer_flom.py InputSamFileName MetaTsvFilename SummaryFileName OutputSamFileName
 #summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout $SRA.th"
 summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout"

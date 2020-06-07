@@ -1,7 +1,7 @@
 [
   {
     "name": "prometheus",
-    "image": "jefftaylor42/serratus-prometheus",
+    "image": "${dockerhub_account}/serratus-prometheus",
     "memoryReservation": 128,
     "essential": true,
     "portMappings": [
@@ -16,14 +16,27 @@
         "ipAddress": "${sched_ip}"
       }
     ],
+    "ulimits": [{
+      "name": "nofile",
+      "softLimit": 1048576,
+      "hardLimit": 1048576
+    }],
     "mountPoints": [{
       "sourceVolume": "prometheus-data",
       "containerPath": "/prometheus"
-    }]
+    }],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-monitor",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "prometheus"
+      }
+    }
   },
   {
     "name": "grafana",
-    "image": "jefftaylor42/serratus-grafana",
+    "image": "${dockerhub_account}/serratus-grafana",
     "cpu": 256,
     "memoryReservation": 128,
     "essential": true,
@@ -32,6 +45,14 @@
         "containerPort": 3000,
         "hostPort": 3000
       }
-    ]
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-monitor",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "grafana"
+      }
+    }
   }
 ]

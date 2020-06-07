@@ -1,7 +1,7 @@
 # Serratus
 
 #### Introduction Video (1:59)
-[![Serratus Mountain in Squamish, BC. Canada](img/logo/splash_play.png)](https://youtu.be/MtZk7JEOzus)
+[![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash_play.png)](https://youtu.be/MtZk7JEOzus)
 
 ### Background
 The SARS-CoV-2 pandemic will infect millions and has already crippled the global economy. 
@@ -11,7 +11,7 @@ While there is an intense research effort to sequence SARS-CoV-2 isolates to und
 We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to discover new members of Coronaviridae and assemble their genomes. That is >1.12 million biological samples or 5.72 petabytes of sequencing data.
 
 ### Architecture
-![serratus-overview](img/serratus_overview.png)
+![serratus-overview](https://github.com/ababaian/serratus/wiki/img/serratus_overview.png)
 
 ### Contributing
 `Serratus` is an Open-Science project. We welcome all scientists to contribute. [See CONTRIBUTING.md](CONTRIBUTING.md)

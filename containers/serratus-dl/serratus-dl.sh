@@ -133,7 +133,7 @@ done
 shift $((OPTIND-1))
 
 if [ -z "$SCHEDULER" ]; then
-    echo Please set SCHEDULER environment variable or use -k flag.
+    echo "Please set SCHEDULER environment variable or use -k flag."
     exit 1
 fi
 
@@ -143,8 +143,8 @@ ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
 # Set up a error trap.  If something goes wrong unexpectedly, this will send
 # a message to the scheduler before exiting.
 function error {
-    echo Error encountered.  Notifying the scheduler.
-    curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_err"
+    echo "Error encountered.  Notifying the scheduler."
+    curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_err" > /dev/null
 }
 trap error ERR
 
@@ -178,25 +178,10 @@ function cleanup {
 }
 trap cleanup EXIT
 
-echo "============================"
-echo "    serratus-dl Pipeline    "
-echo "============================"
-echo " date:      $(date)"
-echo " version:   $PIPE_VERSION"
-echo " ami:       $AMI_VERSION"
-echo " container: $CONTAINER_VERSION"
-echo " worker-id: $WORKER_ID"
-echo " run-id:    $RUNID"
-echo " sra:       $SRA"
-echo " S3 url:    $S3_BUCKET"
-echo ""
-
 # RUN DOWNLOAD ==============================================
-echo "  Running -- run_dl-sra.sh --"
-echo "  $BASEDIR/run_dl-sra.sh $SRA $DL_ARGS"
 
 export BASEDIR
-$BASEDIR/run_dl-sra.sh "$SRA" "$S3_BUCKET"
+"$BASEDIR"/run_dl-sra.sh "$SRA" "$S3_BUCKET"
 
 echo ''
 
@@ -214,23 +199,19 @@ then
   echo "Number of FQ1 files != FQ2 files.  Notifying scheduler"
   false # Handle error and quit
 fi
-  
+
 if [[ ( "$N_FQ1" -gt 0 ) && ( "$N_FQ2" -gt 0 ) ]]
 then
   paired_exists=true
-  echo "  Paired-end reads detected"
 else
   paired_exists=false
-  echo "  Paired-end reads not-detected"
 fi
 
 if [[ ( "$N_FQ3" -gt 0 ) ]]
 then
   unpaired_exists=true
-  echo "  Unpaired reads detected"
 else
   unpaired_exists=false
-  echo "  unpaired reads not-detected"
 fi
 
 if [[ "$paired_exists" = false && "$unpaired_exists" = false ]]
@@ -250,17 +231,8 @@ then
 fi
 
 # Count output blocks
-echo "    N paired-end fq-blocks: $N_FQ1"
-echo "    N unpaired   fq-blocks: $N_FQ3"
-echo ""
-
 # Update to scheduler -------------------------------------
-# ---------------------------------------------------------
 ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
-echo "  $WORKER_ID - Job $ACC_ID is complete. Update scheduler."
-curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_done&N_paired=$N_FQ1&N_unpaired=$N_FQ3"
+curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_done&N_paired=$N_FQ1&N_unpaired=$N_FQ3" > /dev/null
 
-echo "============================"
-echo "======= RUN COMPLETE ======="
-echo "============================"
 exit 0
