@@ -26,7 +26,7 @@ TMPDIR ?= /tmp
 .SECONDARY:
 
 #### Local Parameters:
-DATA_DIR ?= /media/ephemeral/assembly
+DATA_DIR ?= /media/storage/assembly
 OUT_DIR  ?= $(CURDIR)/
 INSTALL_DIR ?= $(CURDIR)/third-party
 
@@ -46,15 +46,17 @@ export PATH
 #	SRR924370 \
 #	SRR11616465
 
-SRA_LIST := SRR10951638 SRR10951639 SRR10951640 SRR10951641 SRR10951642 SRR10951643 SRR10951644 SRR10951645 SRR10951646 SRR10951647 SRR10951648 SRR10951649 SRR10951650 SRR10951651 SRR10951652 SRR10951653 SRR10951666 SRR10951667 SRR10951668 SRR10951669 SRR10951670 SRR10951671 SRR10951672 SRR10951673 SRR10951674 SRR10951675 SRR10951676 SRR10951677 SRR10951678 SRR10951679 SRR10951680 SRR10951681 SRR10951682 SRR10951684 SRR10951685 SRR10951686 SRR10951687 SRR10951654 SRR10951655 SRR10951657 SRR10951658 SRR10951659 SRR10951660 SRR10951661 SRR10951662 SRR10951663 SRR10951664 SRR10951665 SRR10951656 SRR10951683
+## SRR10951638 SRR10951639 SRR10951640 SRR10951641 SRR10951642 SRR10951643 SRR10951644 SRR10951645 SRR10951646 SRR10951647 SRR10951648 SRR10951649 SRR10951650 SRR10951651 SRR10951652 SRR10951653 SRR10951666 SRR10951667 SRR10951668 SRR10951669 SRR10951670 SRR10951671 SRR10951672 SRR10951673 SRR10951674 SRR10951675 SRR10951676 SRR10951677 SRR10951678 SRR10951679 SRR10951680 SRR10951681 SRR10951682 SRR10951684 SRR10951685 SRR10951686 SRR10951687 SRR10951654 SRR10951655 SRR10951657 SRR10951658 SRR10951659 SRR10951660 SRR10951661 SRR10951662 SRR10951663 SRR10951664 SRR10951665 SRR10951656 SRR10951683
+SRA_LIST := SRR10873977 SRR5383919 SRR5447167
 
 SRAs := $(shell echo $(SRA_LIST) | tr ' ' '\n')
 
 SRA-flags  := $(addsuffix .txt, $(addprefix $(DATA_DIR)/fastq/, $(SRAs)))
 SRA-fastqs := $(addsuffix _1.fastq, $(addprefix $(DATA_DIR)/fastq/, $(SRAs)))
 SRA-assemblies := $(addsuffix _megahit/final.contigs.fa, $(addprefix $(DATA_DIR)/, $(SRAs)))
-SRA-alignments := $(addsuffix .delta, $(addprefix $(DATA_DIR)/, $(SRAs)))
-SRA-align-reports:= $(addsuffix .delta, $(addprefix $(DATA_DIR)/, $(SRAs)))
+SRA-alignments := $(addsuffix _megahit/nucmer.delta, $(addprefix $(DATA_DIR)/, $(SRAs)))
+SRA-alignment-reports := $(addsuffix _megahit/nucmer-report.txt, $(addprefix $(DATA_DIR)/, $(SRAs)))
+SRA-blast-alignments := $(addsuffix _megahit/blastn-nt-virome.tsv, $(addprefix $(DATA_DIR)/, $(SRAs)))
 
 #### Targets:
 
@@ -172,7 +174,7 @@ download-emapper-db:
 ## ~30 minutes on 72 cores, 144G RAM, and 200G instance swap
 run-assembly: $(SRA-assemblies)
 
-$(DATA_DIR)/%_megahit/final.contigs.fa: $(DATA_DIR)/%_1.fastq
+$(DATA_DIR)/%_megahit/final.contigs.fa: $(DATA_DIR)/fastq/%_1.fastq
 	if [ -e `echo $^ | sed 's/_1.fastq/_2.fastq/'` ]
 	then	
 		megahit -1 $^ \
@@ -190,39 +192,38 @@ $(DATA_DIR)/%_megahit/final.contigs.fa: $(DATA_DIR)/%_1.fastq
 
 align-assembly: $(SRA-alignments)
 
-$(DATA_DIR)/%.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/%_megahit/final.contigs.fa
+$(DATA_DIR)/%_megahit/nucmer.delta: $(DATA_DIR)/cov2m.fa $(DATA_DIR)/%_megahit/final.contigs.fa
 	cd $(DATA_DIR)
 	nucmer --delta=$@ $^
 
 
 
 ## This shows that k141_146741 wholly contains three fragments in cov2m, and is ~29k:
-show-coords:
-	cd $(DATA_DIR)
-	for alignment in *.delta
-	do
-		show-coords -c -q -g -o -l -T \
-			$$alignment \
-			> `echo $$alignment | sed 's/.delta/-alignments.txt/'`
-	done
+show-coords: $(SRA-alignment-reports)
 
-## Blast:
-
-$(DATA_DIR)/%/blast.tsv: $(DATA_DIR)/%_megahit/final.contigs.fa
-	cd $(DATA_DIR)
-	mkdir -p `dirname $@`
-	get_species_taxids.sh -t 10239 > virus-ids.txt
-	blastn -query $^ \
-		-db nt \
-		-evalue 1 \
-		-task blastn \
-		-dust yes \
-		-taxidlist virus-ids.txt \
-		-num_threads `nproc` \
-		-outfmt 7 \
+$(DATA_DIR)/%_megahit/nucmer-report.txt: $(DATA_DIR)/%_megahit/nucmer.delta
+	cd `dirname $^`
+	show-coords -c -q -g -o -l -T \
+		$^ \
 		> $@
 
-run-blast: $(DATA_DIR)/ERR2756788/blast.tsv
+## Blast:
+blast-alignments: $(SRA-blast-alignments)
+
+$(DATA_DIR)/%_megahit/blastn-nt-virome.tsv: $(DATA_DIR)/%_megahit/final.contigs.fa
+	cd `dirname $^`
+	get_species_taxids.sh -t 10239 > $(DATA_DIR)/virus-ids.txt
+	blastn -query $^ \
+		-db nt \
+		-evalue .001 \
+		-task blastn \
+		-dust yes \
+		-taxidlist $(DATA_DIR)/virus-ids.txt \
+		-num_threads `nproc` \
+		-outfmt "7 qaccver saccver staxid scomname qlen slen length pident qcovs bitscore evalue" \
+		> $@
+
+#run-blast: $(DATA_DIR)/ERR2756788/blast.tsv
 
 
 

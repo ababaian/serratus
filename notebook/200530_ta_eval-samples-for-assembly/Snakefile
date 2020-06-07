@@ -17,7 +17,7 @@ rule sort_bam:
         S3.remote("serratus-public/out/200528_viro/bam/{sample}.bam", keep_local=True)
     output:
         sort="sorted_bam/{sample}.bam",
-	index="indexed_bam/{sample}.bam.bai"
+	index="sorted_bam/{sample}.bam.bai"
     shell:
         """
         samtools sort {input} > {output.sort}

@@ -1,0 +1,71 @@
+from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
+
+S3_URI="serratus-taltman/"
+
+SRRs = ["SRR10951638",
+        "SRR10951639",
+        "SRR10951640", "SRR10951641", "SRR10951642", "SRR10951643",
+        "SRR10951644", "SRR10951645", "SRR10951646", "SRR10951647",
+        "SRR10951648", "SRR10951649", "SRR10951650", "SRR10951651",
+        "SRR10951652", "SRR10951653", "SRR10951666", "SRR10951667",
+        "SRR10951668", "SRR10951669", "SRR10951670", "SRR10951671",
+        "SRR10951672", "SRR10951673", "SRR10951674", "SRR10951675",
+        "SRR10951676", "SRR10951677", "SRR10951678", "SRR10951679",
+        "SRR10951680", "SRR10951681", "SRR10951682", "SRR10951684",
+        "SRR10951685", "SRR10951686", "SRR10951687", "SRR10951654",
+        "SRR10951655", "SRR10951657", "SRR10951658", "SRR10951659",
+        "SRR10951660", "SRR10951661", "SRR10951662", "SRR10951663",
+        "SRR10951664", "SRR10951665", "SRR10951656", "SRR10951683"]
+
+S3 = S3RemoteProvider()
+
+rule generate_reports:
+    input:
+        S3.remote("serratus-taltman/final.contigs.fa")
+    shell:
+        """
+        get_species_taxids.sh -t 10239 > viral-taxids.txt;
+        blastn -task blastn \
+         -query serratus-taltman/final.contigs.fa \
+         -db /media/storage/blastdbs/nt \
+         -evalue .001 \
+         -dust yes \
+         -taxidlist viral-taxids.txt \
+         -qcov_hsp_perc 75 \
+         -num_threads `nproc` \
+         -outfmt "7 qaccver saccver staxid scomname qlen slen length pident qcovs bitscore evalue" \
+         > blastn-virus-out.tsv; 
+        egrep -v "^#" blastn-virus-out.tsv \
+         | sort -t $'\t' -k1,1 -k9,9nr -k8,8nr \
+         | awk -F'\t' '!a[$1]++' > virus-contig-annotations.txt;
+        awk -F'\t' 'BEGIN{OFS="\t"} \
+         { seq_length[$4] += $5} \
+         END{for(org in seq_length) print org, seq_length[org] }' \
+         virus-contig-annotations.txt \
+         | sort -t $'\t' -k2,2nr > org-cumul-length.txt
+        """
+
+rule fetch_summaries:
+    input:
+        S3.remote(expand("serratus-public/out/200505_zoonotic/summary/{sample}.summary",
+                         sample=SRRs), keep_local=True)
+    output:
+        expand("serratus-public/out/200505_zoonotic/summary/{sample}.summary",
+                         sample=SRRs)
+    shell:
+        """
+        date 
+        """
+
+rule generate_serratus_summary_stats:
+    input:
+        expand("serratus-public/out/200505_zoonotic/summary/{sample}.summary",
+               sample=SRRs)
+    output:
+        "serratus-summary-stats.txt"
+    shell:
+        """
+        awk -F';' '/^acc/ && !/REVERSE_/ { print $6, $9 }' \
+         serratus-public/out/200505_zoonotic/summary/*.summary  \
+         | sort | uniq -c | sort -n
+        """
