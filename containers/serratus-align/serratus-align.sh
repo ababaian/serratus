@@ -223,29 +223,21 @@ mkdir -p $WORKDIR; cd $WORKDIR
 GENDIR=$BASEDIR/$GENOME
 
 # DOWNlOAD GENOME =========================================
-# This is not threadsafe!  For now let's just put it in a critical section.
-# Using a recipe from "man flock" which appears to work.
+# Lock this section using a recipe from the flock manual.
 (
     flock 200
-    if [ ! -d $GENDIR ]; then
+    if [ ! -e "$GENDIR"/"$GENOME.fa" ]; then
         echo "  $GENDIR not found. Attempting download from"
         echo "  s3://serratus-public/seq/$GENOME"
-        mkdir -p $GENDIR; cd $GENDIR
+        mkdir -p "$GENDIR"; cd "$GENDIR"
 
-        aws s3 cp --only-show-errors --recursive s3://serratus-public/seq/$GENOME/ $GENDIR/
+        aws s3 sync --only-show-errors "s3://serratus-public/seq/$GENOME/" "$GENDIR/"
     fi
-
-    # Link genome files to workdir
-    cd $WORKDIR
-    ln -s $GENDIR/* ./
 ) 200> "$BASEDIR/.genome-lock"
 
-if [ ! -e "$GENDIR/$GENOME.fa" ]
-then
-    echo " ERROR: $GENOME.fa not found"
-    false
-    exit 1
-fi
+# Link genome files to workdir
+cd "$WORKDIR"
+ln -s "$GENDIR"/* ./
 
 # DOWNlOAD FQ Files =======================================
 
