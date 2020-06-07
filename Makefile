@@ -74,3 +74,46 @@ test-mash-sensitivity:
 			> sim.cov.$${sim}.fq
 		time mash screen -p 2 cov2.fa.gz.msh sim.cov.$${sim}.fq 
 	done
+
+
+### Conda
+
+## I install it to /home/ubuntu/.miniconda3
+install-miniconda:
+	wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+	if [ `sha256sum Miniconda3-latest-Linux-x86_64.sh | cut -d' ' -f 1` == 957d2f0f0701c3d1335e3b39f235d197837ad69a944fa6f5d8ad2c686b69df3b ]
+	then
+		chmod 700 Miniconda3-latest-Linux-x86_64.sh
+		./Miniconda3-latest-Linux-x86_64.sh
+	fi
+
+#
+# To activate this environment, use
+#
+#     $ conda activate snakemake
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+install-snakemake:
+	conda install -c conda-forge mamba
+	mamba create -c conda-forge -c bioconda -n snakemake snakemake
+
+install-igv:
+	cd third-party
+	wget https://data.broadinstitute.org/igv/projects/downloads/2.8/IGV_Linux_2.8.2.zip
+
+
+### Utilities:
+## Use lsblk to find a suitable ephemeral drive to use, then call it like:
+## SWAP_DEVICE=/dev/nvme1n1 SWAP_SIZE=400G make set-up-swap
+storage-dir := /media/storage
+set-up-swap:
+	sudo mkdir -p $(storage-dir)
+	sudo mkfs.ext4 $(SWAP_DEVICE)
+	sudo mount $(SWAP_DEVICE) $(storage-dir)
+	sudo fallocate -l $(SWAP_SIZE) $(storage-dir)/swapfile
+	sudo chmod 600 $(storage-dir)/swapfile
+	sudo mkswap $(storage-dir)/swapfile
+	sudo swapon $(storage-dir)/swapfile
