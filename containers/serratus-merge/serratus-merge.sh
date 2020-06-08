@@ -163,11 +163,11 @@ ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
 # Set up a error trap.  If something goes wrong unexpectedly, this will send
 # a message to the scheduler before exiting.
 function error {
-    echo Error encountered.  Notifying the scheduler.
+    echo "Error on line $1 processing acc $ACC_ID"
     curl -s -X POST "$SCHEDULER/jobs/merge/$ACC_ID?state=merge_err" > /dev/null
     exit 0 # Already told the calling script.
 }
-trap error ERR
+trap 'error "$LINENO"' ERR
 
 # Parse Job JSON for run parameters
 SRA=$(echo $JOB_JSON    | jq -r .sra_run_info.Run)

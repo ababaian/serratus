@@ -190,10 +190,11 @@ BLOCK_ID=$(echo $JOB_JSON | jq -r .block_id)
 # a message to the scheduler before exiting.
 function error {
     curl -s -X POST "$SCHEDULER/jobs/align/$BLOCK_ID?state=fail" > /dev/null
+    echo "Error on line $1 processing block $BLOCK_ID"
     touch $RUN_FAIL
     exit 0 # Already told the calling script.
 }
-trap error ERR
+trap 'error "$LINENO"' ERR
 
 SRA=$(echo $JOB_JSON      | jq -r .sra_run_info.Run)
 PAIRED=$(echo $JOB_JSON   | jq -r .contains_paired)
