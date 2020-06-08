@@ -27,22 +27,7 @@ fi
 WORKERS=${WORKERS:-$(nproc)}
 retry_count=0
 
-function terminate_handler {
-    # Tell server to reset this job to a "new" state,
-    # since we couldn't finish processing it.
-    curl -s -X POST "$SCHEDULER/jobs/$TYPE/$JOB_ID&state=new"
-    
-    echo "    $JOB_ID was terminated without completing. Reset status."
-    echo "    In trap $(date -In)"
-
-}
-
 function main_loop {
-    trap terminate_handler SIGUSR1
-    # Note: The "& wait"s are important.  Without them, bash will wait for
-    # the command to finish before executing its traps.  When we use "& wait",
-    # the command will recieve the same trap (killing it), and then run our
-    # trap handler, which tells the server our job failed.
     WORKER_ID="$INSTANCE_ID-$1"
     NWORKER="$1"
     shift
@@ -65,12 +50,6 @@ function main_loop {
         fi
 
         JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/?worker_id=$WORKER_ID" || true)
-
-        if [ "$TYPE" = align ]; then
-            JOB_ID=$(echo $JOB_JSON | jq -r .block_id)
-        else
-            JOB_ID=$(echo $JOB_JSON | jq -r .acc_id)
-        fi
 
         if [ -n "$JOB_JSON" ]; then
             ACTION=$(echo $JOB_JSON | jq -r .action)
@@ -106,7 +85,7 @@ function main_loop {
                     --region us-east-1 \
                     --instance-ids $INSTANCE_ID \
                     --auto-scaling-group-name $ASG_NAME \
-                    --protected-from-scale-in & wait
+                    --protected-from-scale-in
                     
                 fi
             fi
@@ -117,7 +96,7 @@ function main_loop {
             export RUN_FAIL
 
             # Run the target script.
-            "$@" & wait
+            "$@"
 
             # If run-failed. Count the failure as a 
             # 'retry_count' to initiate shut-down
@@ -126,9 +105,6 @@ function main_loop {
                 ((retry_count=fail_count+1))
                 rm $RUN_FAIL
             fi
-
-            # Unset job ID to prevent incorrect terminations
-            unset JOB_ID
             ;;
           wait)
             # Worker punch-out
@@ -150,7 +126,7 @@ function main_loop {
                   --region us-east-1 \
                   --instance-ids $INSTANCE_ID \
                   --auto-scaling-group-name $ASG_NAME \
-                  --no-protected-from-scale-in & wait
+                  --no-protected-from-scale-in
 
                 rm -f $BASEDIR/scale.in.pro
             fi
@@ -159,7 +135,7 @@ function main_loop {
             ((retry_count=retry_count+1))
 
             # wait cycle
-            sleep 10 & wait
+            sleep 10
 
             continue
             ;;
@@ -172,7 +148,7 @@ function main_loop {
                 ((retry_count=retry_count+1))
             fi
 
-            sleep 10 & wait
+            sleep 10
             continue
             ;;
           shutdown)
