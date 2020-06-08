@@ -251,8 +251,8 @@ curl -X POST -s "$SCHEDULER/jobs/merge/$ACC_ID?state=merge_done" > /dev/null
 cd $BASEDIR; rm -rf $WORKDIR/*
 
 # Free up fq-blocks and bam-blocks from s3
-aws s3 rm --recursive $S3_BAM
-aws s3 rm --recursive $S3_FQ
+aws s3 rm --only-show-errors --recursive $S3_BAM
+aws s3 rm --only-show-errors --recursive $S3_FQ
 
 exit 0
 

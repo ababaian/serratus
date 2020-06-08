@@ -12,6 +12,6 @@ ENV LANG=C.UTF-8
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /opt/
-ADD serratus-scheduler/flask_app/ ./flask_app
+COPY serratus-scheduler/flask_app/ ./flask_app
 
-ENTRYPOINT ["gunicorn", "flask_app:create_app()", "--bind", "0.0.0.0:8000", "-t", "7200"]
+ENTRYPOINT ["gunicorn", "flask_app:create_app()", "--bind", "0.0.0.0:8000"]
