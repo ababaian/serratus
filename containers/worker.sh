@@ -225,6 +225,7 @@ then
     #     to "terminate" in terraform for all ASG
 
     sudo shutdown
+
     false
     exit 0
 fi
@@ -232,7 +233,8 @@ fi
 # Retrieve ASG name
 ASG_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region us-east-1 | jq -r '.Tags[] | select(.["Key"] | contains("aws:autoscaling:groupName")) | .Value')
 FIRST='true'
-export INSTANCE_ID ASG_NAME FIRST
+retry_counter=0
+export INSTANCE_ID ASG_NAME FIRST retry_counter
 
 # ----------------------------
 
