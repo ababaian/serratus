@@ -215,7 +215,7 @@ export INSTANCE_ID ASG_NAME FIRST
 # Fire up main loop (SRA downloader)
 echo "Creating $WORKERS worker processes"
 for i in $(seq 1 "$WORKERS"); do
-    main_loop "$i" "$@" & worker[i]=$!
+    main_loop "$i" "$@" &
 done
 
-# :)
+wait
