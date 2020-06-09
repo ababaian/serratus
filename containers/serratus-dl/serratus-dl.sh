@@ -134,6 +134,7 @@ shift $((OPTIND-1))
 
 if [ -z "$SCHEDULER" ]; then
     echo "Please set SCHEDULER environment variable or use -k flag."
+    false
     exit 1
 fi
 
@@ -145,6 +146,7 @@ ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
 function error {
     echo "Error on line $1 processing acc $ACC_ID"
     curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_err" > /dev/null
+    false
 }
 trap 'error "$LINENO"' ERR
 
