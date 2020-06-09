@@ -44,9 +44,9 @@ S3_FQ3="s3://$S3_BUCKET/fq-blocks/$SRA/$SRA.3.fq.%010d"
 # Stream those pipes into a parallel AWS upload.
 # TODO: there are 3 levels of concurrency here: with bash, parallel, and aws.
 #       should we disable concurrency in parallel or aws?
-cat "$FQ_1" | parallel --block 100M --pipe -N"$BLOCKSIZE" "$BASEDIR"/s3_cp_formatted.sh "$S3_FQ1" "{#}" &
-cat "$FQ_2" | parallel --block 100M --pipe -N"$BLOCKSIZE" "$BASEDIR"/s3_cp_formatted.sh "$S3_FQ2" "{#}" &
-cat "$FQ_3" | parallel --block 100M --pipe -N"$BLOCKSIZE" "$BASEDIR"/s3_cp_formatted.sh "$S3_FQ3" "{#}" &
+cat "$FQ_1" | parallel --block 500M --pipe -N"$BLOCKSIZE" "$BASEDIR"/s3_cp_formatted.sh "$S3_FQ1" "{#}" &
+cat "$FQ_2" | parallel --block 500M --pipe -N"$BLOCKSIZE" "$BASEDIR"/s3_cp_formatted.sh "$S3_FQ2" "{#}" &
+cat "$FQ_3" | parallel --block 500M --pipe -N"$BLOCKSIZE" "$BASEDIR"/s3_cp_formatted.sh "$S3_FQ3" "{#}" &
 
 # Wait for fastq-dump to finish.
 wait $pid
