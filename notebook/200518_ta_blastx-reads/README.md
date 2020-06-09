@@ -169,7 +169,7 @@ BlastN:
 Another use of `blastn_vdb` would be as a "predicate", to quickly
 determine in one minute whether a given sample is worth dumping out as
 FASTQ to disk, and checking more carefully with a larger reference
-database.
+database. 
 
 Due to a limitation in `blastn_vdb`, it can only run
 single-threaded. This limitation can be circumvented by using GNU
@@ -202,6 +202,7 @@ reasonable, as it doesn't seem to impact the run-time.
 It is unclear whether the "database" (i.e., the one or more SRA files)
 are indexed before `blastn_vdb` begins its search. I have put in a
 request to the authors for more information.
+
 
 ### Conclusion
 
