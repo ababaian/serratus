@@ -130,7 +130,7 @@ Mutation % | Align %
 Here is a plot of the alignment rate of `blastn` as a function of the
 mutation rate:
 
-![Sensitivity plot](ali)
+![Sensitivity plot](alignment-rate.png)
 
 #### Performance
 
