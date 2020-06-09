@@ -4,7 +4,7 @@ This folder contains various experiments related to how to search
 prospective SRA runs quickly to determine whether there is CoV-related
 reads which warrant more detailed analysis.
 
-##SRA BlastN
+## SRA BlastN_
 
 A poorly-documented feature of the `sra-toolkit` is a program called
 `blastn_vdb`. It is a binary that allows the NCBI Blast suite
@@ -130,7 +130,7 @@ Mutation % | Align %
 Here is a plot of the alignment rate of `blastn` as a function of the
 mutation rate:
 
-![Sensitivity plot]()
+![Sensitivity plot](ali)
 
 #### Performance
 
