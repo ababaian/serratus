@@ -1,0 +1,117 @@
+## -*-python-*-
+
+from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
+
+S3_bucket="serratus-public"
+
+S3 = S3RemoteProvider()
+
+## Local vars:
+frankie_acc = "ERR2756788"
+sars_cov2_acc = "SRR11454614"
+neg_control_acc = "ERR3568641"
+
+rule stage_data:
+    input:
+        S3.remote("serratus-public/seq/cov3ma/cov3ma.fa")
+    output:
+        ref_db = "serratus-public/seq/cov3ma/cov3ma.fa",
+        frankie_run = expand("{acc}/{acc}.sra", acc=frankie_acc),
+        sars_cov2_run = expand("{acc}/{acc}.sra", acc=sars_cov2_acc),
+        neg_control_run = expand("{acc}/{acc}.sra", acc=neg_control_acc)
+    shell:
+        """
+        date
+        ../../third-party/sratoolkit.2.10.5-ubuntu64/bin/prefetch --progress {output.frankie_run} {output.sars_cov2_run} {output.neg_control_run}
+        """
+
+rule test_cov_plus:
+    input:
+        sars_cov2_run = expand("{acc}/{acc}.sra", acc=sars_cov2_acc),
+    output:
+        "test_cov_plus_blastn_vdb.tsv"
+    shell:
+        """
+        date
+        time ../../third-party/sratoolkit.2.10.5-ubuntu64/bin/blastn_vdb \
+            -db "SRR11454614" \
+            -query SARS-CoV-2.fa \
+            -out {output} \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+        echo $?
+        date
+        """        
+
+        
+rule test_cov_neg:
+    input:
+        neg_control_run = expand("{acc}/{acc}.sra", acc=neg_control_acc),
+    output:
+        "test_cov_neg_blastn_vdb.tsv"
+    shell:
+        """
+        date
+        time ../../third-party/sratoolkit.2.10.5-ubuntu64/bin/blastn_vdb \
+            -db "ERR3568641" \
+            -query SARS-CoV-2.fa \
+            -out {output} \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+        echo $?
+        date
+        """
+
+rule test_cov_frankie:
+    input:
+        frankie_run = expand("{acc}/{acc}.sra", acc=frankie_acc),
+    output:
+        "test_cov_frankie_blastn_vdb.tsv"
+    shell:
+        """
+        date
+        time ../../third-party/sratoolkit.2.10.5-ubuntu64/bin/blastn_vdb \
+            -db "SRR11454614" \
+            -query SARS-CoV-2.fa \
+            -out {output} \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+        echo $?
+        date
+        """
+
+rule make_blast_dbs:
+    shell:
+        """
+        cd benchmark/fq
+        
+        """
+rule test_blastn:
+    output:
+        "test_blastn_results.tsv"
+    shell:
+        """
+        date
+        time ../../third-party/sratoolkit.2.10.5-ubuntu64/bin/blastn_vdb \
+            -db "SRR11454614" \
+            -query SARS-CoV-2.fa \
+            -out {output} \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+        echo $?
+        date
+        """
+        
+rule run_all_tests:
+    input:
+        "test_cov_plus_blastn_vdb.tsv",
+        "test_cov_neg_blastn_vdb.tsv",
+        "test_cov_frankie_blastn_vdb.tsv"
