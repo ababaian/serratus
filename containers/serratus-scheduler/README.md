@@ -92,5 +92,10 @@ do
 done
 ```
 
+## Dumping the postgres database
+
+You'll need to be running the same version of `pg_dump` that's used on the server.  The easiest way to do this is through podman.
+
+    podman run --rm --net=host postgres:12 pg_dump -h localhost -U postgres postgres | pv -l | xz > pg_dump.sql.xz
 
 

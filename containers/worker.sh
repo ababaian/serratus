@@ -27,22 +27,7 @@ fi
 WORKERS=${WORKERS:-$(nproc)}
 retry_count=0
 
-function terminate_handler {
-    # Tell server to reset this job to a "new" state,
-    # since we couldn't finish processing it.
-    curl -s -X POST "$SCHEDULER/jobs/$TYPE/$JOB_ID&state=new"
-    
-    echo "    $JOB_ID was terminated without completing. Reset status."
-    echo "    In trap $(date -In)"
-
-}
-
 function main_loop {
-    trap terminate_handler SIGUSR1
-    # Note: The "& wait"s are important.  Without them, bash will wait for
-    # the command to finish before executing its traps.  When we use "& wait",
-    # the command will recieve the same trap (killing it), and then run our
-    # trap handler, which tells the server our job failed.
     WORKER_ID="$INSTANCE_ID-$1"
     NWORKER="$1"
     shift
@@ -66,12 +51,6 @@ function main_loop {
 
         JOB_JSON=$(curl -fs -X POST "$SCHEDULER/jobs/$TYPE/?worker_id=$WORKER_ID" || true)
 
-        if [ "$TYPE" = align ]; then
-            JOB_ID=$(echo $JOB_JSON | jq -r .block_id)
-        else
-            JOB_ID=$(echo $JOB_JSON | jq -r .acc_id)
-        fi
-
         if [ -n "$JOB_JSON" ]; then
             ACTION=$(echo $JOB_JSON | jq -r .action)
         else
@@ -87,6 +66,7 @@ function main_loop {
 
         case "$ACTION" in
           process)
+            fail_count=$retry_count  # temporary holder for retry_counter
             retry_count=0 # reset retry counter
 
             export JOB_JSON WORKER_ID
@@ -105,16 +85,26 @@ function main_loop {
                     --region us-east-1 \
                     --instance-ids $INSTANCE_ID \
                     --auto-scaling-group-name $ASG_NAME \
-                    --protected-from-scale-in & wait
+                    --protected-from-scale-in
                     
                 fi
             fi
 
-            # Run the target script.
-            "$@" & wait
+            # If `serratus-align.sh` fails
+            # it will `touch $RUN_FAIL`
+            RUN_FAIL="$BASEDIR"/"$NWORKER".fail
+            export RUN_FAIL
 
-            # Unset job ID to prevent incorrect terminations
-            unset JOB_ID
+            # Run the target script.
+            "$@"
+
+            # If run-failed. Count the failure as a 
+            # 'retry_count' to initiate shut-down
+            #
+            if [ -e "$RUN_FAIL" ]; then
+                ((retry_count=fail_count+1))
+                rm $RUN_FAIL
+            fi
             ;;
           wait)
             # Worker punch-out
@@ -136,7 +126,7 @@ function main_loop {
                   --region us-east-1 \
                   --instance-ids $INSTANCE_ID \
                   --auto-scaling-group-name $ASG_NAME \
-                  --no-protected-from-scale-in & wait
+                  --no-protected-from-scale-in
 
                 rm -f $BASEDIR/scale.in.pro
             fi
@@ -145,7 +135,7 @@ function main_loop {
             ((retry_count=retry_count+1))
 
             # wait cycle
-            sleep 10 & wait
+            sleep 10
 
             continue
             ;;
@@ -158,7 +148,7 @@ function main_loop {
                 ((retry_count=retry_count+1))
             fi
 
-            sleep 10 & wait
+            sleep 10
             continue
             ;;
           shutdown)
@@ -172,6 +162,16 @@ function main_loop {
                  --instance-ids $INSTANCE_ID
 
                 sleep 300
+
+                # TODO: Add a redundancy for shutdown
+                #       to work form inside the container
+                #
+                # Secondary back-up -- shutdown instance
+                # (set to "stopped" state" if terminate fails)
+                # yum -y install sudo shadow-utils util-linux
+                # sudo shutdown -h now
+                # sleep 300
+
                 false
                 exit 0
 
@@ -201,6 +201,7 @@ then
     #     to "terminate" in terraform for all ASG
 
     sudo shutdown
+
     false
     exit 0
 fi
@@ -208,43 +209,15 @@ fi
 # Retrieve ASG name
 ASG_NAME=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" --region us-east-1 | jq -r '.Tags[] | select(.["Key"] | contains("aws:autoscaling:groupName")) | .Value')
 FIRST='true'
-export INSTANCE_ID ASG_NAME FIRST
+retry_counter=0
+export INSTANCE_ID ASG_NAME FIRST retry_counter
 
 # ----------------------------
 
 # Fire up main loop (SRA downloader)
 echo "Creating $WORKERS worker processes"
 for i in $(seq 1 "$WORKERS"); do
-    main_loop "$i" "$@" & worker[i]=$!
+    main_loop "$i" "$@" &
 done
 
-function kill_workers {
-    for i in $(seq 1 "$WORKERS"); do
-        kill -USR1 ${worker[i]} 2>/dev/null || true
-    done
-
-    exit 0
-}
-
-# Send signal if docker is shutting down.
-trap kill_workers TERM
-
-# Spot Operations ===============================
-# Monitor AWS Cloudwatch for spot-termination signal
-# if Spot termination signal detected, proceed with
-# shutdown via SIGURS1 signal
-
-METADATA=http://169.254.169.254/latest/meta-data
-while true; do
-    # Note: this URL returns an HTML 404 page when there is no action.  Use
-    # "curl -f" to mitigate that.
-    INSTANCE_ACTION=$(curl -fs $METADATA/spot/instance-action | jq -r .action)
-    if [ "$INSTANCE_ACTION" == "terminate" ]; then
-        echo "SPOT TERMINATION SIGNAL RECEIEVED."
-        echo "Initiating shutdown procedures for all workers"
-
-        kill_workers
-    fi
-
-    sleep 5
-done
+wait
