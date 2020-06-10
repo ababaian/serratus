@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-set -eu
+set -u
 
 # Wrapper script to serratus-{dl,align-merge}.  This script provides looping,
 # multi-threading and also checks for spot termination.  If nodes are
