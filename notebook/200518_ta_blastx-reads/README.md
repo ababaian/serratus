@@ -39,6 +39,7 @@ cd third-party
 wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.10.0+-x64-linux.tar.gz
 tar xzf ncbi-blast-2.10.0+-x64-linux.tar.gz
 export PATH=$PATH:$PWD/third-party/ncbi-blast-2.10.0+/bin
+conda install -c bioconda bowtie2
 ```
 
 First, we fetch the benchmark simulated reads:
@@ -93,6 +94,26 @@ do
 done
 ```
 
+In theory, an aligner that suffered no loss in sensitivity in the face
+of increased sequence divergence would not need more than a single
+Coronavirus genome as a reference. Of course in reality all tools have
+diminished sensitivity, so one way to compensate is to stock the
+reference database with a diverse collection of Coronavirus
+genomes. To gauge the degree of improvement of the alignment rate when
+going from a single genome to a large reference database, I used
+Bowtie2 to align the reads simulated at a 40% mutation rate against
+the `cov3ma` reference.
+
+```shell
+date; time bowtie2-build cov3ma.fa cov.index; echo $?; date
+time bowtie2 --very-sensitive-local \
+      -x cov.index -1 benchmark/fq/sim.cov.12000_1.fq -2 benchmark/fq/sim.cov.12000_2.fq  \
+      | samtools view -b -G 12 -) \
+      1> sim.cov.12000.bam \
+      2> runtime.bt2.12000
+```
+
+
 #### Testing Performance
 
 I wrote a Snakemake file to automate the testing of `blastn_vdb` (see
@@ -139,6 +160,8 @@ using a single thread, using the SARS-CoV-2 genome as the
 "query". The runtime seemed to increase linearly with the size of the
 query, so that putting in another SARS-CoV-2 genome would double the
 run-time. Memory consumption was negligible.
+
+
 
 
 ### Discussion & Future Work
