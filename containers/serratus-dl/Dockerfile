@@ -22,7 +22,7 @@ ENV SRATOOLKITVERSION='2.10.4'
 
 # EPEL + Parallel
 RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-RUN yum install -y parallel procps-ng; echo will cite | parallel --citation 1>/dev/null 2>/dev/null
+RUN yum install -y ps parallel procps-ng; echo will cite | parallel --citation 1>/dev/null 2>/dev/null
 
 #==========================================================
 # Install Software ========================================

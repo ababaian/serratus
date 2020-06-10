@@ -134,6 +134,7 @@ shift $((OPTIND-1))
 
 if [ -z "$SCHEDULER" ]; then
     echo "Please set SCHEDULER environment variable or use -k flag."
+    false
     exit 1
 fi
 
@@ -143,10 +144,11 @@ ACC_ID=$(echo $JOB_JSON | jq -r .acc_id)
 # Set up a error trap.  If something goes wrong unexpectedly, this will send
 # a message to the scheduler before exiting.
 function error {
-    echo "Error encountered.  Notifying the scheduler."
+    echo "Error on line $1 processing acc $ACC_ID"
     curl -s -X POST "$SCHEDULER/jobs/split/$ACC_ID?state=split_err" > /dev/null
+    false
 }
-trap error ERR
+trap 'error "$LINENO"' ERR
 
 SRA=$(echo $JOB_JSON | jq -r .sra_run_info.Run)
 # Check inputs --------------
