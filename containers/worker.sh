@@ -181,6 +181,13 @@ function main_loop {
           *)        echo "  $WORKER_ID - ERROR: Unknown State received."
             echo "  $WORKER_ID - ERROR: Unknown State received."
             # Don't exit; we just got one invalid request.
+            if ls running* 1> /dev/null 2>&1; then
+                ## Other worker is not checked out
+                retry_count=0
+            else
+                # Add to retry counter
+                ((retry_count=retry_count+1))
+            fi
         esac
     done
 }
