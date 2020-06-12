@@ -28,8 +28,11 @@ def update_counts():
     for state, count in acc_bystate:
         acc_state_gauge.labels(state).set(count)
 
+    # Avoid "done" blocks, as this can involve counting a very large number
+    # of rows.
     block_bystate = (
         session.query(db.Block.state, func.count(db.Block.state))
+        .filter(db.Block.state != "done")
         .group_by(db.Block.state)
         .all()
     )
