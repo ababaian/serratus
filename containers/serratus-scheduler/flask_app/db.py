@@ -172,6 +172,12 @@ def enable_pg_stat_statements():
     with get_engine().connect() as con:
         con.execute("CREATE EXTENSION IF NOT EXISTS pg_stat_statements;")
 
+        # Allow an index-only scan to find non-mergeable accessions.  This
+        # index is used by the start_merge_job subquery.
+        con.execute(
+            "CREATE INDEX IF NOT EXISTS block_state_idx ON blocks (state) INCLUDE (acc_id);"
+        )
+
 
 def init_db(reset=False):
     """Clear the existing data and create new tables."""
