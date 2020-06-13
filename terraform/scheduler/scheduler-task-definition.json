@@ -30,7 +30,6 @@
   {
     "name": "flask",
     "image": "${dockerhub_account}/serratus-scheduler",
-    "command": ["-w", "${workers}"],
     "cpu": 256,
     "memoryReservation": 128,
     "essential": true,

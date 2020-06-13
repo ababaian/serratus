@@ -1,11 +1,14 @@
 from flask import Blueprint, make_response
 import prometheus_client
-from prometheus_client import Gauge
+from prometheus_client import Gauge, multiprocess, REGISTRY
 from sqlalchemy import func
 
 from . import db
 
 bp = Blueprint("metrics", __name__, url_prefix="/metrics")
+
+# Multiprocess metric collection.
+multiprocess.MultiProcessCollector(REGISTRY)
 
 acc_state_gauge = Gauge(
     "scheduler_accesion_state", "Number of accessions in each state", ["state"]
