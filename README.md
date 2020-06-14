@@ -10,10 +10,12 @@ While there is an intense research effort to sequence and analyze SARS-CoV-2 iso
 
 We are re-analyzing all RNA-seq, meta-genomics, meta-transcriptomics and environmental sequencing data in the NCBI Short Read Archive to discover new species of coronavirus. That is **>3.2 million biological samples** or >10 petabytes of sequencing data.
 
-### Contributing
-`Serratus` is an Open-Science project. We are actively looking to collaborate with all scientists and developers. [See CONTRIBUTING.md](CONTRIBUTING.md)
+### Contribute to Serratus
+The `Serratus` team is actively looking to collaborate with all scientists and developers.
 
-Email (ababaian AT bccrc DOT ca) or join  [Slack (`/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-ewlzh9qf-SiNkxvvTJflcutFN0h5jIQ)
+- See: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Email (ababaian AT bccrc DOT ca)
+- Join us on  [Slack (`/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-ewlzh9qf-SiNkxvvTJflcutFN0h5jIQ)
 
 ### Architecture
 ![serratus-overview](https://github.com/ababaian/serratus/wiki/img/serratus_overview.png)
