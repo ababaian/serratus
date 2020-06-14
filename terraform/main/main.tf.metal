@@ -102,8 +102,6 @@ module "scheduler" {
   instance_type      = "m5.8xlarge"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
-  flask_workers      = 63 # (2*CPU)+1, according to https://medium.com/building-the-system/gunicorn-3-means-of-concurrency-efbb547674b7
-                          # (2*CPU)-1, according to artem
 }
 
 // Cluster monitor

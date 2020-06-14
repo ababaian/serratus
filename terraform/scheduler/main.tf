@@ -31,10 +31,6 @@ variable "security_group_ids" {
   default = []
 }
 
-variable "flask_workers" {
-  type = number
-}
-
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["self"]
@@ -111,7 +107,6 @@ resource aws_ecs_task_definition "scheduler" {
     aws_region = data.aws_region.current.name
     log_group  = aws_cloudwatch_log_group.scheduler.name
     pg_password = random_password.pg_password.result
-    workers    = var.flask_workers
   })
   task_role_arn = module.ecs_cluster.task_role.arn
   network_mode = "host"

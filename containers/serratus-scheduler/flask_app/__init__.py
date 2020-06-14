@@ -9,9 +9,13 @@ from flask import Flask, jsonify, request, current_app, redirect, url_for
 from prometheus_client import Summary
 
 from . import db, jobs, metrics, cron
+from .metrics import REGISTRY
 
-FLASK_REQUEST_SUMMARY = Summary(
-    "flask_request_latency_seconds", "Flask Request Latency", ["method", "endpoint"]
+SCHEDULER_REQUEST_SUMMARY = Summary(
+    "scheduler_request_latency_seconds",
+    "Flask Request Latency",
+    ["method", "endpoint"],
+    registry=REGISTRY,
 )
 
 
@@ -21,7 +25,7 @@ def before_request():
 
 def after_request(response):
     request_latency = time.time() - request.start_time
-    FLASK_REQUEST_SUMMARY.labels(request.method, request.url_rule).observe(
+    SCHEDULER_REQUEST_SUMMARY.labels(request.method, request.url_rule).observe(
         request_latency
     )
 

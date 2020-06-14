@@ -3,10 +3,16 @@ from itertools import islice
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request, abort, render_template
+from prometheus_client import Counter
 
 from . import db
+from .metrics import REGISTRY
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
+
+done_items_counter = Counter(
+    "scheduler_done_items", "Items successfully processed", ["kind"], registry=REGISTRY
+)
 
 
 @bp.route("/add_sra_run_info/<filename>", methods=["POST"])
@@ -158,6 +164,8 @@ def finish_split_job(acc_id):
     session.add(acc)
     session.commit()
 
+    done_items_counter.labels("dl").inc()
+
     return jsonify({"result": "success", "inserted_rows": blocks,})
 
 
@@ -221,6 +229,8 @@ def finish_align_job(block_id):
     block.state = state
     block.align_end_time = datetime.now()
     session.commit()
+
+    done_items_counter.labels("align").inc()
 
     return jsonify({"result": "success"})
 
@@ -291,4 +301,7 @@ def finish_merge_job(acc_id):
     acc.state = state
     acc.merge_end_time = datetime.now()
     session.commit()
+
+    done_items_counter.labels("merge").inc()
+
     return jsonify({"result": "success"})
