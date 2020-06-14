@@ -105,6 +105,7 @@ Bowtie2 to align the reads simulated at a 40% mutation rate against
 the `cov3ma` reference.
 
 ```shell
+aws s3 cp s3://serratus-public/seq/cov3ma/cov3ma.fa .
 date; time bowtie2-build cov3ma.fa cov.index; echo $?; date
 time bowtie2 --very-sensitive-local \
       -x cov.index -1 benchmark/fq/sim.cov.12000_1.fq -2 benchmark/fq/sim.cov.12000_2.fq  \
@@ -113,6 +114,49 @@ time bowtie2 --very-sensitive-local \
       2> runtime.bt2.12000
 ```
 
+I performed additional analysis of "false positives" using a list of
+CoV+ SRA runs, and a set of SRA runs that are thought to be CoV-free
+(but this cannot be guaranteed). The files can be found here:
+
+```
+s3://serratus-public/notebook/200518_ta_blastx-reads/cov_pos_sras.txt
+s3://serratus-public/notebook/200518_ta_blastx-reads/cov_neg_sras.txt
+```
+
+Setting up the workspace and staging the files:
+
+```
+sudo mkdir -p /media/storage
+sudo mkfs.ext4 /dev/nvme0n1
+sudo mount /dev/nvme0n1 /media/storage
+sudo chmod -R 777 /media/storage
+mkdir -p /media/storage/workdir
+cd /media/storage/workdir
+mkdir pos
+cd pos
+time prefetch --progress `awk '!/^#/ { print $1 }' ~/repos/serratus/notebook/200518_ta_blastx-reads/cov_pos_sras.txt | tr '\n' ' '`
+mkdir ../neg
+cd ../neg
+time prefetch --progress `awk '!/^#/ { print $1 }' ~/repos/serratus/notebook/200518_ta_blastx-reads/cov_neg_sras.txt | tr '\n' ' '`
+mkdir ../asm
+cd ../asm
+time prefetch --progress `awk '!/^#/ { print $1 }' ~/repos/serratus/notebook/200518_ta_blastx-reads/assembly-benchmark.txt | tr '\n' ' '`
+```
+
+Now, we evaluate the negative samples:
+```shell
+for acc in `ls`
+do
+	time blastn_vdb \
+            -db "$acc" \
+            -query ../SARS-CoV-2.fa \
+            -out $acc.tsv \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+done
+```
 
 #### Testing Performance
 
@@ -124,6 +168,58 @@ Frankie SRA run ('ERR2756788'), a SARS-CoV-2 positive (CoV+) SRA run
 here:
 
 `https://github.com/ababaian/serratus/blob/54856f0f86ff8f0af3ed6f9e87f0d7d04819c570/notebook/2000605_rce_diamond.pdf`
+
+I also used the same environment set-up to test the performance of
+`blastn_vdb` when using more than one SRA at a a time. Below, see the
+runtimes for three samples individually, and the runtime for running
+three simultaneously:
+
+```shell
+time blastn_vdb \
+            -db "SRR11454615" \
+            -query SARS-CoV-2.fa \
+            -out SRR11454615.tsv \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+
+time blastn_vdb \
+            -db "SRR11454610" \
+            -query SARS-CoV-2.fa \
+            -out SRR11454610.tsv \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+
+time blastn_vdb \
+            -db "SRR11454608" \
+            -query SARS-CoV-2.fa \
+            -out SRR11454608.tsv \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+
+time blastn_vdb \
+            -db "SRR11454608 SRR11454610" \
+            -query SARS-CoV-2.fa \
+            -out test2.tsv \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+
+time blastn_vdb \
+            -db "SRR11454608 SRR11454610 SRR11454615" \
+            -query SARS-CoV-2.fa \
+            -out test3.tsv \
+            -evalue 0.001 \
+            -max_target_seqs 100000 \
+            -task blastn \
+            -outfmt "7 std qlen slen"
+```
 
 ### Results
 
@@ -153,13 +249,82 @@ mutation rate:
 
 ![Sensitivity plot](alignment-rate.png)
 
+There was a concern that this approach might have greater sensitivity
+at the expense of a greater number of false positives. Artem provided
+me with a list of 27 SRA accessions that he asserted would not have
+coronavirus DNA present. The following output shows that only a small
+number of hits were found, with most of the runs showing no hits at
+all.
+
+
+```
+ERR2906838.tsv:1
+ERR2906839.tsv:5
+ERR2906840.tsv:2
+ERR2906842.tsv:2
+SRR6639051.tsv:0
+SRR6639053.tsv:0
+SRR9658356.tsv:1
+SRR9658357.tsv:3
+SRR9658358.tsv:4
+SRR9658359.tsv:3
+SRR9658360.tsv:2
+SRR9658361.tsv:2
+SRR9658362.tsv:0
+SRR9658363.tsv:0
+SRR9658364.tsv:1
+SRR9658365.tsv:1
+SRR9658384.tsv:0
+SRR9658385.tsv:0
+SRR9658386.tsv:0
+SRR9658387.tsv:0
+SRR9658388.tsv:0
+SRR9658389.tsv:0
+SRR9658390.tsv:0
+SRR9658391.tsv:0
+SRR9658392.tsv:0
+SRR9658393.tsv:0
+SRR9658394.tsv:0
+```
+
+By contrast, if you check out the following file:
+
+`s3://serratus-public/notebook/200518_ta_blastx-reads/cov_neg_sras.txt`
+
+The tool used to screen these samples (bowtie2?) generated a much
+larger number of false positives: most samples had non-zero entries,
+with most of them in the double-digits. 
+
 #### Performance
 
 Running `blastn_vdb` on a pre-fetched SRA file took only one minute
 using a single thread, using the SARS-CoV-2 genome as the
 "query". The runtime seemed to increase linearly with the size of the
 query, so that putting in another SARS-CoV-2 genome would double the
-run-time. Memory consumption was negligible.
+run-time. Memory consumption was proportional to the size of the SRA
+files being processed.
+
+Interestingly, `blastn_vdb` scales well when given more than one SRA
+sample to process at a time, probably due to on-the-fly index building
+happening in-memory. From the set-up described in the Methods section,
+here are the runtimes:
+
+Sample(s) | Time
+--- | ---
+SRR11454608 | 55s
+SRR11454610 | 37s
+SRR11454615 | 1m 41s
+First two | 1m 9s
+All three | 1m 33s
+
+In fact, the time taken to process three samples simultaneously was
+less than the time to process the longest-running singleton job! This
+implies that the way to scale `blastn_vdb` is to batch the number of
+samples it processes simultaneously, not try to give it increasingly
+long "reference" sequence to compare against. It also only
+parallelizes its workflow when there is more than one SRA file as part
+of the "db", so further bolstering the case for SRA-parallelization,
+not reference DB sequence parallelization.
 
 
 
@@ -194,11 +359,15 @@ determine in one minute whether a given sample is worth dumping out as
 FASTQ to disk, and checking more carefully with a larger reference
 database. 
 
-Due to a limitation in `blastn_vdb`, it can only run
-single-threaded. This limitation can be circumvented by using GNU
-Parallel to split up the reference database of CoV sequences (which,
-according to `blastn_vdb`, are the query sequences) , running a single
-sequence from the CoV sequences against the SRA file at a time.
+It seems that `blastn_vdb` does not parallelize on the "query"
+sequences, but rather on the SRA samples. This means that greater
+throughput will be achieved by processing multiple SRA files
+simultaneously. Even when running single-threaded, there's greater
+throughput when running SRA files simultaneously. This limitation on
+the query sequences can be circumvented by using GNU Parallel to split
+up the reference database of CoV sequences (which, according to
+`blastn_vdb`, are the query sequences) , running a single sequence
+from the CoV sequences against the SRA file at a time.
 
 Currently only the `blastn` program is available in the SRA toolkit
 for aligning against SRA files directly. We can simulate a
