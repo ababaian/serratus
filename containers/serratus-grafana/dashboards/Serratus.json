@@ -16,39 +16,10 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": 3,
-  "iteration": 1590790833829,
+  "id": 2,
+  "iteration": 1592092294507,
   "links": [],
   "panels": [
-    {
-      "dashboardFilter": "",
-      "dashboardTags": [],
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "folderId": -1,
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 25,
-      "limit": 10,
-      "nameFilter": "",
-      "onlyAlertsOnDashboard": false,
-      "show": "current",
-      "sortOrder": 1,
-      "stateFilter": [],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Alert List",
-      "type": "alertlist"
-    },
     {
       "datasource": null,
       "fieldConfig": {
@@ -75,7 +46,7 @@
         "h": 3,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 0
       },
       "id": 18,
       "options": {
@@ -87,13 +58,14 @@
           "calcs": [
             "mean"
           ],
+          "fields": "",
           "values": false
         }
       },
-      "pluginVersion": "7.0.1",
+      "pluginVersion": "7.0.3",
       "targets": [
         {
-          "expr": "scheduler_accesion_state",
+          "expr": "scheduler_acc_state_count",
           "instant": true,
           "interval": "",
           "legendFormat": "{{state}}",
@@ -130,9 +102,9 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 9,
+        "w": 12,
         "x": 12,
-        "y": 4
+        "y": 0
       },
       "id": 16,
       "links": [],
@@ -145,13 +117,14 @@
           "calcs": [
             "mean"
           ],
+          "fields": "",
           "values": false
         }
       },
-      "pluginVersion": "7.0.1",
+      "pluginVersion": "7.0.3",
       "targets": [
         {
-          "expr": "scheduler_block_state",
+          "expr": "scheduler_block_state_count",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -168,8 +141,9 @@
       "datasource": null,
       "fieldConfig": {
         "defaults": {
-          "custom": {},
-          "decimals": 2,
+          "custom": {
+            "align": null
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -188,39 +162,155 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 3,
-        "x": 21,
-        "y": 4
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 3
       },
-      "id": 20,
+      "id": 34,
       "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "mean"
           ],
+          "fields": "",
           "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": false
+        }
       },
-      "pluginVersion": "7.0.1",
+      "pluginVersion": "7.0.3",
       "targets": [
         {
-          "expr": "60 * rate(scheduler_block_state{state=\"done\"}[$interval])",
-          "format": "time_series",
-          "instant": false,
+          "expr": "rate(scheduler_done_items_total{kind=\"dl\"}[$interval]) * 3600",
           "interval": "",
-          "intervalFactor": 1,
           "legendFormat": "",
           "refId": "A"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Blocks / min",
-      "type": "gauge"
+      "title": "DLed / Hour",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 3
+      },
+      "id": 31,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "rate(scheduler_done_items_total{kind=\"merge\"}[$interval]) * 3600",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Merged / Hour",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 3
+      },
+      "id": 35,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "rate(scheduler_done_items_total{kind=\"align\"}[$interval]) * 3600",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Aligned / Hour",
+      "type": "stat"
     },
     {
       "aliasColors": {},
@@ -269,7 +359,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "scheduler_accesion_state",
+          "expr": "scheduler_acc_state_count",
           "interval": "",
           "legendFormat": "{{state}}",
           "refId": "A"
@@ -365,7 +455,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "scheduler_block_state",
+          "expr": "scheduler_block_state_count",
           "interval": "",
           "legendFormat": "{{state}}",
           "refId": "A"
@@ -847,7 +937,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg by (autoscaling_group) (rate(node_network_transmit_bytes_total{instance=~\"$instance\",device=\"eth0\"}[$interval]))",
+          "expr": "sum by (autoscaling_group) (rate(node_network_transmit_bytes_total{instance=~\"$instance\",device=\"eth0\"}[$interval]))",
           "interval": "",
           "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
@@ -857,7 +947,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Network Tx",
+      "title": "Network Tx Total (B/s)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -943,7 +1033,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg by (autoscaling_group) (rate(node_network_receive_bytes_total{instance=~\"$instance\",device=\"eth0\"}[$interval]))",
+          "expr": "sum by (autoscaling_group) (rate(node_network_receive_bytes_total{instance=~\"$instance\",device=\"eth0\"}[$interval]))",
           "interval": "",
           "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
@@ -953,7 +1043,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Network Rx",
+      "title": "Network Rx Total (B/s)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1219,7 +1309,7 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {

@@ -28,6 +28,21 @@
     }
   },
   {
+    "name": "postgres-exporter",
+    "image": "${dockerhub_account}/serratus-scheduler-postgres-exporter",
+    "cpu": 128,
+    "memoryReservation": 128,
+    "environment": [
+      { "name": "DATA_SOURCE_NAME", "value": "postgresql://postgres@localhost:5432/postgres?sslmode=disable" }
+    ],
+    "portMappings": [
+      {
+        "containerPort": 9187,
+        "hostPort": 9187
+      }
+    ]
+  },
+  {
     "name": "flask",
     "image": "${dockerhub_account}/serratus-scheduler",
     "cpu": 256,

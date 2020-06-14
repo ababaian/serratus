@@ -16,8 +16,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": 2,
-  "iteration": 1589588719478,
+  "id": 1,
+  "iteration": 1592096748370,
   "links": [],
   "panels": [
     {
@@ -26,6 +26,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -61,7 +67,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "scheduler_accesion_state",
+          "expr": "scheduler_acc_state_count",
           "interval": "",
           "legendFormat": "{{state}}",
           "refId": "A"
@@ -116,6 +122,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -151,7 +163,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "scheduler_block_state",
+          "expr": "scheduler_block_state_count",
           "interval": "",
           "legendFormat": "{{state}}",
           "refId": "A"
@@ -206,6 +218,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -337,6 +355,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -369,7 +393,7 @@
       "renderer": "flot",
       "repeat": null,
       "repeatDirection": "h",
-      "repeatIteration": 1589588719478,
+      "repeatIteration": 1592096748370,
       "repeatPanelId": 2,
       "scopedVars": {
         "asg": {
@@ -470,6 +494,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
@@ -502,7 +532,7 @@
       "renderer": "flot",
       "repeat": null,
       "repeatDirection": "h",
-      "repeatIteration": 1589588719478,
+      "repeatIteration": 1592096748370,
       "repeatPanelId": 2,
       "scopedVars": {
         "asg": {
@@ -603,6 +633,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -638,7 +674,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(flask_request_latency_seconds_sum[1m]) / rate(flask_request_latency_seconds_count[1m])",
+          "expr": "rate(scheduler_request_latency_seconds_sum[1m]) / rate(scheduler_request_latency_seconds_count[1m])",
           "interval": "",
           "legendFormat": "{{method}} {{endpoint}}",
           "refId": "A"
@@ -648,7 +684,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Average Request Latency",
+      "title": "Average Request Latency [seconds]",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -664,6 +700,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:807",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -672,6 +709,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:808",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -726,6 +764,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -761,7 +805,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(flask_request_latency_seconds_sum[1m])",
+          "expr": "rate(scheduler_request_latency_seconds_sum[1m])",
           "interval": "",
           "legendFormat": "{{method}} {{endpoint}}",
           "refId": "A"
@@ -824,6 +868,12 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -859,7 +909,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(flask_request_latency_seconds_count[1m])",
+          "expr": "rate(scheduler_request_latency_seconds_count[1m])",
           "interval": "",
           "legendFormat": "{{method}} {{endpoint}}",
           "refId": "A"
@@ -910,7 +960,7 @@
     }
   ],
   "refresh": "30s",
-  "schemaVersion": 22,
+  "schemaVersion": 25,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -927,7 +977,6 @@
         "definition": "label_values(asg)",
         "hide": 0,
         "includeAll": true,
-        "index": -1,
         "label": "",
         "multi": true,
         "name": "asg",
@@ -991,8 +1040,5 @@
   "timezone": "",
   "title": "Serratus Scheduler",
   "uid": "t_HhOqeZk",
-  "variables": {
-    "list": []
-  },
-  "version": 8
+  "version": 1
 }
