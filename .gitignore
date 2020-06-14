@@ -7,6 +7,9 @@ local*
 data/*
 data/sra/*
 
+# Ignore local data directories (requires force)
+notebook/*/*
+
 # Ignore wiki sub-repo ===================================
 wiki/*
 
