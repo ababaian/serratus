@@ -31,7 +31,7 @@ FQ_3="$SRA".fastq
 # Prefetch the data before processing
 # This should be VERY fast, and will cause fastq-dump to have
 # smoother CPU usage in the end.
-prefetch $SRA
+prefetch $SRA 1> /dev/null
 
 # Create some named pipes for fastq-dump to put its data into.
 mkfifo "$FQ_1" "$FQ_2" "$FQ_3"
