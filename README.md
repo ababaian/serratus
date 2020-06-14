@@ -1,166 +1,44 @@
 # Serratus
 
+Serratus is a collaborative Open Science project for ultra-rapid discovery of known and unknown coronaviruses in response to the COVID-19 pandemic.
+
 #### Introduction Video (1:59)
 [![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash_play.png)](https://youtu.be/MtZk7JEOzus)
 
 ### Background
-The SARS-CoV-2 pandemic will infect millions and has already crippled the global economy. 
+While there is an intense research effort to sequence and analyze SARS-CoV-2 isolates for tracking real-time virus evolution, our understanding of the virus's evolution and origins is limited by incomplete genomic characterization of other members of the Coronaviridae (CoV) family.
 
-While there is an intense research effort to sequence SARS-CoV-2 isolates to understand the evolution of the virus in real-time, our understanding of coronavirus evolution is limited by the poor characterization of other members of the Coronaviridae family (only 421/957 CoV sp. Genomes are available).
+We are re-analyzing all RNA-seq, meta-genomics, meta-transcriptomics and environmental sequencing data in the NCBI Short Read Archive to discover new species of coronavirus. That is **>3.2 million biological samples** or >10 petabytes of sequencing data.
 
-We are re-analyzing all RNA-sequencing data in the NCBI Short Read Archive to discover new members of Coronaviridae and assemble their genomes. That is >1.12 million biological samples or 5.72 petabytes of sequencing data.
+### Contribute to Serratus
+The `Serratus` team is actively looking to collaborate with all scientists and developers.
+
+- See: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Email (ababaian AT bccrc DOT ca)
+- Join us on  [Slack (`/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-ewlzh9qf-SiNkxvvTJflcutFN0h5jIQ)
 
 ### Architecture
 ![serratus-overview](https://github.com/ababaian/serratus/wiki/img/serratus_overview.png)
 
-### Contributing
-`Serratus` is an Open-Science project. We welcome all scientists to contribute. [See CONTRIBUTING.md](CONTRIBUTING.md)
+Learn more about the [Serratus architecture](https://github.com/ababaian/serratus/wiki/Architecture-and-Pipeline)
 
-Email (ababaian AT bccrc DOT ca) or join  [Slack (type `/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-dwdg5uw0-TTcfrFagariqKpOSU_d6wg)
-
-# Setting up and running Serratus
-
-### 0) Dependencies
-
-#### AWS account
-
-1. Sign up for an AWS account (you can use the free tier)
-2. [Create an IAM Admin User with Access Key](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html). For **Access type**, use **Progammatic access**.
-3. Note the Access Key ID and Secret values.
-4. Create a [EC2 keypair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html#having-ec2-create-your-key-pair) in `us-east-1` region. Retain the name of the keypair and the `.pem` file. Configure your `ssh` for easy AWS access(change `serratus.pem` to your identity file).
-
-`~/.ssh/config`: Add these lines
-```
-Host *.compute.amazonaws.com *.compute-1.amazonaws.com aws_*
-     User ec2-user
-     IdentityFile ~/.ssh/serratus.pem
-     StrictHostKeyChecking no
-     UserKnownHostsFile /dev/null
-```
-
-#### Packer
-
-1. [Download Packer](https://packer.io/downloads.html) as a binary. Extract it to a PATH directory (`~/.local/bin`)
-
-#### Terraform
-
-1. [Download Teraform](https://www.terraform.io/downloads.html) (>= v0.12.24) as a binary. Extract it to a PATH directory (`~/.local/bin`)
-
-### 1) Build Serratus AMIs with Packer
-
-Pass AWS credentials to pipeline via environmental variables
-```
-export AWS_ACCESS_KEY_ID="your_access_key"
-export AWS_SECRET_ACCESS_KEY="your_secret_key"
-```
-
-Use packer to build the serratus instance image (AMI)
-```
-cd serratus/packer
-/path/to/packer build docker-ami.json
-cd ../..
-```
-
-This will start up a t3.nano, build the AMI, and then terminate it.  Currently this takes about 2 minutes, which should cost well under a penny. The final line of STDOUT will be the region and AMI. Retain this information
-
-Current stable AMI: `us-east-1: ami-04c1625cf0bcb4159`
-
-###  2) Build Serratus resources with Terraform
-
-#### Set Terraform variables
-
-Open `terraform/main/terraform.tfvars` in a text editor. Set these variables
- * `dev_cidrs`: Your public IP, followed by "/32". Use: `curl ipecho.net/plain; echo`
- * `key_name`: Your EC2 key pair name
- * `dockerhub_account`: (optional). Change this to your docker hub account to build your own images. Default images are in `serratusbio` organization.
+# Serratus Usage
+Learn more on the [Serratus Wiki](https://github.com/ababaian/serratus/wiki/)
 
 
-#### Create Serratus resources
+### [Serratus Usage](https://github.com/ababaian/serratus/wiki/Running-Serratus)
 
-Navigate to the top-level module and run `terraform` initialization and apply. Retain the scheduler DNS address (last output line).
+### [Building Containers](https://github.com/ababaian/serratus/wiki/Containers)
 
-```
-cd terraform/main
-terraform init
-terrafform apply
-cd ../..
-```
-At the time of writing, this will create:
+### [Access Data Releases](https://github.com/ababaian/serratus/wiki/Access-Data-Release) 
 
-  * a t3.nano, for the scheduler, with an Elastic IP
-  * an S3 bucket, to store intermediates
-  * an ASG for serratus-dl, using c5.large with 50GB of gp2.
-  * An ASG for serratus-align, using c5.large
-  * An ASG for serratus-merge, using t3.small
-  * Security groups and IAM roles to tie it all together.
-
-All ASGs have a max size of 1.  This can all be reconfigured in terraform/main/main.tf.
-
-At the end of `tf apply`, it will output the scheduler's DNS address.  Keep this for later.
-
-### 3) Open SSH tunnel to the scheduler
-
-The scheduler exposes ports 3000/8000/9090.  This port is *not* exposed to the public internet. You will need to create an SSH tunnel to allow your local web-browser and terminal to connect.  
-
-```
-./create_tunnel.sh
-```
-Open a web browser for UI: [Status Page: http://localhost:8000/jobs/](http://localhost:8000/jobs/) [Grafana: http://localhost:3000/jobs/](http://localhost:8000/jobs/) [http://localhost:8000/jobs/](http://localhost:3000) [Prometheus: http://localhost:8000/jobs/](http://localhost:9090)
-
-May take a few minutes to boot. Make tea.
-
-### 5) Loading SRA Accesions into Serratus
-
-Once the scheduler is online, you can curl SRA accession data in the form of a `SraRunInfo.csv` file (NCBI SRA > `Send to: File`).
-
-```
-curl -s -X POST -T /path/to/SraRunInfo.csv localhost:8000/jobs/add_sra_run_info/
-```
-
-This should respond with a short JSON indicating the number of rows inserted, and the total number in the scheduler.
-
-In your web browser, refresh the status page.  You should now see a list of accessions by state. If ASGs are online, they should start processing immediately.  In a few seconds, the first entry will switch to "splitting" state, which means it's working.
-
-### 6) Launch cluster nodes
-
-With data loaded into the scheduler, manually set the number of `serratus-dl`, `serratus-align` and `serratus-merge`nodes to process the data. You can adjust the number of each node with these scripts.
-
-```
-terraform/main/dl_set_capacity.sh 10
-terraform/main/align_set_capacity.sh 10
-terraform/main/merge_set_capacity.sh 1
-```
-
-### Example
-- Example run template is here: [Run template](notebook/200401_Run_template.ipynb)
-- Example run with data is here: [cov2r test run](notebook/200423_Run_cov2r_pilot_test_data.ipynb)
-
-## Useful links
-
-#### AWS-specific
-- [AWS Batch workflow - Introduction](https://aws.amazon.com/blogs/compute/building-high-throughput-genomics-batch-workflows-on-aws-introduction-part-1-of-4/)
-- [AWS Batch workflow - github page](https://github.com/aws-samples/aws-batch-genomics)
-- [SRAtoolkit in Cloud Computing](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud/)
-- [NCBI SRA Data on S3](https://registry.opendata.aws/ncbi-sra/)
-- [S3 transfer optimization](https://docs.aws.amazon.com/cli/latest/topic/s3-config.html)
-- [Paper on analyzing EC2 costs (2011)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0026624)
-- [Pushing the limits of Amazon S3 Upload Performance](https://improve.dk/pushing-the-limits-of-amazon-s3-upload-performance/)
-- [Clever SRA alignment pipeline](https://github.com/FredHutch/sra-pipeline
-)
-
-#### SARS-CoV-2
-- [SARS-CoV-2 UCSC Genome Browser](https://genome.ucsc.edu/cgi-bin/hgTracks?db=wuhCor1)
-- [Interpretable detection of novel human viruses from genome sequencing data](https://www.biorxiv.org/content/10.1101/2020.01.29.925354v3.full.pdf)
-- [Virus detection from RNA-seq: proof of concept](https://www.ncbi.nlm.nih.gov/pubmed/21603639)
-- [Potential Host Range for SARS-CoV-2](https://www.biorxiv.org/content/10.1101/2020.04.22.046565v1)
-
-#### Bloom Filters
-- [Bigsi: Bloom filter indexing of SRA/ENA for organism search](https://github.com/phelimb/bigsi)
-- [Fast Search of Thousands of Short-Read Sequencing Experiments](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4804353/)
-- [Ultra-fast search of all deposited bacterial and viral genomic data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6420049/)
-
+### [Tantalus: R interface for Serratus Data](https://github.com/serratus-bio/tantalus)
 
 # Data Release Policy
-To achieve our objective of providing high quality CoV sequence data to the global research effort, Serratus ensures:
+Our primary goal is to generate the coronavirus data to accelerate the global research efforts in fighting SARS-CoV-2. To achieve this:
 - All software development is open-source and freely available (GPLv3)
-- All sequencing data generated, raw and processed, will be freely available in the public domain in accordance with the [Bermuda Principles](https://en.wikipedia.org/wiki/Bermuda_Principles) of the Human Genome Project.
+- All sequencing data generated, raw and processed, will be freely and immediatly available in the public domain in accordance with the [Bermuda Principles](https://en.wikipedia.org/wiki/Bermuda_Principles) set out by the Human Genome Project.
+
+---
+
+## [Contributing Team](CONTRIBUTORS.md)
