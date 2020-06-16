@@ -221,7 +221,7 @@ resource "aws_iam_role_policy" "s3_delete" {
             "Effect": "Allow",
             "Action": "s3:DeleteObject",
             "Resource": [
-                "arn:aws:s3:::${var.s3_bucket}/${var.s3_delete_prefix}/*"
+                "arn:aws:s3:::${var.s3_bucket}/*"
             ]
         }
     ]
