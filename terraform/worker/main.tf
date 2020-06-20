@@ -16,9 +16,9 @@ variable "spot_price" {
 }
 
 variable "volume_size" {
-  type = number
+  type        = number
   description = "Size of the root EBS volume in GB"
-  default = 8
+  default     = 8
 }
 
 variable "volume_type" {
@@ -91,7 +91,7 @@ variable "security_group_ids" {
 }
 
 variable "options" {
-  type = string
+  type        = string
   description = "Options to pass to the container"
 }
 
@@ -204,8 +204,8 @@ EOF
 }
 
 resource "aws_iam_role_policy" "s3_delete" {
-  name = "S3DeleteData-${var.image_name}"
-  role = module.iam_role.role.id
+  name  = "S3DeleteData-${var.image_name}"
+  role  = module.iam_role.role.id
   count = var.s3_delete_prefix != "" ? 1 : 0
 
   policy = <<EOF
@@ -298,7 +298,7 @@ resource "aws_launch_configuration" "worker" {
 
 // TODO: COOLDOWN POLICY NOT ATTACHED TO GROUP
 resource "aws_autoscaling_policy" "worker" {
-  name = aws_launch_configuration.worker.name
+  name                   = aws_launch_configuration.worker.name
   autoscaling_group_name = aws_autoscaling_group.worker.name
   scaling_adjustment     = 5
   adjustment_type        = "ChangeInCapacity"
