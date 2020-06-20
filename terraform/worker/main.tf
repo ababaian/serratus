@@ -37,12 +37,6 @@ variable "scheduler" {
   type = string
 }
 
-variable "workers" {
-  type        = number
-  description = "Number of worker threads to use"
-  default     = 1
-}
-
 variable "dev_cidrs" {
   description = "Remote IP Address, for SSH, HTTP, etc access"
   type        = set(string)
