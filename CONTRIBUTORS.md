@@ -29,3 +29,4 @@ shallam AT mail DOT ubc DOT ca
 - Gherman Novakovsky. University of British Columbia. gnovakovsky AT cmmt DOT ubc DOT ca. @fransilvion
 
 ### Project Team
+- Nicole Pereyaslavsky. University of British Columbia. 
