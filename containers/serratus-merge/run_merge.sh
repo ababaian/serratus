@@ -62,7 +62,7 @@ FLAGSTAT='negative'
 SORT='negative'
 
 # Script Arguments -M
-MERGE_ARGS=''
+MERGE_ARGS='dna'
 
 # Output options -do
 BASEDIR="/home/serratus"
@@ -108,8 +108,8 @@ while getopts b:s:nifrM:d:o:x:h FLAG; do
       AWS_CONFIG='TRUE'
       ;;
     # SCRIPT ARGUMENTS -------
-    A)
-      ALIGN_ARGS=$OPTARG
+    M)
+      MERGE_ARGS=$OPTARG
       ;;
     U)
       UL_ARGS='TRUE'
@@ -142,86 +142,110 @@ fi
 
 
 # MERGE ===================================================
-# Final Output Bam File name
-OUTBAM="$SRA.bam"
 
-# Command to run summarizer script
+# DNA / Protein Common Elements
+# Meta-data header for summary file
+export SUMZER_COMMENT=$(echo sra="$SRA",genome="$GENOME",date=$(date +%y%m%d-%R),type="$MERGE_ARGS")
 sumzer="$GENOME.sumzer.tsv"
 
-# Meta-data header for summary file
-export SUMZER_COMMENT=$(echo sra="$SRA",genome="$GENOME",date=$(date +%y%m%d-%R))
 
-# Summary Comment / Meta-data
-# usage: serratus_summarizer_flom.py InputSamFileName MetaTsvFilename SummaryFileName OutputSamFileName
-#summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout $SRA.th"
-summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout"
+if [ "$MERGE_ARGS" = "protein" ]; then
+  # PROTEIN (.pro) merge ------------------------
 
-# Create tmp list of bam files to merge
-ls $BAMREGEX > bam.list
+  # Output Filename
+  OUTFILE="$SRA.pro"
 
-if [[ "$SORT" = true ]]
-then
-  # GENERATE SORTED BAM OUTPUT
-  # Requires high disk usage for tmp files
-  # Uses header from first bam entry
+  # usage: serratus_psummarizer.py
+  psummarizer="python2 /home/serratus/serratus_psummarizer.py"
 
-  # Extract header from first file
-  samtools view -H $(head -n1 bam.list) > 0.header.sam
+  export SUMZER_SRA=$SRA
+  export SUMZER_MAXALNS=10000000
+  export SUMZER_MAXX=100
+  export SUMZER_THROWX="NO"
 
-  # Initial merge gives un-sorted; with ugly header
-  samtools merge -n -@ $THREADS -b bam.list -f /dev/stdout | \
-  samtools view -h - | \
-  $summarizer | \
-  samtools sort -@ $THREADS - | \
-  samtools reheader 0.header.sam - >\
-  $OUTBAM
-
-  if [[ "$INDEX" = true ]]
-  then
-    samtools index $OUTBAM
-  fi
+  cat $BAMREGEX \
+    | $psummarizer \
+    > $OUTFILE
 
 else
-  # GENERATE REDUCED SIZE, UNSORTED BAM [DEFAULT]
-  # Create Reduced SAM Header
-  # (Only for non-sort option)
+  # DNA (.bam) merge ----------------------------
+  # Default fallback to "dna"
 
-  # Extract header from first file
-  #samtools view -H $(head -n1 bam.list) |
-  #sed '/^@SQ/d' - > header.sam
-  samtools view -H $(head -n1 bam.list) > header.sam
+  # Output Filename
+  OUTFILE="$SRA.bam"
 
-  # Insert dummy SQ to make file 'intact'
-  #sed -i "1a\
-#@SQ\tSN:serratus\tLN:1337
-  #" header.sam
+  # Summary Comment / Meta-data
+  # usage: serratus_summarizer.py InputSamFileName MetaTsvFilename SummaryFileName OutputSamFileName
+  #summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout $SRA.th"
+  summarizer="python3 /home/serratus/serratus_summarizer.py /dev/stdin $sumzer $SRA.summary /dev/stdout"
 
-  #echo -e "@CO\t====SERRATUS.IO====" >> header.sam
-  #echo -e "@CO\tThis sam header is modified to reduce filesize." >> header.sam
-  #echo -e "@CO\tTo reconstitute the missing @SQ entries" >> header.sam
-  #echo -e "@CO\tDownload the header this pan-genome (i.e. cov2r) from:" >> header.sam
-  #echo -e "@CO\t  https://serratus-public.s3.amazonaws.com/seq/<GENOME>/dummy_header.sam" >> header.sam
+  # Create tmp list of bam files to merge
+  ls $BAMREGEX > bam.list
 
-  # Convert new header to bam (add EOF)
-  #samtools view -b header.sam > header.bam
+  if [[ "$SORT" = true ]]
+  then
+    # GENERATE SORTED BAM OUTPUT
+    # Requires high disk usage for tmp files
+    # Uses header from first bam entry
 
-  # Created concatenated bam file w/ reduced header
-  samtools cat --threads $THREADS \
-    -b bam.list --no-PG |\
-    samtools view -h - |\
+    # Extract header from first file
+    samtools view -H $(head -n1 bam.list) > 0.header.sam
+
+    # Initial merge gives un-sorted; with ugly header
+    samtools merge -n -@ $THREADS -b bam.list -f /dev/stdout | \
+    samtools view -h - | \
     $summarizer | \
-    samtools view -b - |\
-    samtools reheader -P header.sam - \
-    > $OUTBAM
-  
-fi
+    samtools sort -@ $THREADS - | \
+    samtools reheader 0.header.sam - >\
+    $OUTFILE
 
-if [[ "$FLAGSTAT" = true ]]
-then
-  samtools flagstat $OUTBAM > $SRA.flagstat
-  #cat $SRA.flagstat
-  #echo ''
-fi
+    if [[ "$INDEX" = true ]]
+    then
+      samtools index $OUTFILE
+    fi
 
+  else
+    # GENERATE REDUCED SIZE, UNSORTED BAM [DEFAULT]
+    # Create Reduced SAM Header
+    # (Only for non-sort option)
+
+    # Extract header from first file
+    #samtools view -H $(head -n1 bam.list) |
+    #sed '/^@SQ/d' - > header.sam
+    samtools view -H $(head -n1 bam.list) > header.sam
+
+    # Insert dummy SQ to make file 'intact'
+    #sed -i "1a\
+  #@SQ\tSN:serratus\tLN:1337
+    #" header.sam
+
+    #echo -e "@CO\t====SERRATUS.IO====" >> header.sam
+    #echo -e "@CO\tThis sam header is modified to reduce filesize." >> header.sam
+    #echo -e "@CO\tTo reconstitute the missing @SQ entries" >> header.sam
+    #echo -e "@CO\tDownload the header this pan-genome (i.e. cov2r) from:" >> header.sam
+    #echo -e "@CO\t  https://serratus-public.s3.amazonaws.com/seq/<GENOME>/dummy_header.sam" >> header.sam
+
+    # Convert new header to bam (add EOF)
+    #samtools view -b header.sam > header.bam
+
+    # Created concatenated bam file w/ reduced header
+    samtools cat --threads $THREADS \
+      -b bam.list --no-PG |\
+      samtools view -h - |\
+      $summarizer | \
+      samtools view -b - |\
+      samtools reheader -P header.sam - \
+      > $OUTFILE
+    
+  fi
+
+  if [[ "$FLAGSTAT" = true ]]
+  then
+    samtools flagstat $OUTFILE > $SRA.flagstat
+    #cat $SRA.flagstat
+    #echo ''
+  fi
+
+fi
 
 # end of script
