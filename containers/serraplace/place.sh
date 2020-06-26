@@ -1,17 +1,21 @@
 #!/bin/bash
 
+echo "expecting contigs folder to be in the mounted dir!"
+
+set -e
+
 S3_BASE=https://serratus-public.s3.amazonaws.com
 
 mkdir -p reference
-# get the reference alignment and tree, and the 
-wget -P reference 	${S3_BASE}/rce/uniprot_genes/pol_msas/pol.muscle.phys \
+# get the reference alignment and tree, and the taxonomy file
+wget -qP reference 	${S3_BASE}/rce/uniprot_genes/pol_msas/pol.muscle.phys \
 					${S3_BASE}/rce/uniprot_genes/raxml/pol.muscle/RAxML_bestTree.pol.muscle.raxml \
 					${S3_BASE}/rce/complete_cov_genomes/complete.tsv
 
 mkdir -p raw
 # get the file specifying which contigs to take
-wget -P raw/ ${S3_BASE}/assemblies/analysis/catA-v1.txt 
- 
+wget -qP raw/ ${S3_BASE}/assemblies/analysis/catA-v1.txt 
+
 # get the filenames of all cat-A contigs
 # and merge the sequences into one fasta file
 (while IFS= read -r line; do echo "contigs/${line##*/}"; done < raw/catA-v1.txt) | xargs msa-merge > raw/catA-contigs.fa
@@ -41,7 +45,7 @@ gzip --force --best place/query.fasta
 
 # re-get the model params
 mkdir -p eval
-raxml-ng --evaluate --model PROTGTR+F --tree reference/RAxML_bestTree.pol.muscle.raxml --msa reference/pol.muscle.phys --prefix eval/eval --threads 2
+raxml-ng --evaluate --model PROTGTR+F --tree reference/RAxML_bestTree.pol.muscle.raxml --msa reference/pol.muscle.phys --prefix eval/eval --threads 10
 
 # place
 epa-ng --threads 4 --query place/query.fasta.gz --msa place/reference.fasta \
