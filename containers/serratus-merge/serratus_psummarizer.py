@@ -67,19 +67,21 @@ ExceptCount = 0
 FamilyToAlnCount = {}
 FamilyToPctIds = {}
 FamilyToGenes = {}
+FamilyToTotalAlnLength = {}
 
 FamilyGeneToLength = {}
 FamilyGeneToAlnCount = {}
 FamilyGeneToPctIds = {}
 FamilyGeneToBins = {}
+FamilyGeneToTotalAlnLength = {}
 
 SumReadLength = 0
 
-def IncCount(D, k):
+def IncCount(D, k, n=1):
 	try:
-		D[k] += 1
+		D[k] += n
 	except:
-		D[k] = 1
+		D[k] = n
 
 def AppendList(D, k, x):
 	try:
@@ -191,6 +193,13 @@ def GetAlnCount(Family):
 		AlnCount = 0
 	return AlnCount
 
+def GetTotalAlnLength(Family):
+	try:
+		n = FamilyToTotalAlnLength[Family]
+	except:
+		n = 0
+	return n
+
 def GetScore(Family):
 	NA = GetAlnCount(Family)
 	Pcts = GetCoveredGenePcts(Family)
@@ -219,7 +228,7 @@ def GetScore(Family):
 
 def Rep(s):
 	global SRA
-	fRep.write(SRA + "|" + s + "\n")
+	fRep.write(SRA + ";" + s + "\n")
 
 def Report():
 	global AlnCount
@@ -245,6 +254,10 @@ def Report():
 	for k in Order:
 		Family = Families[k]
 		AlnCount = FamilyToAlnCount[Family]
+		TotalAlnLength = FamilyToTotalAlnLength[Family]
+		AvgAlnlength = 0.0
+		if AlnCount > 0:
+			AvgAlnlength = float(TotalAlnLength)/AlnCount
 		MedPctId = GetMedian(FamilyToPctIds, Family)
 		GeneCount = GetGeneCount(Family)
 		CoveredGeneCount = GetCoveredGenesCount(Family)
@@ -253,6 +266,7 @@ def Report():
 		s = "family:%s;" % Family
 		s += "score=%.0f;" % Score
 		s += "alns=%d;"% AlnCount
+		s += "avgcols=%.0f;" % AvgAlnlength
 		s += "pctid=%.1f;" % MedPctId
 		s += "genes=%d/%d;" % (CoveredGeneCount, GeneCount)
 		Rep(s)
@@ -267,8 +281,13 @@ def Report():
 		Length = FamilyGeneToLength[FamilyGene]
 		CvgPct = GetCvgPct(FamilyGene)
 		Cartoon = MakeCartoon(FamilyGene)
+		TotalAlnLength = FamilyGeneToTotalAlnLength[FamilyGene]
+		AvgAlnlength = 0.0
+		if AlnCount > 0:
+			AvgAlnlength = float(TotalAlnLength)/AlnCount
 		s = "gene:%s;" % FamilyGene
 		s += "alns=%d;"% AlnCount
+		s += "avgcols=%.0f;" % AvgAlnlength
 		s += "medpctid=%.1f;" % MedPctId
 		s += "len=%d;" % Length
 		s += "cvgpct=%d;" % CvgPct
@@ -279,7 +298,7 @@ def DoAln_():
 	global SumReadLength
 
 	Fields = Line.split()
-	if len(Fields) != 13:
+	if len(Fields) < 10:
 		print >> sys.stderr, len(Fields), Fields, Line
 		assert False
 
@@ -291,10 +310,10 @@ def DoAln_():
 	THi = int(Fields[6])
 	TL = int(Fields[7])
 	PctId = float(Fields[8])
-	Evalue = float(Fields[9])
-	BtSc = float(Fields[10])
-	MiM = int(Fields[11])
-	Gap = int(Fields[12])
+	# Evalue = float(Fields[9])
+	# BtSc = float(Fields[10])
+	# MiM = int(Fields[11])
+	# Gap = int(Fields[12])
 
 	Fields = RefLabel.split('.')
 	assert len(Fields) == 3
@@ -304,10 +323,18 @@ def DoAln_():
 	FamilyGene = Family + "." + Gene
 
 	SumReadLength += QL
+
+	if THi > TLo:
+		AlnLength = THi - TLo + 1
+	else:
+		AlnLength = TLo - THi + 1
+
 	FamilyGeneToLength[FamilyGene] = TL
 	AddFamilyGene(Family, Gene)
 	IncCount(FamilyToAlnCount, Family)
 	IncCount(FamilyGeneToAlnCount, FamilyGene)
+	IncCount(FamilyToTotalAlnLength, Family, AlnLength)
+	IncCount(FamilyGeneToTotalAlnLength, FamilyGene, AlnLength)
 	AppendList(FamilyGeneToPctIds, FamilyGene, PctId)
 	AppendList(FamilyToPctIds, Family, PctId)
 	IncCvg(FamilyGene, TLo, THi, TL)
