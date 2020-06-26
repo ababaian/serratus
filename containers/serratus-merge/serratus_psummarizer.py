@@ -23,6 +23,7 @@ ERR2756788.6146 Poxviridae.Q6VZU9.1     152     301     301     50      99      
 ERR2756788.6232 Coronaviridae.repl1a.1  156     1       302     2980    3031    4117    73.1    7.4e-21
 '''
 
+# Include bitscore, gaps and mismatches
 '''
 #        ReadLabel                   RefLabel  QLo     QHi       QL     TLo     THi      TL    PctId     Evalue BtSc  MiM     Gap
 #                0                          1    2       3        4       5       6       7        8          9   10   11      12
@@ -278,7 +279,7 @@ def DoAln_():
 	global SumReadLength
 
 	Fields = Line.split()
-	if len(Fields) != 10:
+	if len(Fields) != 13:
 		print >> sys.stderr, len(Fields), Fields, Line
 		assert False
 

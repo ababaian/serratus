@@ -156,7 +156,7 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   OUTFILE="$SRA.pro"
 
   # usage: serratus_psummarizer.py
-  psummarizer="python2 /home/serratus/serratus_psummarizer.py"
+  psummarizer="python2 /home/serratus/serratus_psummarizer.py $SRA.psummary"
 
   export SUMZER_SRA=$SRA
   export SUMZER_MAXALNS=10000000
