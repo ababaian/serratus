@@ -159,7 +159,7 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   psummarizer="python2 /home/serratus/serratus_psummarizer.py $SRA.psummary /dev/stdout/"
 
   export SUMZER_SRA=$SRA
-  export SUMZER_MAXALNS=10000000
+  export SUMZER_MAXALNS=1000000
   export SUMZER_MAXX=100
   export SUMZER_THROWX="NO"
 
