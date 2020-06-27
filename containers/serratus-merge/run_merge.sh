@@ -165,6 +165,7 @@ if [ "$MERGE_ARGS" = "protein" ]; then
 
   cat $BAMREGEX \
     | $psummarizer \
+    | gzip \
     > $OUTFILE
 
 else
