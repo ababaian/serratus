@@ -153,10 +153,10 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   # PROTEIN (.pro) merge ------------------------
 
   # Output Filename
-  OUTFILE="$SRA.pro"
+  OUTFILE="$SRA.pro.gz"
 
   # usage: serratus_psummarizer.py
-  psummarizer="python2 /home/serratus/serratus_psummarizer.py $SRA.psummary"
+  psummarizer="python2 /home/serratus/serratus_psummarizer.py $SRA.psummary /dev/stdout/"
 
   export SUMZER_SRA=$SRA
   export SUMZER_MAXALNS=10000000

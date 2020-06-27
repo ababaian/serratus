@@ -258,7 +258,7 @@ if [[ -s "$SRA.th" ]]; then
 fi
 
 # PROTEIN ---------------------------------------
-if [[ -s "$SRA.pro" ]]; then
+if [[ -s "$SRA.pro.gz" ]]; then
   aws s3 cp --only-show-errors $SRA.pro $S3_OUT/pro/
 fi
 
