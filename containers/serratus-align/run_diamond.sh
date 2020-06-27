@@ -145,22 +145,10 @@ if [ -z "$GENOME" ]; then
   usage
 fi
 
-if [[ -z "$RGID" || -z "$RGSM" || -z "$RGPO" ]]
-then
-  echo "-I -S -P read-groups required"
-  usage
-fi
-
 if [ -z "$OUTNAME" ]
 then
   echo "-o <output_name> required"
   usage
-fi
-
-# If RGLB is not defined; use <output_name>
-if [ -z "$RGLB" ]
-then
-  RGLB=$OUTNAME
 fi
 
 # ALIGN ===================================================
@@ -205,5 +193,3 @@ diamond blastx \
   # -b 0.2 Limits memory, RAM used is roughly <6×b in Gb, ~1.2 Gb per core
   # -t /tmp Temp directory. Required to avoid bug with input from /dev/stdin.
   # -f 6 <field> BLAST tabular output format
-  
-fi

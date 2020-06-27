@@ -277,7 +277,7 @@ GENDIR=$BASEDIR/$GENOME
           fi
         elif [ "$ALIGNER" = "diamond" ]; then
           # Check for Genome Index (diamond) Files
-          elif [ ! -e "$GENDIR/$GENOME.dmnd" ]; then
+          if [ ! -e "$GENDIR/$GENOME.dmnd" ]; then
             echo " ERROR:  diamond index file $GENOME.dmnd not found"
             echo "        run 'diamond makedb --in  $GENOME.fa -d $GENOME' and "
             echo "        upload index files to s3_path"
