@@ -185,12 +185,15 @@ GENOME=$(echo $JOB_JSON | jq -r .genome)
 # `dna` bam output (bowtie2 / bwa) [Default]
 # or
 # `protein` pro output (diamond)
+
+## TODO: This isn't returning anything, it's 'null'
 MERGE_ARGS=$(echo $JOB_JSON | jq -r .merge_args)
 
-if [ -z "$MERGE_ARGS" ]; then
-  MERGE_ARGS='dna'
+if [ "$MERGE_ARGS" = 'null' ]; then
+  MERGE_ARGS='protein'
 fi
 
+echo "Merge type: $MERGE_ARGS"
 
 # Run job --------------------------------------------------
 # ----------------------------------------------------------
@@ -259,7 +262,7 @@ fi
 
 # PROTEIN ---------------------------------------
 if [[ -s "$SRA.pro.gz" ]]; then
-  aws s3 cp --only-show-errors $SRA.pro $S3_OUT/pro/
+  aws s3 cp --only-show-errors $SRA.pro.gz $S3_OUT/pro/
 fi
 
 if [[ -s "$SRA.psummary" ]]; then

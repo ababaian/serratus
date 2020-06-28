@@ -183,7 +183,7 @@ diamond blastx \
   --unal 0 \
   -k 1 \
   -p 1 \
-  -b 0.2 \
+  -b 0.35 \
   -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue bitscore mismatch gapopen \
   > "$OUTNAME".bam
 

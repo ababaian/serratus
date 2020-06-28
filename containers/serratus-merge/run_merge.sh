@@ -156,7 +156,7 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   OUTFILE="$SRA.pro.gz"
 
   # usage: serratus_psummarizer.py
-  psummarizer="python2 /home/serratus/serratus_psummarizer.py $SRA.psummary /dev/stdout/"
+  psummarizer="python2 /home/serratus/serratus_psummarizer.py $SRA.psummary /dev/stdout"
 
   export SUMZER_SRA=$SRA
   export SUMZER_MAXALNS=1000000
@@ -168,7 +168,7 @@ if [ "$MERGE_ARGS" = "protein" ]; then
     | gzip \
     > $OUTFILE
 
-else
+elif [ "$MERGE_ARGS" = "dna" ]; then
   # DNA (.bam) merge ----------------------------
   # Default fallback to "dna"
 
@@ -247,6 +247,9 @@ else
     #echo ''
   fi
 
+else
+  # MERGE_ARGS not recognized
+  echo $MERGE_ARGS : not recognized
+  false; exit 1
 fi
-
 # end of script
