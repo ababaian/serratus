@@ -99,10 +99,10 @@ for Line in f:
 		if Clip >= 1000:
 			Quality = "misassembly"
 		elif Clip >= 100:
-			Quality = "partial_clipped"
+			Quality = "clipped"
 		else:
 			assert Clip < 100
-			Quality = "partial_loclip"
+			Quality = "loclip"
 
 	Rec = Ass
 	Rec += "\t" + Quality
