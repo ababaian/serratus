@@ -88,7 +88,7 @@ for Line in f:
 
 	QL, Clip, M = ParseCigar(CIGAR)
 	LengthDiff = TLEN - QL - Clip
-	PctId = (Diffs*100.0)/QL
+	PctId = 100.0 - (Diffs*100.0)/QL
 	PctClip = (Clip*100.0)/QL
 
 	if LengthDiff > -50 and LengthDiff < 50:
