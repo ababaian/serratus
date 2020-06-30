@@ -1,46 +1,41 @@
 #!/usr/bin/python3
 
-# Author: Robert C. Edgar
-# email robert@drive5.com
-
 import sys
 import os
-import re
-
-# **************************************************
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# MUST set RAISEX to False for production
-# If True, exceptions are raised, which is helpful
-# for debugging but fatal for generating a BAM file.
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# **************************************************
-RAISEX = False
 
 CVG_BINS = 25
-COV_FAM = "Coronaviridae"
+MAXCLIP = 0.1		# Max clipping for alignment to be "global"
+
+THROWX = (os.getenv("SUMZER_THROWX", "YES") != "NO")
+SRA = os.getenv("SUMZER_SRA", None)
+SUMZER_COMMENT = os.getenv("SUMZER_COMMENT", None)
 
 SAMInputFileName = sys.argv[1]
 MetaFileName = sys.argv[2]
 SummaryFileName = sys.argv[3]
 SAMOutputFileName = sys.argv[4]
 
-SUMZER_COMMENT = os.getenv("SUMZER_COMMENT", None)
-if SUMZER_COMMENT != None:
-	SUMZER_COMMENT = SUMZER_COMMENT.replace(";", "&")
-
 fIn = open(SAMInputFileName)
 fSum = open(SummaryFileName, "w")
 fOut = open(SAMOutputFileName, "w")
 
-AccToTax = {}
+AlnCount = 0
+SumReadLength = 0
+ExceptCount = 0
+
 AccToName = {}
 AccToLen = {}
 AccToFam = {}
 AccToOffset = {}
 AccToPanLength = {}
+AccToGlbs = {}
+AccToAlns = {}
+AccToSumBases = {}
+AccToSumBasesPctId = {}
+AccToCoverageVec = {}
 
-FamToAccToCount = {}
-FamToPL = {}
+FamToPanLength = {}
+FamToAccs = {}
 
 #   0     1    2      3		4		5
 # Acc	Len	Name	Fam		Offset	Pan-genome length
@@ -61,59 +56,44 @@ for Line in open(MetaFileName):
 		PanLength = None
 
 	AccToName[Acc] = Name
-	AccToLen[Acc] = Len
-	AccToFam[Acc] = Fam
 	AccToOffset[Acc] = Offset
 	AccToPanLength[Acc] = PanLength
-	FamToPL[Fam] = PanLength
+	AccToFam[Acc] = Fam
+	AccToLen[Acc] = Len
 
+	AccToLen[Fam] = PanLength
 	if Fam not in Fams:
 		Fams.append(Fam)
-		FamToAccToCount[Fam] = {}
+		FamToAccs[Fam] = []
+	FamToAccs[Fam].append(Acc)
 
-AccToSumBases = {}
-AccToSumBasesPctId = {}
-AccToCoverageVec = {}
 for Fam in Fams:
 	AccToCoverageVec[Fam] = [0]*CVG_BINS
 
-CovSeqs = [ None ]*CVG_BINS
-OtherSeqs = [ None ]*CVG_BINS
-
-d = {}
-Order = []
-Keys = []
-
-def CharToProb(c):
-	ic = ord(c)
-	iq = ic - 33
-	if iq < 0:
-		return 1.0
-	if iq > 60:
-		return 0.0
-	return 10**(-iq/10.0)
-
-def GetAlnLen(CIGAR):
-	Ns = []
-	Letters = []
+def ParseCigar(CIGAR):
+	AlnLen = 0
+	Clip = 0
 
 	if CIGAR == "*":
-		return 100
+		return 100, 0
 	try:
-		Len = 0
+		AlnLen = 0
 		n = 0
 		for c in CIGAR:
 			if c.isdigit():
 				n = n*10 + (ord(c) - ord('0'))
 			elif c.isalpha() or c == '=':
-				if c != 'S' and c != 'H':
-					Len += n
+				if c == 'S' or c == 'H':
+					Clip += n
+				else:
+					AlnLen += n
 				n = 0
 	except:
-		if RAISEX:
+		if THROWX:
 			raise
-		Len = 100
-	return Len
+		AlnLen = 100
+		Clip = 0
+	return AlnLen, Clip
 
 def CmpKey__(i):
 	global d, Keys
@@ -137,76 +117,84 @@ def GetCvgVec(Acc):
 	try:
 		return AccToCoverageVec[Acc]
 	except:
-		return [0]*CVG_BINS
+		None
 
-def MakeCartoon(Acc):
-	w = GetCvgVec(Acc)
-	Max = max(w)
-	if Max < 4:
-		Max = 4
-	s = ""
-	for i in w:
-		if i == 0:
-			s += '_'
-		elif i <= Max/4:
-			s += '.'
-		elif i <= Max/2:
-			s += 'o'
-		else:
-			s += 'O'
-	return s 
-
-def AllMatch(CIGAR):
-	M = re.match("[0-9]+M", CIGAR)
-	return M != None
-
-AccToGlbs = {}
-AccToAlns = {}
-
-def AddHit(Acc, TBin, L, PctId, SoftClipped):
-	if Acc == None:
-		return
-
+def IncDict(Dict, Key, n=1):
 	try:
-		AccToAlns[Acc] += 1
+		Dict[Key] += n
 	except:
-		AccToAlns[Acc] = 1
+		Dict[Key] = n
 
+def GetDict(Dict, Key, Default = None):
+	try:
+		return Dict[Key]
+	except:
+		return Default
+
+def IncCvgVec(Acc, TBin):
 	try:
 		AccToCoverageVec[Acc][TBin] += 1
 	except:
 		AccToCoverageVec[Acc] = [0]*CVG_BINS
 		AccToCoverageVec[Acc][TBin] = 1
 
-	if not SoftClipped:
-		try:
-			AccToGlbs[Acc] += 1
-		except:
-			AccToGlbs[Acc] = 1
+def CountToSymbol(i):
+	#		    012345678901  2^11=2048
+	Symbols = "_.:uwaomUWAOM^"
+	if i == 0:
+		return Symbols[0]
+	n = 1
+	for c in Symbols:
+		if i < n:
+			return c
+		n *= 2
+	return "^"
 
-	try:
-		AccToSumBases[Acc] += L
-		AccToSumBasesPctId[Acc] += L*PctId
-	except:
-		AccToSumBases[Acc] = L
-		AccToSumBasesPctId[Acc] = L*PctId
+def MakeCartoon(Acc):
+	w = GetCvgVec(Acc)
+	if w == None:
+		return "~"
 
-def GetBin(Pos, L):
-	Bin = ((Pos-1)*CVG_BINS)//L
+	s = ""
+	for i in w:
+		s += CountToSymbol(i)
+	return s 
+
+def GetBin(Pos, TL):
+	Bin = ((Pos-1)*CVG_BINS)//TL
 	if Bin < 0:
 		Bin = 0
 	if Bin >= CVG_BINS:
 		Bin = CVG_BINS - 1
 	return Bin
 
-CovMapped = 0
-SumL = 0
-MaxL = 0
+def AddHit(Acc, TBin, AlnLen, PctId, IsGlobal):
+	if Acc == None:
+		return
+
+	IncCvgVec(Acc, TBin)
+	IncDict(AccToAlns, Acc)
+	IncDict(AccToSumBases, Acc, AlnLen)
+	IncDict(AccToSumBasesPctId, Acc, AlnLen*PctId)
+	if IsGlobal:
+		IncDict(AccToGlbs, Acc)
+
+def GetNM(TagFields):
+	NM = None
+	for Field in TagFields:
+		if Field.startswith("NM:i:"):
+			s = Field.replace("NM:i:", "")
+			try:
+				NM = int(s)
+			except:
+				if THROWX:
+					raise
+				NM = None
+			break
+	return NM
+
 for Line in fIn:
 	fOut.write(Line)
-	# Ignore SAM headers
-	# if Line.startswith('@'):
-		# continue
 
 	# Wrap everything in a try-except block because
 	# the summarizer MUST not crash the pipeline!
@@ -220,71 +208,36 @@ for Line in fIn:
 			continue
 
 		Acc = Fields[2]
-		Acc = Acc.split(':')[0]
-		try:
-			Fam = AccToFam[Acc]
-		except:
-			Fam = None
-
-		#if Fam == COV_FAM:
-		#	CovMapped += 1
-
 		TPos = int(Fields[3])
-		# MAPQ = Fields[4]
 		CIGAR = Fields[5]
-		# RNEXT = Fields[6]
-		# PNEXT = Fields[7]
-		# TL = int(Fields[8])
-		# SEQ = Fields[9]
-		QUAL = Fields[10]
-		L = GetAlnLen(CIGAR)
-		SumL += L
-		if L > MaxL:
-			MaxL = L
+		SEQ = Fields[9]
 
-		SoftClipped = (CIGAR.find("S") >= 0)
+		NM = GetNM(Fields[11:])
+		AlnLen, Clip = ParseCigar(CIGAR)
 
-		AS = None
-		NM = None
-		for Field in Fields[11:]:
-			if Field.startswith("NM:i:"):
-				s = Field.replace("NM:i:", "")
-				try:
-					NM = int(s)
-				except:
-					if RAISEX:
-						raise
-					NM = None
-				break
+		AlnCount += 1
+		ReadLength = len(SEQ)
+		SumReadLength += ReadLength
+
+		IsGlobal = float(Clip)/float(AlnLen + Clip + 1) >= MAXCLIP
 
 		PctId = 0
-		if NM != None and L > 0:
-			PctId = (L - NM)*100.0/L
+		if NM != None and AlnLen > 0:
+			PctId = (AlnLen - NM)*100.0/AlnLen
 
-		try:
-			Offset = AccToOffset[Acc]
-		except:
-			Offset = None
+		Desc = GetDict(AccToName, Acc)
+		Fam = GetDict(AccToFam, Acc)
+		PL = GetDict(AccToPanLength, Acc)
+		TL = GetDict(AccToLen, Acc)
+		Offset = GetDict(AccToOffset, Acc)
 
-		try:
-			PL = AccToPanLength[Acc]
-		except:
-			PL = None
-
-		try:
-			TL = AccToLen[Acc]
-		except:
-			TL = None
+		IsComplete = False
+		if Desc != None:
+			IsComplete = (Desc.find("omplete genome") > 0)
 
 		if TL != None:
 			TBin = GetBin(TPos, TL)
-			AddHit(Acc, TBin, L, PctId, SoftClipped)
-
-		try:
-			Desc = AccToName[Acc]
-			IsComplete = (Desc.find("omplete genome") > 0)
-		except:
-			IsComplete = False
+			AddHit(Acc, TBin, AlnLen, PctId, IsGlobal)
 
 		PBin = None
 		if Fam != None:
@@ -295,29 +248,26 @@ for Line in fIn:
 			elif TL != None:
 				PBin = GetBin(TPos, TL)
 			if PBin != None:
-				AddHit(Fam, PBin, PL, PctId, SoftClipped)
-
-		if Fam != None:
-			try:
-				FamToAccToCount[Fam][Acc] += 1
-			except:
-				FamToAccToCount[Fam][Acc] = 1
-
-		if PBin != None and AllMatch(CIGAR):
-			SEQ = Fields[9]
-			if Fam == COV_FAM:
-				if CovSeqs[PBin] == None:
-					CovSeqs[PBin] = SEQ
-			else:
-				if OtherSeqs[PBin] == None:
-					OtherSeqs[PBin] = SEQ
+				AddHit(Fam, PBin, PL, PctId, IsGlobal)
 
 	except:
-		if RAISEX:
+		if THROWX:
 			raise
 		pass
 
-def GetCovFract(Acc):
+def GetPctId(Acc):
+	SumBases = GetDict(AccToSumBases, Acc)
+	SumBasesPctId = GetDict(AccToSumBasesPctId, Acc)
+	PctId = 0
+	if SumBases > 0:
+		PctId = float(SumBasesPctId)/SumBases
+	if PctId < 50:
+		PctId = 50
+	if PctId > 100:
+		PctId = 100
+	return PctId
+
+def GetCvgBins(Acc, MinCount):
 	v = GetCvgVec(Acc)
 
 	N = len(v)
@@ -325,165 +275,180 @@ def GetCovFract(Acc):
 		return 0
 	n = 0
 	for x in v:
-		if x > 2:
+		if x >= MinCount:
 			n += 1
-	return float(n)/N
+	return n
+
+def GetCvgPct(Acc, MinCount):
+	n = GetCvgBins(Acc, MinCount)
+	Pct = (n*100.0)/CVG_BINS
+	return Pct
+
+def GetTypicalBinCount(Acc):
+	v = GetCvgVec(Acc)
+	if v == None:
+		return 0
+	
+	N = len(v)
+	if N < 10:
+		return 0
+
+	w = v[:]
+	w.sort()
+	Sum = 0
+	for i in range(2, N-2):
+		Sum += w[i]
+	Typ = float(Sum)/(N-4)
+	return Typ
+
+def GetIdentityWeight(PctId):
+	PctId = GetPctId(Acc)
+	FractId = PctId/100.0
+	if FractId < 0.5:
+		FractId = 0.5
+	if FractId > 1.0:
+		FractId = 1.0
+	Weight = 1.0/(FractId**3)
+	return Weight
+
+def GetScore(Acc):
+	Cvg1 = GetCvgBins(Acc, 1)
+	Cvg8 = GetCvgBins(Acc, 8)
+	RawScore = Cvg8*4 + (Cvg1 - Cvg8)
+	PctId = GetPctId(Acc)
+	Weight = GetIdentityWeight(PctId)
+	Score = RawScore*Weight
+	if Score > 100:
+		Score = 100
+	return Score
+
+def GetDepth(Acc, PctId):
+	global AvgReadLength
+
+	TL = GetDict(AccToLen, Acc)
+	if TL == None or TL == 0:
+		return 0
+
+	PctId = GetPctId(Acc)
+	Typ = GetTypicalBinCount(Acc)
+	EstimatedTotalBases = AvgReadLength*Typ*CVG_BINS
+	Weight = GetIdentityWeight(PctId)
+	RawDepth = EstimatedTotalBases/TL
+	Depth = RawDepth*Weight
+	return Depth
 
 Accs = list(AccToAlns.keys())
-
-AccToCovFract = {}
+AccToScore = {}
 for Acc in Accs:
-	CovFract = GetCovFract(Acc)
-	AccToCovFract[Acc] = CovFract
+	Score = GetScore(Acc)
+	AccToScore[Acc] = Score
 
-AccOrder = GetOrder(AccToCovFract)
+AccOrder = GetOrder(AccToScore)
+OrderAccs = list(AccToScore.keys())
 
+AvgReadLength = 0
+if AlnCount > 0:
+	AvgReadLength = float(SumReadLength)/AlnCount
+
+s = ""
+if SRA != None:
+	s += "sra=%s;" % SRA
+s += "readlength=%.0f;" % AvgReadLength
 if SUMZER_COMMENT != None:
-	s = "SUMZER_COMMENT=" + SUMZER_COMMENT + ";"
-	print(s, file=fSum)
+	s += "SUMZER_COMMENT=" + SUMZER_COMMENT + ";"
+print(s, file=fSum)
 
-def GetOutputLineFam(Fam):
+def GetFamLine(Fam):
 	try:
-		Alns = AccToAlns[Fam]
+		FamAccs = FamToAccs[Fam]
 	except:
-		Alns = 0
+		return
+	if len(FamAccs) == 0:
+		return
 
-	try:
-		Glbs = AccToGlbs[Fam]
-	except:
-		Glbs = 0
+	TopAcc = FamAccs[0]
+	for k in AccOrder:
+		Acc = OrderAccs[k]
+		if Acc in FamAccs:
+			TopAcc = Acc
+			break
 
-	try:
-		Alns = AccToAlns[Fam]
-	except:
-		Alns = 0
+	TopScore = AccToScore[TopAcc]
+	TopName = GetDict(AccToName, TopAcc, "_missing_name_")
+	TopLen = GetDict(AccToLen, TopAcc)
+	PL = GetDict(FamToPanLength, Fam)
 
-	try:
-		PL = FamToPL[Fam]
-	except:
-		PL = None
-
-	SumBases = AccToSumBases[Fam]
-	SumBasesPctId = AccToSumBasesPctId[Fam]
-	PctId = 0
-	Depth = 0
-	if SumBases > 0:
-		PctId = float(SumBasesPctId)/SumBases
-
-	CovFract = GetCovFract(Fam)
-	Cartoon = MakeCartoon(Fam)
-
-	AccToCount = FamToAccToCount[Fam]
-	Order = GetOrder(AccToCount)
-	Accs = list(AccToCount.keys())
-	TopAcc = Accs[0]
-	TopHits = AccToCount[TopAcc]
-	try:
-		TopName = AccToName[TopAcc]
-	except:
-		TopName = "?"
-	try:
-		TopLen = AccToLen[TopAcc]
-	except:
-		TopLen = None
-
-	Score = 100.0*CovFract
-	s = "family=" + Fam + ";"
-	s += "score=%.0f;" % Score
-	s += "pctid=%.0f;" % PctId
-	s += "aln=%d;" % Alns
-	s += "glb=%d;" % Glbs
+	s = ""
 	if PL != None:
 		s += "panlen=%d;" % PL
-	s += "cvg=" + Cartoon + ";"
 	s += "top=" + TopAcc + ";"
-	s += "topaln=" + str(TopHits) + ";"
-	if TopLen == None:
-		s += "toplen=?;"
-	else:
+	s += "topscore=%d;" % TopScore
+	if TopLen != None:
 		s += "toplen=%d;" % TopLen
 	s += "topname=" + TopName + ";"
 	return s
 
 def GetOutputLine(Acc):
-	if Acc in Fams:
-		return GetOutputLineFam(Acc)
-
-	try:
-		Glbs = AccToGlbs[Acc]
-	except:
-		Glbs = 0
-
-	try:
-		Alns = AccToAlns[Acc]
-	except:
-		Alns = 0
-
-	try:
-		Name = AccToName[Acc]
-	except:
-		Name = "?"
-	try:
-		Len = AccToLen[Acc]
-	except:
-		Len = None
-
-	SumBases = AccToSumBases[Acc]
-	SumBasesPctId = AccToSumBasesPctId[Acc]
-	PctId = 0
-	Depth = 0
-	if SumBases > 0:
-		PctId = float(SumBasesPctId)/SumBases
-		if Len != None:
-			Depth = float(SumBases)/Len
-
-	CovFract = GetCovFract(Acc)
+	Fam = GetDict(AccToFam, Acc);
+	Score = GetScore(Acc)
+	Alns = GetDict(AccToAlns, Acc)
+	Glbs = GetDict(AccToGlbs, Acc, 0)
+	PctId = GetPctId(Acc)
+	PL = GetDict(AccToPanLength, Acc)
+	Depth = GetDepth(Acc, PctId)
 	Cartoon = MakeCartoon(Acc)
+	Len = GetDict(AccToLen, Acc)
 
-	s = "acc=" + Acc + ";"
-	s += "pctid=%.1f;" % PctId
+	IsFam = (Acc in Fams)
+
+	s = ""
+	if SRA != None:
+		s += "sra=" + SRA + ";"
+
+	if IsFam:
+		s += "famcvg=" + Cartoon + ";"
+	else:
+		s += "seqcvg=" + Cartoon + ";"
+
+	if IsFam:
+		s += "fam=%s;" % Acc
+	else:
+		s += "seq=%s;" % Acc
+
+	s += "score=%.0f;" % Score
+
+	s += "pctid=%.0f;" % PctId
+	s += "depth=%.1f;" % Depth
 	s += "aln=%d;" % Alns
 	s += "glb=%d;" % Glbs
-	if Len != None:
+	if Len == None:
+		s += "len=?;"
+	else:
 		s += "len=%d;" % Len
-	try:
-		Fam = AccToFam[Acc]
-	except:
-		Fam = None
-	if Len != None:
-		s += "cvgpct=%.0f;" % (CovFract*100)
-		s += "len=" + str(Len) + ";"
-		s += "depth=%.3g;" % Depth
-		s += "cvg=" + Cartoon + ";"
-	if Fam != None:
-		s += "fam=" + Fam + ";"
-	s += "name=%s;" % Name
+
+	if IsFam:
+		s += GetFamLine(Acc)
+	else:
+		if Fam != None:
+			s += "family=%s;" % Fam
+		Name = GetDict(AccToName, Acc, "_missing_name_")
+		s += "name=%s;" % Name
 	return s
 
 for i in AccOrder:
-	Acc = Accs[i]
+	Acc = OrderAccs[i]
 	if not Acc in Fams:
 		continue
-	s = GetOutputLineFam(Acc)
-	print(s, file=fSum)
+	s = GetOutputLine(Acc)
+	if s != None:
+		print(s, file=fSum)
 
 for i in AccOrder:
-	Acc = Accs[i]
+	Acc = OrderAccs[i]
 	if Acc in Fams:
 		continue
 	s = GetOutputLine(Acc)
-	print(s, file=fSum)
-
-for i in range(0, CVG_BINS):
-	Seq = CovSeqs[i]
-	if Seq != None:
-		print(">Cov.%d" % (i+1), file=fSum)
-		print(Seq, file=fSum)
-
-for i in range(0, CVG_BINS):
-	Seq = OtherSeqs[i]
-	if Seq != None:
-		print(">Other.%d" % (i+1), file=fSum)
-		print(Seq, file=fSum)
+	if s != None:
+		print(s, file=fSum)
 
 fSum.close()
