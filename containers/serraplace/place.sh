@@ -1,20 +1,35 @@
 #!/bin/bash
 
-echo "expecting contigs folder to be in the mounted dir!"
-
 set -e
 
 S3_BASE=https://serratus-public.s3.amazonaws.com
+SERRAPLACE=${S3_BASE}/pb/serraplace
 
 mkdir -p reference
-# get the reference alignment and tree, and the taxonomy file
-wget -qP reference 	${S3_BASE}/rce/uniprot_genes/pol_msas/pol.muscle.phys \
-					${S3_BASE}/rce/uniprot_genes/raxml/pol.muscle/RAxML_bestTree.pol.muscle.raxml \
+# get the reference alignment, model and tree, and the taxonomy file
+wget -qP reference 	${SERRAPLACE}/tree/pol.muscle.phys.reduced \
+					${SERRAPLACE}/tree/pol.reduced.raxml.bestModel \
+					${SERRAPLACE}/tree/pol.reduced.raxml.bestTree \
 					${S3_BASE}/rce/complete_cov_genomes/complete.tsv
+
+TREE=reference/pol.reduced.raxml.bestTree
+MODEL=reference/pol.reduced.raxml.bestModel
+REFPHY=reference/pol.muscle.phys.reduced
 
 mkdir -p raw
 # get the file specifying which contigs to take
 wget -qP raw/ ${S3_BASE}/assemblies/analysis/catA-v1.txt 
+
+# if there already is a contigs folder, use that. else download the files specified in the catX-file
+if [[ ! -d contigs/ ]]
+then
+	echo "Downloading contigs since I didn't find a contigs/ folder"
+	mkdir contigs
+	while IFS= read -r line;
+	do
+		wget -P contigs "${S3_BASE}/assemblies/contigs/${line##*/}";
+	done < raw/catA-v1.txt
+fi
 
 # get the filenames of all cat-A contigs
 # and merge the sequences into one fasta file
@@ -27,7 +42,7 @@ sed -i -e "s/[[:space:]]/_/g" raw/orfs.fa
 
 # build the hmm
 mkdir -p align
-hmmbuild --amino align/ref.hmm reference/pol.muscle.phys
+hmmbuild --amino align/ref.hmm ${REFPHY}
 
 # search orfs against the hmm to get evalues
 hmmsearch -o align/search.log --noali --cpu 4 --tblout align/hits.tsv align/ref.hmm raw/orfs.fa
@@ -36,20 +51,16 @@ hmmsearch -o align/search.log --noali --cpu 4 --tblout align/hits.tsv align/ref.
 seqtk subseq raw/orfs.fa <(grep -v '^#' align/hits.tsv | awk '{print $1}') > align/orfs.filtered.fa
 
 # align the good hits
-hmmalign --outformat afa --mapali reference/pol.muscle.phys align/ref.hmm align/orfs.filtered.fa | gzip --best > align/aligned.orfs.afa.gz
+hmmalign --outformat afa --mapali ${REFPHY} align/ref.hmm align/orfs.filtered.fa | gzip --best > align/aligned.orfs.afa.gz
 
 # split for epa
 mkdir -p place 
-epa-ng --outdir place/ --redo --split reference/pol.muscle.phys align/aligned.orfs.afa.gz
+epa-ng --outdir place/ --redo --split ${REFPHY} align/aligned.orfs.afa.gz
 gzip --force --best place/query.fasta
-
-# re-get the model params
-mkdir -p eval
-raxml-ng --evaluate --model PROTGTR+F --tree reference/RAxML_bestTree.pol.muscle.raxml --msa reference/pol.muscle.phys --prefix eval/eval --threads 10
 
 # place
 epa-ng --threads 4 --query place/query.fasta.gz --msa place/reference.fasta \
---outdir place/ --model eval/eval.raxml.bestModel --tree eval/eval.raxml.bestTree --redo
+--outdir place/ --model ${MODEL} --tree ${TREE} --redo
 
 mkdir -p assign
 # get reference taxonomy file in the right order for gappa assign
@@ -57,7 +68,8 @@ mkdir -p assign
 awk -F '\t' '{if(length($1) == 8){$1=sprintf("%s.",$1)};print $1,$6}' OFS='\t' reference/complete.tsv > assign/taxonomy.tsv
 
 # do the assignment
-gappa examine assign --jplace-path place/epa_result.jplace --taxon-file assign/taxonomy.tsv --out-dir assign/ --krona --best-hit --per-query-results --allow-file-overwriting
+gappa examine assign --jplace-path place/epa_result.jplace --taxon-file assign/taxonomy.tsv \
+--out-dir assign/ --per-query-results --allow-file-overwriting --consensus-thresh 0.66
 
 # make per-query best hit results more readable
 awk '{split($1,a,".");$1=a[1];print}' OFS='\t'  assign/assign_per_query.tsv > assign/readable.per_query.tsv
