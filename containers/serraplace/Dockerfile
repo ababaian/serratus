@@ -9,7 +9,7 @@ RUN 	apt-get update &&\
 	wget https://github.com/amkozlov/raxml-ng/releases/download/0.9.0/raxml-ng_v0.9.0_linux_x86_64.zip &&\
 	unzip raxml-ng_v0.9.0_linux_x86_64.zip raxml-ng && mv raxml-ng /usr/local/bin && rm raxml-ng_v0.9.0_linux_x86_64.zip &&\
 	git clone --recursive https://github.com/lczech/gappa.git &&\
-	cd gappa && git checkout dev && git submodule update --init --recursive && make -j4 && cp bin/gappa /usr/local/bin && cd - &&\
+	cd gappa && git checkout 9a55d7b && git submodule update --init --recursive && make -j4 && cp bin/gappa /usr/local/bin && cd - &&\
 	cd gappa/libs/genesis/apps && git clone https://github.com/Pbdas/genesis-apps.git && make -j4 -C .. && cp ../bin/apps/genesis-apps/msa-merge ../bin/libgenesis.so /usr/local/bin && cd -
 
 WORKDIR /home/serratus
