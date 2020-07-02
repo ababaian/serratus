@@ -62,7 +62,7 @@ gzip --force --best place/query.fasta
 
 # place
 epa-ng --threads 4 --query place/query.fasta.gz --msa place/reference.fasta \
---outdir place/ --model ${MODEL} --tree ${TREE} --redo
+--outdir place/ --model ${MODEL} --tree ${TREE} --redo --no-heur
 
 mkdir -p assign
 # get reference taxonomy file in the right order for gappa assign
