@@ -40,9 +40,11 @@ getorf -sequence raw/catA-contigs.fa -snucleotide1 -sformat1 fasta -outseq raw/o
 # normalize the orf seq names
 sed -i -e "s/[[:space:]]/_/g" raw/orfs.fa
 
-# build the hmm
 mkdir -p align
-hmmbuild --amino align/ref.hmm ${REFPHY}
+# how to build the hmm:
+# hmmbuild --amino align/ref.hmm ${REFPHY}
+# but we will download it instead
+wget -qP align ${SERRAPLACE}/reference/ref.hmm
 
 # search orfs against the hmm to get evalues
 hmmsearch -o align/search.log --noali --cpu 4 --tblout align/hits.tsv align/ref.hmm raw/orfs.fa
