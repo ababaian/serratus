@@ -7,10 +7,10 @@ SERRAPLACE=${S3_BASE}/pb/serraplace
 
 mkdir -p reference
 # get the reference alignment, model and tree, and the taxonomy file
-wget -qP reference 	${SERRAPLACE}/tree/pol.muscle.phys.reduced \
-					${SERRAPLACE}/tree/pol.reduced.raxml.bestModel \
-					${SERRAPLACE}/tree/pol.reduced.raxml.bestTree \
-					${S3_BASE}/rce/complete_cov_genomes/complete.tsv
+wget -qP reference  ${SERRAPLACE}/tree/pol.muscle.phys.reduced \
+                    ${SERRAPLACE}/tree/pol.reduced.raxml.bestModel \
+                    ${SERRAPLACE}/tree/pol.reduced.raxml.bestTree \
+                    ${S3_BASE}/rce/complete_cov_genomes/complete.tsv
 
 TREE=reference/pol.reduced.raxml.bestTree
 MODEL=reference/pol.reduced.raxml.bestModel
@@ -23,12 +23,12 @@ wget -qP raw/ ${S3_BASE}/assemblies/analysis/catA-v1.txt
 # if there already is a contigs folder, use that. else download the files specified in the catX-file
 if [[ ! -d contigs/ ]]
 then
-	echo "Downloading contigs since I didn't find a contigs/ folder"
-	mkdir contigs
-	while IFS= read -r line;
-	do
-		wget -P contigs "${S3_BASE}/assemblies/contigs/${line##*/}";
-	done < raw/catA-v1.txt
+  echo "Downloading contigs since I didn't find a contigs/ folder"
+  mkdir contigs
+  while IFS= read -r line;
+  do
+    wget -qP contigs "${S3_BASE}/assemblies/contigs/${line##*/}";
+  done < raw/catA-v1.txt
 fi
 
 # get the filenames of all cat-A contigs
