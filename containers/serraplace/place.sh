@@ -5,6 +5,21 @@ set -e
 S3_BASE=https://serratus-public.s3.amazonaws.com
 SERRAPLACE=${S3_BASE}/pb/serraplace
 
+OPTIND=1
+
+while getopts "h?" opt; do
+  case "$opt" in
+  h|\?)
+    echo "Usage: $0 [-h] contig_files..."
+    exit 0
+    ;;
+  # v)  verbose=1
+  #   ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
 mkdir -p reference
 # get the reference alignment, model and tree, and the taxonomy file
 wget -qP reference  ${SERRAPLACE}/tree/pol.muscle.phys.reduced \
@@ -17,26 +32,33 @@ MODEL=reference/pol.reduced.raxml.bestModel
 REFPHY=reference/pol.muscle.phys.reduced
 
 mkdir -p raw
-# get the file specifying which contigs to take
-wget -qP raw/ ${S3_BASE}/assemblies/analysis/catA-v1.txt 
-
-# if there already is a contigs folder, use that. else download the files specified in the catX-file
-if [[ ! -d contigs/ ]]
+# if contig files were not passed via command line, download them from the specified file
+if [[ $# -eq 0 ]]
 then
-  echo "Downloading contigs since I didn't find a contigs/ folder"
-  mkdir contigs
-  while IFS= read -r line;
-  do
-    wget -qP contigs "${S3_BASE}/assemblies/contigs/${line##*/}";
-  done < raw/catA-v1.txt
+  # get the file specifying which contigs to take
+  wget -qP raw/ ${S3_BASE}/assemblies/analysis/catA-v1.txt 
+
+  # if there already is a contigs folder, use that. else download the files specified in the catX-file
+  if [[ ! -d contigs/ ]]
+  then
+    echo "Downloading contigs since I didn't find a contigs/ folder"
+    mkdir contigs
+    while IFS= read -r line;
+    do
+      wget -qP contigs "${S3_BASE}/assemblies/contigs/${line##*/}";
+    done < raw/catA-v1.txt
+  fi
+
+  # get the filenames of all cat-A contigs
+  # and merge the sequences into one fasta file
+  (while IFS= read -r line; do echo "contigs/${line##*/}"; done < raw/catA-v1.txt) | xargs msa-merge > raw/contigs.fa
+# if they were passed, just parse those in
+else
+  msa-merge $@ > raw/contigs.fa
 fi
 
-# get the filenames of all cat-A contigs
-# and merge the sequences into one fasta file
-(while IFS= read -r line; do echo "contigs/${line##*/}"; done < raw/catA-v1.txt) | xargs msa-merge > raw/catA-contigs.fa
-
 # get orfs / individual genes
-getorf -sequence raw/catA-contigs.fa -snucleotide1 -sformat1 fasta -outseq raw/orfs.fa -osformat2 fasta
+getorf -sequence raw/contigs.fa -snucleotide1 -sformat1 fasta -outseq raw/orfs.fa -osformat2 fasta
 # normalize the orf seq names
 sed -i -e "s/[[:space:]]/_/g" raw/orfs.fa
 
