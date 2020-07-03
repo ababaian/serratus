@@ -10,18 +10,37 @@ OPTIND=1
 verbose=0
 threads=4
 
-while getopts "h?vt:" opt; do
+die () {
+    echo >&2 "$@"
+    exit 1
+}
+
+show_help() {
+  echo "Usage: $0 [OPTION]... contig_files..."
+  echo "Options:"
+  printf "  %s\t%s\n" "-h" "show help"
+  printf "  %s\t%s\n" "-v" "increase verbosity"
+  printf "  %s\t%s\n" "-t" "number of threads"
+  printf "  %s\t%s\n" "-c" "alternative catX-file"
+}
+
+while getopts "h?vt:c:" opt; do
   case "$opt" in
   h|\?)
-    echo "Usage: $0 [-hvt] contig_files..."
+    show_help
     exit 0
     ;;
   v)  verbose=1
     ;;
   t)  threads=$OPTARG
     ;;
+  c)  catfile=$OPTARG
+    ;;
   esac
 done
+
+# ensure therads is a number
+[[ $yournumber =~ '^[0-9]+$' ]] || die "Invalid number of threads: $threads"
 
 shift $((OPTIND-1))
 
@@ -46,7 +65,9 @@ mkdir -p raw
 # if contig files were not passed via command line, download them from the specified file
 if [[ $# -eq 0 ]]
 then
-  CATX=raw/catX-spec.txt
+  [[ -z catfile ]] && CATX=raw/catX-spec.txt || CATX=$catfile
+  [[ ! -f "${catfile}" ]] && die "No such file: $catfile"
+
   # get the file specifying which contigs to take
   wget_mod ${CATX} ${S3_BASE}/assemblies/analysis/catA-v1.txt
 
