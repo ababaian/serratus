@@ -190,9 +190,11 @@ BLOCK_ID=$(echo $JOB_JSON | jq -r .block_id)
 # a message to the scheduler before exiting.
 function error {
     curl -s -X POST "$SCHEDULER/jobs/align/$BLOCK_ID?state=fail" > /dev/null
+    echo "Error on line $1 processing block $BLOCK_ID"
+    touch $RUN_FAIL
     exit 0 # Already told the calling script.
 }
-trap error ERR
+trap 'error "$LINENO"' ERR
 
 SRA=$(echo $JOB_JSON      | jq -r .sra_run_info.Run)
 PAIRED=$(echo $JOB_JSON   | jq -r .contains_paired)
@@ -223,29 +225,60 @@ mkdir -p $WORKDIR; cd $WORKDIR
 GENDIR=$BASEDIR/$GENOME
 
 # DOWNlOAD GENOME =========================================
-# This is not threadsafe!  For now let's just put it in a critical section.
-# Using a recipe from "man flock" which appears to work.
+# Lock this section using a recipe from the flock manual.
 (
     flock 200
-    if [ ! -d $GENDIR ]; then
+    if [ ! -e "$GENDIR"/"$GENOME.fa" ]; then
         echo "  $GENDIR not found. Attempting download from"
         echo "  s3://serratus-public/seq/$GENOME"
-        mkdir -p $GENDIR; cd $GENDIR
+        mkdir -p "$GENDIR"; cd "$GENDIR"
 
-        aws s3 cp --only-show-errors --recursive s3://serratus-public/seq/$GENOME/ $GENDIR/
+        aws s3 sync --only-show-errors "s3://serratus-public/seq/$GENOME/" "$GENDIR/"
+
+        # Check for Genome Fasta File
+        if [ ! -e "$GENDIR/$GENOME.fa" ]; then
+          echo " ERROR: Genome file $GENOME.fa not found"
+          echo "        in s3://serratus-public/seq/$GENOME/ "
+          false; exit 1
+
+        # Check for Genome Index (bowtie2) Files
+        elif [ ! -e "$GENDIR/$GENOME.1.bt2" ]; then
+          echo " ERROR: bowtie2 genome index file $GENOME.1.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1
+        elif [ ! -e "$GENDIR/$GENOME.2.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.2.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1
+        elif [ ! -e "$GENDIR/$GENOME.3.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.3.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1    
+        elif [ ! -e "$GENDIR/$GENOME.4.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.4.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1
+        elif [ ! -e "$GENDIR/$GENOME.rev.1.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.rev.1.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1              
+        elif [ ! -e "$GENDIR/$GENOME.rev.2.bt2" ]; then
+          echo " ERROR:  bowtie2 genome index file $GENOME.rev.2.bt2 not found"
+          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+          echo "        upload index files to s3_path"
+          false; exit 1              
+        fi
     fi
+) 200> "$BASEDIR/.genome-lock"  
 
-    # Link genome files to workdir
-    cd $WORKDIR
-    ln -s $GENDIR/* ./
-) 200> "$BASEDIR/.genome-lock"
-
-if [ ! -e "$GENDIR/$GENOME.fa" ]
-then
-    echo " ERROR: $GENOME.fa not found"
-    false
-    exit 1
-fi
+# Link genome files to workdir
+cd "$WORKDIR"
+ln -s "$GENDIR"/* ./
 
 # DOWNlOAD FQ Files =======================================
 

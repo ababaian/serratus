@@ -11,7 +11,11 @@ ENV FLASK_ENV=production
 ENV LANG=C.UTF-8
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /opt/
-ADD serratus-scheduler/flask_app/ ./flask_app
+RUN mkdir /opt/metrics
+ENV prometheus_multiproc_dir=/opt/metrics
 
-ENTRYPOINT ["gunicorn", "flask_app:create_app()", "--bind", "0.0.0.0:8000", "-t", "7200"]
+WORKDIR /opt/
+COPY serratus-scheduler/flask_app/ ./flask_app
+COPY serratus-scheduler/gunicorn.conf.py /etc/gunicorn.conf.py
+
+ENTRYPOINT ["gunicorn", "flask_app:create_app()", "--bind", "0.0.0.0:8000", "--config", "/etc/gunicorn.conf.py"]

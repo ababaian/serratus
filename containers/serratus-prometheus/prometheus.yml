@@ -23,6 +23,7 @@ scrape_configs:
     scrape_interval: 15s
     static_configs:
       - targets:
-        - 'scheduler:8000'
-        - 'scheduler:9101'
+        - 'scheduler:8000' # scheduler
+        - 'scheduler:9101' # cron
+        - 'scheduler:9187' # postgres_exporter
 

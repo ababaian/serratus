@@ -24,6 +24,7 @@ ACC_STATES = (
     "merge_done",
     "split_err",
     "merge_err",
+    "hold",
 )
 
 bp = Blueprint("db", __name__, url_prefix="/db")
@@ -62,7 +63,7 @@ class Accession(Base, Dicter):
     merge_worker = Column(String)
 
 
-BLOCK_STATES = ("new", "aligning", "done", "fail")
+BLOCK_STATES = ("new", "aligning", "done", "fail", "hold")
 
 
 class Block(Base, Dicter):
@@ -70,7 +71,7 @@ class Block(Base, Dicter):
 
     block_id = Column(Integer, primary_key=True)
     state = Column(Enum(name="blk_state", *BLOCK_STATES), index=True)
-    acc_id = Column(Integer, ForeignKey("acc.acc_id"))
+    acc_id = Column(Integer, ForeignKey("acc.acc_id"), index=True)
     n = Column(Integer)
 
     align_start_time = Column(DateTime)
@@ -165,6 +166,19 @@ def get_config_val(key):
     return row.value
 
 
+def enable_pg_stat_statements():
+    """Enable the postgres pg_stat_statement, which allows tracking statement
+    timings"""
+    with get_engine().connect() as con:
+        con.execute("CREATE EXTENSION IF NOT EXISTS pg_stat_statements;")
+
+        # Allow an index-only scan to find non-mergeable accessions.  This
+        # index is used by the start_merge_job subquery.
+        con.execute(
+            "CREATE INDEX IF NOT EXISTS block_state_idx ON blocks (state) INCLUDE (acc_id);"
+        )
+
+
 def init_db(reset=False):
     """Clear the existing data and create new tables."""
     engine = get_engine()
@@ -172,6 +186,7 @@ def init_db(reset=False):
         Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     create_config(CONFIG_DEFAULT)
+    enable_pg_stat_statements()
 
 
 @bp.route("", methods=["GET"])

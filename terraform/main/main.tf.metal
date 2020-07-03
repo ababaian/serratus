@@ -78,6 +78,13 @@ resource "aws_security_group" "internal" {
 }
 
 // MODULES ##############################
+// Note: AWS Limits
+// These settings require increased quota from AWS (open a ticket)
+// Defaults limits violated are
+// - 2000 Spot Instances --> 10000
+// - 2500 vCPU           --> 30000
+// - 300 TB EBS volumes  --> 5000
+//
 
 // Working S3 storage for Serratus
 module "work_bucket" {
@@ -92,7 +99,7 @@ module "scheduler" {
   
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
-  instance_type      = "c5.large"
+  instance_type      = "m5.8xlarge"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
 }
@@ -105,7 +112,7 @@ module "monitoring" {
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
   dockerhub_account  = var.dockerhub_account
-  instance_type      = "r5.large"
+  instance_type      = "r5.2xlarge"
 }
 
 // Serratus-dl
@@ -113,12 +120,12 @@ module "download" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 200
+  max_size           = 5000
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
-  instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
+  instance_type      = "r5.xlarge" // Mitigate the memory leak in fastq-dump
   volume_size        = 250 // Mitigate the storage leak in fastq-dump
   spot_price         = 0.10
 
@@ -137,11 +144,11 @@ module "align" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 500
+  max_size           = 10000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "c5.large" # c5.large
-  volume_size        = 10
+  instance_type      = "c5.xlarge" # c5.large
+  volume_size        =10
   spot_price         = 0.10
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "fq-blocks"
@@ -158,7 +165,7 @@ module "merge" {
   source             = "../worker"
 
   desired_size       = 0
-  max_size           = 50
+  max_size           = 5000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"

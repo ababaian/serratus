@@ -1,13 +1,18 @@
 import csv
-import io
 from itertools import islice
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request, abort, render_template
+from prometheus_client import Counter
 
 from . import db
+from .metrics import REGISTRY
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
+
+done_items_counter = Counter(
+    "scheduler_done_items", "Items successfully processed", ["kind"], registry=REGISTRY
+)
 
 
 @bp.route("/add_sra_run_info/<filename>", methods=["POST"])
@@ -130,7 +135,7 @@ def finish_split_job(acc_id):
     acc = (
         session.query(db.Accession)
         .filter_by(acc_id=int(acc_id))
-        .with_for_update(skip_locked=True)
+        .with_for_update()
         .one()
     )
 
@@ -158,6 +163,8 @@ def finish_split_job(acc_id):
     acc.blocks = blocks
     session.add(acc)
     session.commit()
+
+    done_items_counter.labels("dl").inc()
 
     return jsonify({"result": "success", "inserted_rows": blocks,})
 
@@ -191,6 +198,8 @@ def start_align_job():
 
     response = block.to_dict()
 
+    # Query acc *without* for_update, since we're just using it to get extra
+    # information about the block.
     acc = session.query(db.Accession).filter_by(acc_id=block.acc_id).one()
 
     response.update(acc.to_dict())
@@ -216,10 +225,12 @@ def finish_align_job(block_id):
         abort(400)
 
     session = db.get_session()
-    block = session.query(db.Block).filter_by(block_id=block_id).one()
+    block = session.query(db.Block).filter_by(block_id=block_id).with_for_update().one()
     block.state = state
     block.align_end_time = datetime.now()
     session.commit()
+
+    done_items_counter.labels("align").inc()
 
     return jsonify({"result": "success"})
 
@@ -280,7 +291,7 @@ def finish_merge_job(acc_id):
     acc = (
         session.query(db.Accession)
         .filter_by(acc_id=int(acc_id))
-        .with_for_update(skip_locked=True)
+        .with_for_update()
         .one()
     )
 
@@ -290,4 +301,7 @@ def finish_merge_job(acc_id):
     acc.state = state
     acc.merge_end_time = datetime.now()
     session.commit()
+
+    done_items_counter.labels("merge").inc()
+
     return jsonify({"result": "success"})

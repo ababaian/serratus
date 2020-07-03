@@ -4,13 +4,28 @@
 
 _We welcome all scientists and developers to contribute._
 
+## Looking for Collaborators
+To acheive rapid analysis of this data to help fight the COVID-19 pandemic we are seeking collaborators in:
+-	computational virology
+-	phylogenetics
+-	viral ecology and zoonosis modeling
+-	web-interface development
+-	R package development
+-	AWS cloud computing
+
+**Data Co-operation**
+
+Collaborators with access to large amounts of sequencing data from bats, wild rodents, or any sample taken from an animal with respiratory/GI disease are also sought. We are offering a no-cost virus-report on all shared data within 72 hours. We only ask that adequate meta-data is provided and if samples are CoV+, the reports and CoV viral assemblies be shared with the research community immediately.
+
 ## Overview
 
 - Development is [done through `git`](https://github.com/ababaian/serratus/wiki/Using-the-Repository).
-- Data is hosted on [a public AWS S3 bucket](https://github.com/ababaian/serratus/wiki/Data-Hosted-on-AWS-S3).
+- Data is hosted on [a public AWS S3 bucket](https://github.com/ababaian/serratus/wiki/Access-Data-Release).
 - [Deployment of Serratus resources](https://github.com/ababaian/serratus/wiki/Running-Serratus-on-AWS) can be done on a personal AWS account.
 - Experiments are [run using Jupyter Notebooks](https://github.com/ababaian/serratus/wiki/Running-an-Experiment).
 - Contact the team: email `ababaian AT bccrc DOT ca` or join our [Slack: (type `/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-dwdg5uw0-TTcfrFagariqKpOSU_d6wg)
+
+# How to Contribute
 
 ## Find an existing task
 

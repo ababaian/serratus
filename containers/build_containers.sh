@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 # Build and push container images in parallel.
-images=${@:-dl align merge scheduler grafana prometheus}
+images=${@:-dl align merge scheduler grafana prometheus scheduler-postgres-exporter}
 
 DOCKERHUB_USER=${DOCKERHUB_USER:-local}
 DOCKER_BUILD=${DOCKER_BUILD:-sudo docker}
