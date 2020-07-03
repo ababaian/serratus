@@ -39,8 +39,15 @@ while getopts "h?vt:c:" opt; do
   esac
 done
 
-# ensure therads is a number
-[[ $yournumber =~ '^[0-9]+$' ]] || die "Invalid number of threads: $threads"
+# input validation
+
+# ensure threads is a number
+int_regex='^[0-9]+$'
+[[ $threads =~ $int_regex ]] || die "Invalid number of threads: $threads"
+
+# ensure catfile exists if it was specified
+[[ ! -z $catfile ]] && [[ ! -f "${catfile}" ]] && die "No such file: $catfile"
+
 
 shift $((OPTIND-1))
 
@@ -66,7 +73,6 @@ mkdir -p raw
 if [[ $# -eq 0 ]]
 then
   [[ -z catfile ]] && CATX=raw/catX-spec.txt || CATX=$catfile
-  [[ ! -f "${catfile}" ]] && die "No such file: $catfile"
 
   # get the file specifying which contigs to take
   wget_mod ${CATX} ${S3_BASE}/assemblies/analysis/catA-v1.txt
@@ -127,7 +133,14 @@ awk -F '\t' '{if(length($1) == 8){$1=sprintf("%s.",$1)};print $1,$6}' OFS='\t' $
 
 # do the assignment
 gappa examine assign --jplace-path place/epa_result.jplace --taxon-file assign/taxonomy.tsv \
---out-dir assign/ --per-query-results --allow-file-overwriting --consensus-thresh 0.66
+--out-dir assign/ --per-query-results --allow-file-overwriting --consensus-thresh 0.66 --log-file assign/assign.log
 
 # make per-query best hit results more readable
 awk '{split($1,a,".");$1=a[1];print}' OFS='\t'  assign/assign_per_query.tsv > assign/readable.per_query.tsv
+
+# if this is a bigger job, produce a grafted tree
+if [[ $# -eq 0 ]]
+then
+  gappa examine graft --jplace-path place/epa_result.jplace --name-prefix "SERRATUS_" --out-dir assign/ \
+  --threads $threads --log-file assign/graft.log --redo
+fi
