@@ -240,8 +240,13 @@ def GetLine(Id):
 	PctId = GetPctId(Id)
 	Score = GetScore(Id)
 	Alns = GetDict(IdToAlnCount, Id)
+	SumBases = GetDict(IdToSumBases, Id)
 	IsGene = (Id in Genes)
 	IsFamily = (Id in Families)
+
+	AvgCols = 0
+	if Alns > 0:
+		AvgCols = float(SumBases)/Alns
 
 	s = ""
 	if IsGene:
@@ -256,6 +261,7 @@ def GetLine(Id):
 	s += "score=%.0f;" % Score
 	s += "pctid=%.0f;" % PctId
 	s += "alns=%.0f;" % Alns
+	s += "avgcols=%.0f;" % AvgCols
 	return s
 
 def Report():
