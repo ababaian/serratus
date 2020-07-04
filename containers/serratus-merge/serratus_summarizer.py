@@ -141,8 +141,6 @@ def IncCvgVec(Acc, TBin):
 def CountToSymbol(i):
 	#		    012345678901  2^11=2048
 	Symbols = "_.:uwaomUWAOM^"
-	if i == 0:
-		return Symbols[0]
 	n = 1
 	for c in Symbols:
 		if i < n:
@@ -302,7 +300,6 @@ def GetTypicalBinCount(Acc):
 	return Typ
 
 def GetIdentityWeight(PctId):
-	PctId = GetPctId(Acc)
 	FractId = PctId/100.0
 	if FractId < 0.5:
 		FractId = 0.5
