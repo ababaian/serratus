@@ -9,9 +9,10 @@ OPTIND=1
 
 verbose=0
 threads=4
+no_merge=0
 
 die () {
-    echo >&2 "$@"
+    echo >&2 "ABORT: $@"
     exit 1
 }
 
@@ -22,9 +23,10 @@ show_help() {
   printf "  %s\t%s\n" "-v" "increase verbosity"
   printf "  %s\t%s\n" "-t" "number of threads"
   printf "  %s\t%s\n" "-c" "alternative catX-file"
+  printf "  %s\t%s\n" "-m" "turn off merging of explicitly passed contig file (assumes one file with sensical fasta names)"
 }
 
-while getopts "h?vt:c:" opt; do
+while getopts "h?vmt:c:" opt; do
   case "$opt" in
   h|\?)
     show_help
@@ -32,12 +34,15 @@ while getopts "h?vt:c:" opt; do
     ;;
   v)  verbose=1
     ;;
+  m)  no_merge=1
+    ;;
   t)  threads=$OPTARG
     ;;
   c)  catfile=$OPTARG
     ;;
   esac
 done
+shift $((OPTIND-1))
 
 # input validation
 
@@ -48,8 +53,7 @@ int_regex='^[0-9]+$'
 # ensure catfile exists if it was specified
 [[ ! -z $catfile ]] && [[ ! -f "${catfile}" ]] && die "No such file: $catfile"
 
-
-shift $((OPTIND-1))
+[[ $no_merge -eq 1 ]] && [[ $# -ne 1 ]] && die "Turned off merging but specified more than one (or no) file"
 
 wget_mod () {
   [[ $verbose -eq 1 ]] && echo "Ensuring update from $2 to $1"
@@ -69,6 +73,7 @@ wget_mod ${TREE} ${SERRAPLACE}/tree/pol.reduced.raxml.bestTree
 wget_mod ${TAXONOMY} ${S3_BASE}/rce/complete_cov_genomes/complete.tsv
 
 mkdir -p raw
+CONTIGS=raw/contigs.fa
 # if contig files were not passed via command line, download them from the specified file
 if [[ $# -eq 0 ]]
 then
@@ -97,11 +102,17 @@ then
   (while IFS= read -r line; do echo "contigs/${line##*/}"; done < ${CATX}) | xargs msa-merge > raw/contigs.fa
 # if they were passed, just parse those in
 else
-  msa-merge $@ > raw/contigs.fa
+  if [[ $no_merge -eq 0 ]] 
+  then
+    msa-merge $@ > ${CONTIGS}
+  else
+    CONTIGS=$@
+    echo "Selected single combined contig file: ${CONTIGS}"
+  fi
 fi
 
 # get orfs / individual genes
-getorf -sequence raw/contigs.fa -snucleotide1 -sformat1 fasta -outseq raw/orfs.fa -osformat2 fasta
+getorf -sequence ${CONTIGS} -snucleotide1 -sformat1 fasta -outseq raw/orfs.fa -osformat2 fasta
 # normalize the orf seq names
 sed -i -e "s/[[:space:]]/_/g" raw/orfs.fa
 
