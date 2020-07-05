@@ -72,10 +72,14 @@ mkdir -p raw
 # if contig files were not passed via command line, download them from the specified file
 if [[ $# -eq 0 ]]
 then
-  [[ -z catfile ]] && CATX=raw/catX-spec.txt || CATX=$catfile
-
-  # get the file specifying which contigs to take
-  wget_mod ${CATX} ${S3_BASE}/assemblies/analysis/catA-v1.txt
+  if [[ -z catfile ]]
+  then 
+    CATX=raw/catX-spec.txt
+    # get the file specifying which contigs to take
+    wget_mod ${CATX} ${S3_BASE}/assemblies/analysis/catA-v1.txt
+  else
+    CATX=$catfile
+  fi  
 
   # if there already is a contigs folder, use that. else download the files specified in the catX-file
   if [[ ! -d contigs/ ]]
