@@ -77,14 +77,14 @@ CONTIGS=raw/contigs.fa
 # if contig files were not passed via command line, download them from the specified file
 if [[ $# -eq 0 ]]
 then
-  if [[ -z catfile ]]
-  then 
-    CATX=raw/catX-spec.txt
+  CATX=raw/catX-spec.txt
+  if [[ -z $catfile ]]
+  then
     # get the file specifying which contigs to take
     wget_mod ${CATX} ${S3_BASE}/assemblies/analysis/catA-v1.txt
   else
     CATX=$catfile
-  fi  
+  fi
 
   # if there already is a contigs folder, use that. else download the files specified in the catX-file
   if [[ ! -d contigs/ ]]
@@ -124,7 +124,7 @@ REF_HMM=align/ref.hmm
 wget_mod ${REF_HMM} ${SERRAPLACE}/reference/ref.hmm
 
 # search orfs against the hmm to get evalues
-hmmsearch -o align/search.log --noali --cpu ${threads} --tblout align/hits.tsv ${REF_HMM} raw/orfs.fa
+hmmsearch -o align/search.log --noali -E 0.01 --cpu ${threads} --tblout align/hits.tsv ${REF_HMM} raw/orfs.fa
 
 # keep only good hits from the orf file 
 seqtk subseq raw/orfs.fa <(grep -v '^#' align/hits.tsv | awk '{print $1}') > align/orfs.filtered.fa
