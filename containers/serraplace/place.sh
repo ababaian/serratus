@@ -10,6 +10,7 @@ OPTIND=1
 verbose=0
 threads=4
 no_merge=0
+download=0
 
 die () {
     echo >&2 "ABORT: $@"
@@ -22,17 +23,20 @@ show_help() {
   printf "  %s\t%s\n" "-h" "show help"
   printf "  %s\t%s\n" "-v" "increase verbosity"
   printf "  %s\t%s\n" "-t" "number of threads"
+  printf "  %s\t%s\n" "-d" "re-download reference data"
   printf "  %s\t%s\n" "-c" "alternative catX-file"
   printf "  %s\t%s\n" "-m" "turn off merging of explicitly passed contig file (assumes one file with sensical fasta names)"
 }
 
-while getopts "h?vmt:c:" opt; do
+while getopts "h?vmt:c:d" opt; do
   case "$opt" in
   h|\?)
     show_help
     exit 0
     ;;
   v)  verbose=1
+    ;;
+  d)  download=1
     ;;
   m)  no_merge=1
     ;;
@@ -72,6 +76,16 @@ TREE=reference/raxml.bestTree
 MODEL=reference/raxml.bestModel
 TAXONOMY=reference/complete.tsv
 OUTGROUP=reference/outgroupspec.txt
+
+if [[ $download -eq 1 ]]
+then
+  # get the reference alignment, model and tree, and the taxonomy file
+  wget_mod ${REF_MSA} ${SERRAPLACE}/reference/tree/clust.comb.afa
+  wget_mod ${MODEL} ${SERRAPLACE}/reference/tree/10_search.raxml.bestModel
+  wget_mod ${TREE} ${SERRAPLACE}/reference/tree/10_search.raxml.bestTree
+  wget_mod ${OUTGROUP} ${SERRAPLACE}/reference/tree/outgroupspec.txt
+  wget_mod ${TAXONOMY} ${SERRAPLACE}/reference/complete.tsv
+fi
 
 expect_file ${REF_MSA}
 expect_file ${MODEL}
@@ -136,13 +150,12 @@ sed -i -e "s/[[:space:]]/_/g" raw/orfs.fa
 
 mkdir -p align
 REF_HMM=align/ref.hmm
-
-expect_file ${REF_HMM}
-
 # how to build the hmm:
 # hmmbuild --amino ${REF_HMM} ${REF_MSA}
-# but we will download it instead
-# wget_mod ${REF_HMM} ${SERRAPLACE}/reference/hmm/clust.comb.hmm
+# but we will download it instead, if we want to
+[[ $download -eq 1 ]] && wget_mod ${REF_HMM} ${SERRAPLACE}/reference/hmm/clust.comb.hmm
+
+expect_file ${REF_HMM}
 
 # search orfs against the hmm to get evalues
 echo "Running hmmsearch"
