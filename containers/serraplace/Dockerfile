@@ -1,7 +1,9 @@
 FROM ubuntu:18.04
 # install all the dependencies
 RUN 	apt-get update &&\
-	apt-get -y install wget git cmake build-essential zlib1g-dev gzip unzip flex bison hmmer &&\
+	apt-get -y install wget git cmake build-essential zlib1g-dev gzip unzip flex bison &&\
+	wget http://eddylab.org/software/hmmer/hmmer-3.3.tar.gz&& tar xzvf hmmer-3.3.tar.gz && cd hmmer-3.3/ &&\
+	./configure && make -j4 && make install && cd easel && make install && cd ../../ &&\
 	git clone --recursive https://github.com/Pbdas/epa-ng.git &&\
 	cd epa-ng && git checkout tags/v0.3.7 && git submodule update --init --recursive && make -j4 && cp bin/epa-ng /usr/local/bin && cd - &&\
 	git clone https://github.com/lh3/seqtk.git && cd seqtk && make && cp seqtk /usr/local/bin && cd - &&\
