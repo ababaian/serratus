@@ -10,7 +10,7 @@ OPTIND=1
 verbose=0
 threads=4
 no_merge=0
-download=0
+download=1
 
 die () {
     echo >&2 "ABORT: $@"
@@ -23,7 +23,7 @@ show_help() {
   printf "  %s\t%s\n" "-h" "show help"
   printf "  %s\t%s\n" "-v" "increase verbosity"
   printf "  %s\t%s\n" "-t" "number of threads"
-  printf "  %s\t%s\n" "-d" "re-download reference data"
+  printf "  %s\t%s\n" "-d" "get reference data from hardcoded docker paths"
   printf "  %s\t%s\n" "-c" "alternative catX-file"
   printf "  %s\t%s\n" "-m" "turn off merging of explicitly passed contig file (assumes one file with sensical fasta names)"
 }
@@ -36,7 +36,7 @@ while getopts "h?vmt:c:d" opt; do
     ;;
   v)  verbose=1
     ;;
-  d)  download=1
+  d)  download=0
     ;;
   m)  no_merge=1
     ;;
@@ -71,11 +71,14 @@ expect_file () {
   fi
 }
 
+DOCKER_DATA_DIR=/serratus-data/serraplace
+
 REF_MSA=reference/reference.afa
 TREE=reference/raxml.bestTree
 MODEL=reference/raxml.bestModel
 TAXONOMY=reference/complete.tsv
 OUTGROUP=reference/outgroupspec.txt
+REF_HMM=align/ref.hmm
 
 if [[ $download -eq 1 ]]
 then
@@ -85,6 +88,14 @@ then
   wget_mod ${TREE} ${SERRAPLACE}/reference/tree/10_search.raxml.bestTree
   wget_mod ${OUTGROUP} ${SERRAPLACE}/reference/tree/outgroupspec.txt
   wget_mod ${TAXONOMY} ${SERRAPLACE}/reference/complete.tsv
+  wget_mod ${REF_HMM} ${SERRAPLACE}/reference/hmm/clust.comb.hmm
+else
+  REF_MSA=${DOCKER_DATA_DIR}/${REF_MSA}
+  TREE=${DOCKER_DATA_DIR}/${TREE}
+  MODEL=${DOCKER_DATA_DIR}/${MODEL}
+  TAXONOMY=${DOCKER_DATA_DIR}/${TAXONOMY}
+  OUTGROUP=${DOCKER_DATA_DIR}/${OUTGROUP}
+  REF_HMM=${DOCKER_DATA_DIR}/${REF_HMM}
 fi
 
 expect_file ${REF_MSA}
@@ -92,7 +103,7 @@ expect_file ${MODEL}
 expect_file ${TREE}
 expect_file ${OUTGROUP}
 expect_file ${TAXONOMY}
-
+expect_file ${REF_HMM}
 
 mkdir -p reference
 # get the reference alignment, model and tree, and the taxonomy file
@@ -149,13 +160,10 @@ esl-translate ${CONTIGS} > raw/orfs.fa
 sed -i -e "s/[[:space:]]/_/g" raw/orfs.fa
 
 mkdir -p align
-REF_HMM=align/ref.hmm
+
 # how to build the hmm:
 # hmmbuild --amino ${REF_HMM} ${REF_MSA}
 # but we will download it instead, if we want to
-[[ $download -eq 1 ]] && wget_mod ${REF_HMM} ${SERRAPLACE}/reference/hmm/clust.comb.hmm
-
-expect_file ${REF_HMM}
 
 # search orfs against the hmm to get evalues
 echo "Running hmmsearch"

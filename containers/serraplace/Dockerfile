@@ -10,9 +10,9 @@ RUN 	apt-get update &&\
 	git clone --recursive https://github.com/lczech/gappa.git &&\
 	cd gappa && git checkout f05e9fe && git submodule update --init --recursive && make -j4 && cp bin/gappa /usr/local/bin && cd - &&\
 	cd gappa/libs/genesis/apps && git clone https://github.com/Pbdas/genesis-apps.git && make -j4 -C .. && cp ../bin/apps/genesis-apps/msa-merge ../bin/libgenesis.so /usr/local/bin && cd - &&\
-	mkdir -p /home/serratus/ && cd /home/serratus/ && wget https://serratus-public.s3.amazonaws.com/pb/serraplace/reference/refpack.tar.gz && tar xzvf refpack.tar.gz && cd -
+	mkdir -p /serratus-data/serraplace && cd /serratus-data/serraplace && wget https://serratus-public.s3.amazonaws.com/pb/serraplace/reference/refpack.tar.gz && tar xzvf refpack.tar.gz && cd -
 
 WORKDIR /home/serratus
 COPY place.sh /home/serratus/
 
-ENTRYPOINT /home/serratus/place.sh
+ENTRYPOINT ["/home/serratus/place.sh", "-d"]
