@@ -7,4 +7,5 @@ RUN wget https://serratus-public.s3.amazonaws.com/rce/serratax/tarball/serratax.
 RUN tar -zxvf serratax.tar.gz
 RUN mv serratax_lib/* /usr/local/bin
 ENV SERRATAX_REFDIR /serratax_ref
+ENV SERRATAX_LIBDIR /usr/local/bin
 CMD serratax
