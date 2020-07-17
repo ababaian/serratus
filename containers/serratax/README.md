@@ -29,7 +29,7 @@ of writing.
 
 To run as a stand-alone command without an interactive prompt:  
 
-`docker run -it -v $PWD:$PWD -w $PWD serratax serratax input.fasta ./outputdir`
+`docker run -v $PWD:$PWD -w $PWD serratax serratax input.fasta ./outputdir`
 
 Notice that `serratax` appears twice in the above command line. First time, it's the container name.
 Second time, it's the command to execute within the container.  
