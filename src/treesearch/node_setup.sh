@@ -20,7 +20,7 @@ esac
 
 # install basics
 # yum update
-yum -y install wget cmake cmake3 zlib-devel gzip unzip flex bison
+yum -y install wget cmake cmake3 zlib-devel gzip unzip flex bison htop
 
 # slave cmake3 as the defaul
 alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
@@ -33,12 +33,6 @@ alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
 --slave /usr/local/bin/cpack cpack /usr/bin/cpack3 \
 --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
 --family cmake
-
-# install usearch
-wget https://drive5.com/downloads/usearch11.0.667_i86linux32.gz -O usearch.gz
-gunzip usearch.gz
-chmod ugo+x usearch
-mv usearch /usr/local/bin
 
 if [[ $MASTER -eq 1 ]]
 then
@@ -75,6 +69,13 @@ then
   git checkout tags/v1.1.2
   ./install.sh 18
   cd -
+
+  # install usearch
+  wget https://drive5.com/downloads/usearch11.0.667_i86linux32.gz -O usearch.gz
+  gunzip usearch.gz
+  chmod ugo+x usearch
+  mkdir -p .bin
+  mv usearch .bin/
 
   # install snakemake
   runuser -l  centos -c './miniconda3/condabin/conda install -y -c conda-forge -c bioconda snakemake'
