@@ -108,6 +108,110 @@ run-blastx: $(DATA_DIR)/query-reads.fa
 		-outfmt 7 \
 		> $@
 
+## megablast: 2m26s
+## blastn: 
+
+eval-blastn_vdb-mapping:
+	cd /dev/shm/
+	mkdir -p blastn-map
+	cd blastn-map	
+	wget https://github.com/ababaian/serratus/wiki/assets/Fr4NK.fa
+	revseq -sequence Fr4NK.fa -outseq Fr4NK_revcomp.fa
+	samtools faidx Fr4NK_revcomp.fa
+	#wget -r https://sra-download.ncbi.nlm.nih.gov/traces/era23/ERR/ERR2756/ERR2756788
+	#cd sra-download.ncbi.nlm.nih.gov/traces/era23/ERR/ERR2756
+	time blastn_vdb \
+		-db "ERR2756788" \
+		-query Fr4NK_revcomp.fa \
+		-evalue .001 \
+		-num_threads `nproc` \
+		-outfmt 17 \
+		-task megablast \
+		-max_target_seqs 100000 \
+		| sed 's/Query_1/Bat/' \
+		| samtools view -S -b \
+		| samtools sort \
+		> test-megablast-sorted.bam
+	samtools index test-megablast-sorted.bam
+	time blastn_vdb \
+		-db "ERR2756788" \
+		-query Fr4NK_revcomp.fa \
+		-evalue .001 \
+		-num_threads `nproc` \
+		-outfmt 17 \
+		-task blastn \
+		-max_target_seqs 100000 \
+		| sed 's/Query_1/Bat/' \
+		| samtools view -S -b \
+		| samtools sort \
+		> test-blastn-sorted.bam
+
+## using default -> 7892 hard clipping
+## using 5/-4/8/6 -> 7323 hard clipping
+## using 1/-1/0/2 -> 
+eval-blastn_vdb-variant-calling:
+	cd /dev/shm/blastn-map
+	wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/503/155/GCF_001503155.1_ViralProj307859/GCF_001503155.1_ViralProj307859_genomic.fna.gz
+	gunzip GCF_001503155.1_ViralProj307859_genomic.fna.gz
+	prefetch -p "ERR2756788"
+	time blastn_vdb \
+		-db "ERR2756788" \
+		-query Fr4NK_revcomp.fa \
+		-evalue 10 \
+		-num_threads `nproc` \
+		-outfmt "17 SQ" \
+		-task blastn \
+		-gapopen 8 \
+		-gapextend 6 \
+		-penalty -4 \
+		-reward 5 \
+		-max_target_seqs 100000 \
+		| sed 's/Query_1/NC_028811.1/' \
+		| samtools view -S -b \
+		| samtools sort \
+		> frank-variants-sorted.bam
+	samtools index frank-variants-sorted.bam
+
+## Need to find hard clipped alignments, record the hits, the hard-clip numbers,
+## and then search the FASTQ file to find the sequence & 
+soft-clip-to-hard-clip:
+	samtools view frank-variants-sorted.bam \
+		| awk -F"\t" '{split($$1, vdb_coord, "."); print vdb_coord[2]}' \
+		| sort | uniq \
+		> spots.txt
+	vdb-dump -f tab -C SPOT_ID,NAME,READ_START,READ,QUALITY
+	export LC_ALL=C
+	awk -F"\t" -v OFS="\t" \
+		'{ split($$1, vdb_coord, ".");
+		   cmd = "vdb-dump -f tab -C SPOT_ID,NAME,READ_START,READ,QUALITY -R " vdb_coord[2] " ERR2756788";
+		   cmd | getline vdb_line;
+		   split(vdb_line, vdb_stats);
+		   split(vdb_stats[3],start_coords,", ");
+		   num_scores = split(vdb_stats[5],q_scores,", ");
+		   q_str = "";		
+		   if( vdb_coord[3] == "1" ) {
+			$10 = substr(vdb_stats[4],1,start_coords[2]);
+			for(i=start_coords[1]+1;i<=start_coords[2];i++)
+				q_str = q_str sprintf("%c", 33+q_scores[i]);
+			$$11 = q_str;
+		   }
+		   else {
+			$$10 = substr(vdb_stats[4],start_coords[2]+1);
+			for(i=start_coords[2]+1;i<=length(q_scores);i++)
+				q_str = q_str sprintf("%c", 33+q_scores[i]);
+			$$11 = q_str;
+		   }
+		   print;
+		 }' \
+	<(samtools view frank-variants-sorted.bam)
+
+bowtie2-align:
+	cd /dev/shm/blastn-map
+	prefetch -p "ERR2756788"
+	cd /tmp
+	fastq-dump --split-e "ERR2756788"
+	cd /dev/shm/blastn-map
+	time bowtie2 --very-sensitive-local -x /dev/shm/blastn-map/NC_028811 -U /tmp/ERR2756788_1.fastq,/tmp/ERR2756788_2.fastq -S > /dev/shm/blastn-map/bt2-align-very-sensitive-local.sam
 
 ### Utils:
 
@@ -115,3 +219,47 @@ stage-on-s3:
 	gzip /media/storage/tblastx/blastx-out.tsv
 	aws s3 cp /media/storage/tblastx/blastx-out.tsv.gz s3://serratus-public/notebook/200518_ta_blastx-reads/ERR2756788-blastx-out.tsv.gz
 	aws s3 cp /media/storage/tblastx/cov-hit-prots.fsa s3://serratus-public/notebook/200518_ta_blastx-reads/ERR2756788-cov-hit-prots.fsa
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
