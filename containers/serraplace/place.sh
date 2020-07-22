@@ -11,6 +11,7 @@ verbose=0
 threads=4
 no_merge=0
 download=1
+graft=0
 
 die () {
     echo >&2 "ABORT: $@"
@@ -26,9 +27,10 @@ show_help() {
   printf "  %s\t%s\n" "-d" "get reference data from hardcoded docker paths"
   printf "  %s\t%s\n" "-c" "alternative catX-file"
   printf "  %s\t%s\n" "-m" "turn off merging of explicitly passed contig file (assumes one file with sensical fasta names)"
+  printf "  %s\t%s\n" "-g" "Produce a reference + queries tree via gappa examine graft"
 }
 
-while getopts "h?vmt:c:d" opt; do
+while getopts "h?vmgt:c:d" opt; do
   case "$opt" in
   h|\?)
     show_help
@@ -43,6 +45,8 @@ while getopts "h?vmt:c:d" opt; do
   t)  threads=$OPTARG
     ;;
   c)  catfile=$OPTARG
+    ;;
+  g)  graft=$OPTARG
     ;;
   esac
 done
@@ -171,8 +175,6 @@ hmmsearch -o align/search.log --noali -E 0.01 --cpu ${threads} --tblout align/hi
 
 # keep only good hits from the orf file 
 seqtk subseq raw/orfs.fa <(grep -v '^#' align/hits.tsv | awk '{print $1}') > raw/orfs.filtered.fa
-sed -i -E 's/^>.*source=/>/g' raw/orfs.filtered.fa
-sed -i -E 's/\..*=$//g' raw/orfs.filtered.fa
 
 # align the good hits
 echo "Running hmmalign"
@@ -197,11 +199,51 @@ gappa examine assign --jplace-path place/epa_result.jplace --taxon-file assign/t
 --out-dir assign/ --per-query-results --allow-file-overwriting --consensus-thresh 0.66 --log-file assign/assign.log \
 --root-outgroup ${OUTGROUP} --threads ${threads}
 
-# make per-query best hit results more readable
-awk '{split($1,a,".");$1=a[1];print}' OFS='\t'  assign/assign_per_query.tsv > assign/readable.per_query.tsv
+# make per-query hit results more readable and include information about orfid and length of aligned fragment
+awk '
+NR==1 {
+  $1="orflength";print "accession","orfid",$0
+}
+NR>1 {
+  split($1,parts,"_");
+  split(parts[2],acc,".");
+  split(acc[1], acc_clean, "=");
 
-# if this is a bigger job, produce a grafted tree
-if [[ $# -eq 0 ]]
+  for(p in parts) {
+    if(match(parts[p], "length=")) {
+      split(parts[p], orflen, "=");
+      $1=orflen[2];
+      break;
+    }
+  }
+  print acc_clean[2], parts[1], $0
+}' OFS='\t'  assign/assign_per_query.tsv > assign/readable.per_query.tsv
+
+# make a best LWR hit, longest contig per accession, version of the previous
+awk '
+NR==1 {
+  print
+}
+NR>1 && $4>best_lwr[$1][$2] {
+  best_lwr[$1][$2] = $4
+  line[$1][$2] = $0
+  orf_length[$1][$2] = $3
+}
+END{
+  for (i in line) {
+    best_length = 0
+    for (j in line[i]) {
+      if (orf_length[i][j] > best_length) {
+        best_length = orf_length[i][j]
+        best_line = line[i][j]
+      }
+    }
+    print best_line
+  }
+}' OFS='\t' assign/readable.per_query.tsv > assign/best_longest.readable.per_query.tsv
+
+# if specified, produce a grafted tree
+if [[ $graft -eq 1 ]]
 then
   gappa examine graft --jplace-path place/epa_result.jplace --name-prefix "SERRATUS_" --out-dir assign/ \
   --threads ${threads} --log-file assign/graft.log --redo
