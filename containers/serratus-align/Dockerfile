@@ -5,6 +5,7 @@ FROM serratus-base:latest AS build_base
 ENV BOWTIEVERSION='2.4.1'
 ENV GATKVERSION='4.1.5.0'
 ENV BWAVERSION='0.7.17'
+ENV DIAMONDVERSION='0.9.35'
 #ENV MBVERSION='1.5.0'
 
 
@@ -29,14 +30,11 @@ RUN wget --quiet https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/"$
 RUN mv bowtie2-"$BOWTIEVERSION"*/bowtie2* /usr/local/bin/ &&\
   rm -rf bowtie2-"$BOWTIEVERSION"*
 
-# Magic-BLAST ===================================
-#RUN wget --quiet ftp://ftp.ncbi.nlm.nih.gov/blast/executables/magicblast/"$MBVERSION"/ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz &&\
-#  tar -xvf ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz &&\
-#  rm ncbi-magicblast-"$MBVERSION"-x64-linux.tar.gz
-#
-# magicblast; makeblatsdb
-#RUN mv ncbi-magicblast-"$MBVERSION"/bin/* /usr/local/bin/ &&\
-#  rm -rf ncbi-magicblast-*
+# DIAMOND ======================================
+RUN wget --quiet https://github.com/bbuchfink/diamond/releases/download/v"$DIAMONDVERSION"/diamond-linux64.tar.gz &&\
+  tar -xvf diamond-linux64.tar.gz &&\
+  rm    diamond-linux64.tar.gz &&\
+  mv    diamond /usr/local/bin/
 
 # BWA ===========================================
 RUN wget https://github.com/lh3/bwa/releases/download/v"$BWAVERSION"/bwa-"$BWAVERSION".tar.bz2 &&\
@@ -87,11 +85,15 @@ RUN yum -y install perl jq unzip \
 # bowtie2
 COPY --from=build_base /opt/bowtie2-align/* /usr/local/bin/
 
+# diamond
+COPY --from=build_base /usr/local/bin/diamond /usr/local/bin/
+
 # samtools
 COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
 
 # flock
 COPY --from=build_base /usr/bin/flock /usr/bin/
+
 
 #==========================================================
 # Serratus Initialize =====================================
