@@ -200,6 +200,7 @@ resource "aws_iam_role_policy" "s3_write" {
             "Effect": "Allow",
             "Action": "s3:*",
             "Resource": [
+                "arn:aws:s3:::serratus-public/*",
                 "arn:aws:s3:::${var.s3_bucket}/${var.s3_prefix}/*"
             ]
         }

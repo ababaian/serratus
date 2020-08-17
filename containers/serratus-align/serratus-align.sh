@@ -240,38 +240,50 @@ GENDIR=$BASEDIR/$GENOME
           echo " ERROR: Genome file $GENOME.fa not found"
           echo "        in s3://serratus-public/seq/$GENOME/ "
           false; exit 1
+        fi
 
-        # Check for Genome Index (bowtie2) Files
-        elif [ ! -e "$GENDIR/$GENOME.1.bt2" ]; then
-          echo " ERROR: bowtie2 genome index file $GENOME.1.bt2 not found"
-          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
-          echo "        upload index files to s3_path"
-          false; exit 1
-        elif [ ! -e "$GENDIR/$GENOME.2.bt2" ]; then
-          echo " ERROR:  bowtie2 genome index file $GENOME.2.bt2 not found"
-          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
-          echo "        upload index files to s3_path"
-          false; exit 1
-        elif [ ! -e "$GENDIR/$GENOME.3.bt2" ]; then
-          echo " ERROR:  bowtie2 genome index file $GENOME.3.bt2 not found"
-          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
-          echo "        upload index files to s3_path"
-          false; exit 1    
-        elif [ ! -e "$GENDIR/$GENOME.4.bt2" ]; then
-          echo " ERROR:  bowtie2 genome index file $GENOME.4.bt2 not found"
-          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
-          echo "        upload index files to s3_path"
-          false; exit 1
-        elif [ ! -e "$GENDIR/$GENOME.rev.1.bt2" ]; then
-          echo " ERROR:  bowtie2 genome index file $GENOME.rev.1.bt2 not found"
-          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
-          echo "        upload index files to s3_path"
-          false; exit 1              
-        elif [ ! -e "$GENDIR/$GENOME.rev.2.bt2" ]; then
-          echo " ERROR:  bowtie2 genome index file $GENOME.rev.2.bt2 not found"
-          echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
-          echo "        upload index files to s3_path"
-          false; exit 1              
+        if [ "$ALIGNER" = "bowtie2" ]; then
+          # Check for Genome Index (bowtie2) Files
+          if [ ! -e "$GENDIR/$GENOME.1.bt2" ]; then
+            echo " ERROR: bowtie2 genome index file $GENOME.1.bt2 not found"
+            echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+            echo "        upload index files to s3_path"
+            false; exit 1
+          elif [ ! -e "$GENDIR/$GENOME.2.bt2" ]; then
+            echo " ERROR:  bowtie2 genome index file $GENOME.2.bt2 not found"
+            echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+            echo "        upload index files to s3_path"
+            false; exit 1
+          elif [ ! -e "$GENDIR/$GENOME.3.bt2" ]; then
+            echo " ERROR:  bowtie2 genome index file $GENOME.3.bt2 not found"
+            echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+            echo "        upload index files to s3_path"
+            false; exit 1    
+          elif [ ! -e "$GENDIR/$GENOME.4.bt2" ]; then
+            echo " ERROR:  bowtie2 genome index file $GENOME.4.bt2 not found"
+            echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+            echo "        upload index files to s3_path"
+            false; exit 1
+          elif [ ! -e "$GENDIR/$GENOME.rev.1.bt2" ]; then
+            echo " ERROR:  bowtie2 genome index file $GENOME.rev.1.bt2 not found"
+            echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+            echo "        upload index files to s3_path"
+            false; exit 1              
+          elif [ ! -e "$GENDIR/$GENOME.rev.2.bt2" ]; then
+            echo " ERROR:  bowtie2 genome index file $GENOME.rev.2.bt2 not found"
+            echo "        run 'bowtie2-build $GENOME.fa $GENOME' and "
+            echo "        upload index files to s3_path"
+            false; exit 1              
+          fi
+        elif [ "$ALIGNER" = "diamond" ]; then
+          # Check for Genome Index (diamond) Files
+          if [ ! -e "$GENDIR/$GENOME.dmnd" ]; then
+            echo " ERROR:  diamond index file $GENOME.dmnd not found"
+            echo "        run 'diamond makedb --in  $GENOME.fa -d $GENOME' and "
+            echo "        upload index files to s3_path"
+            false; exit 1              
+          fi
+
         fi
     fi
 ) 200> "$BASEDIR/.genome-lock"  
@@ -316,21 +328,19 @@ then
       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
   fi
-elif [ "$ALIGNER" = "bwa" ];
+elif [ "$ALIGNER" = "diamond" ];
 then
   if [[ "$PAIRED" = true ]]
   then
     # Paired-end read alignment -----------------
-    bash $BASEDIR/run_bwa.sh \
+    bash $BASEDIR/run_diamond.sh \
       -1 $FQ1 -2 $FQ2 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
-      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
+      -o $SRA.$BL_N -p $THREADS
   else
     # Single-end read alignment -----------------
-    bash $BASEDIR/run_bwa.sh \
+    bash $BASEDIR/run_diamond.sh \
       -3 $FQ3 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
-      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
+      -o $SRA.$BL_N -p $THREADS
   fi
 
 else
