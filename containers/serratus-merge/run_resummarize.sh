@@ -62,7 +62,7 @@ OUTNAME=''
 S3_OUT='s3://serratus-bio'
 
 
-while getopts s:L:o:O:nifrh FLAG; do
+while getopts s:L:o:O:n:ifrh FLAG; do
   case $FLAG in
     s)
       SRA=$OPTARG
