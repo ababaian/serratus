@@ -2,13 +2,12 @@
 
 Serratus is a collaborative Open Science project for ultra-rapid discovery of known and unknown coronaviruses in response to the COVID-19 pandemic.
 
-#### Introduction Video (1:59)
-![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash_play.png)
+![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash.png)
 
 ### Background
 While there is an intense research effort to sequence and analyze SARS-CoV-2 isolates for tracking real-time virus evolution, our understanding of the virus's evolutionary origins is limited by incomplete genomic characterization of other members of the Coronaviridae (CoV) and related families.
 
-We are re-analyzing all RNA-seq, meta-genomics, meta-transcriptomics and environmental sequencing data in the NCBI Short Read Archive to discover new sequence biodiversity of coronaviruses. That is **>3.2 million biological samples** or >10 petabytes of sequencing data.
+We are re-analyzing all RNA-seq, meta-genomics, meta-transcriptomics and environmental sequencing data in the NCBI Short Read Archive to discover new sequence biodiversity of coronaviruses. That is **>3.4 million biological samples** or >5 petabases of sequencing data.
 
 ### Contribute to Serratus
 The `Serratus` team is actively looking to collaborate with all scientists and developers.
