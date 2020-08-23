@@ -3,7 +3,7 @@
     "name": "postgres",
     "image": "postgres:12",
     "memoryReservation": 128,
-    "essential": true,
+    "essential": false,
     "command": ["-c", "shared_preload_libraries=pg_stat_statements", "-c", "max_connections=1000"],
     "portMappings": [
       {
@@ -40,14 +40,22 @@
         "containerPort": 9187,
         "hostPort": 9187
       }
-    ]
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "serratus-scheduler",
+        "awslogs-region": "${aws_region}",
+        "awslogs-stream-prefix": "postgres-exporter"
+      }
+    }
   },
   {
     "name": "flask",
     "image": "${dockerhub_account}/serratus-scheduler",
     "cpu": 256,
     "memoryReservation": 128,
-    "essential": true,
+    "essential": false,
     "portMappings": [
       {
         "containerPort": 8000,
@@ -68,7 +76,7 @@
     "image": "${dockerhub_account}/serratus-scheduler",
     "cpu": 256,
     "memoryReservation": 128,
-    "essential": true,
+    "essential": false,
     "portMappings": [
       {
         "containerPort": 9101,
