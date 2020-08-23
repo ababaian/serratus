@@ -167,8 +167,8 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   psumbler="./sumbler -prod /dev/stdin -db protref4.msa -output $SRA.sumbler"
 
   cat $BAMREGEX \
+    | $psumbler \
     | $psummarizer \
-    | $psubmler \
     | gzip \
     > $OUTFILE
 
