@@ -29,7 +29,7 @@ FROM amazonlinux:2 AS runtime
 # Additional Metadata
 LABEL container.type=${TYPE}
 LABEL container.version=${VERSION}
-LABEL container.description="serratus: alignment container"
+LABEL container.description="serratus: merge container"
 LABEL software.license="GPLv3"
 LABEL tags="aws-cli, samtools"
 
@@ -52,9 +52,6 @@ RUN yum -y install python3 perl ps jq util-linux \
 # samtools
 COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
 
-# sumbler exe
-RUN aws s3 cp s3://serratus-public/sumbler/sumbler/ ./
-
 #==========================================================
 # Serratus Initialize =====================================
 #==========================================================
@@ -62,6 +59,13 @@ WORKDIR /home/serratus
 COPY worker.sh ./
 COPY serratus-merge/*sh ./
 COPY serratus-merge/*py ./
+
+# sumbler exe
+#RUN aws s3 cp s3://serratus-public/sumbler/sumbler ./ \
+# && chmod 755 sumbler
+RUN curl https://serratus-public.s3.amazonaws.com/sumbler/sumbler > \
+  ./sumbler \
+ && chmod 755 sumbler
 
 #==========================================================
 # ENTRYPOINT ==============================================
