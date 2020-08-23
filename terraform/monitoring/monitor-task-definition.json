@@ -14,6 +14,10 @@
       {
         "hostname": "scheduler",
         "ipAddress": "${sched_ip}"
+      },
+      {
+        "hostname": "metrics",
+        "ipAddress": "${metrics_ip}"
       }
     ],
     "ulimits": [{
