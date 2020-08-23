@@ -274,6 +274,10 @@ if [[ -s "$SRA.psummary" ]]; then
   aws s3 cp --only-show-errors $SRA.psummary $S3_OUT/psummary/
 fi
 
+if [[ -s "$SRA.sumbler" ]]; then
+  aws s3 cp --only-show-errors $SRA.sumbler $S3_OUT/sumbler/
+fi
+
 # CLEAN-UP ================================================
 # Tell the scheduler we're done
 curl -X POST -s "$SCHEDULER/jobs/merge/$ACC_ID?state=merge_done" > /dev/null
