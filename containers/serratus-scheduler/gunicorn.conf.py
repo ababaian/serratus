@@ -17,15 +17,15 @@ workers = multiprocessing.cpu_count() + 1
 # workers.  The maximum number of requests in progress is defined by SQLAlchemy
 # QueuePool.pool_size + QueuePool.overflow (defaults 5, and 10, for a total of
 # 15 connections at a time).  This allows for the following mix under heavy load:
-#  * 1 in CPU work (eg: parsing JSON)
-#  * 9 waiting for Postgres
-worker_connections = 15
+#  * 3 in CPU work (eg: parsing JSON)
+#  * 5 waiting for Postgres
+worker_connections = 10
 
 # Due to the same, we'll need to increase the number of Postgres max_connections,
 # up to:
-#     workers * (pool_size + overflow)
-# For an m5.8xlarge, with 32vCPUs, that's (32 + 1) * (5 + 10) = 500
-# We'll use 1000 connections, for good measure.
+#     workers * min(pool_size + overflow, worker_connections)
+# For an m5.8xlarge, with 32vCPUs, that's (32 + 1) * (10) = 330
+# We'll set it to 400 connections, for good measure.
 
 
 def child_exit(server, worker):
