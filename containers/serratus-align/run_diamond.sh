@@ -177,13 +177,17 @@ fi
 
 # Data is labeled as "bam" but it is not
 # data is saved as a diamond TSV (BLAST)
+# -k max hits
+# -p threads
+# -b block-size
+
 cat *.fq* |\
 diamond blastx \
-  -d "$GENOME".dmnd \
+  -d "$GENOME".dmnd --sensitive \
   --unal 0 \
   -k 1 \
   -p 1 \
-  -b 0.35 \
+  -b 0.4 \
   -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue bitscore mismatch gapopen \
   > "$OUTNAME".bam
 
