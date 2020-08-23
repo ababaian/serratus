@@ -163,8 +163,12 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   export SUMZER_MAXX=100
   export SUMZER_THROWX="NO"
 
+  # usage: sumbler -prod /dev/stdin -db OTU.afa -output out.sumbler
+  psumbler="./sumbler -prod /dev/stdin -db protref4.msa -output $SRA.sumbler"
+
   cat $BAMREGEX \
     | $psummarizer \
+    | $psubmler \
     | gzip \
     > $OUTFILE
 
