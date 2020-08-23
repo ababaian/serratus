@@ -52,6 +52,9 @@ RUN yum -y install python3 perl ps jq util-linux \
 # samtools
 COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
 
+# sumbler exe
+RUN aws s3 cp s3://serratus-public/sumbler/sumbler/ ./
+
 #==========================================================
 # Serratus Initialize =====================================
 #==========================================================
