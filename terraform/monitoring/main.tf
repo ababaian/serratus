@@ -17,8 +17,12 @@ variable "scheduler_ip" {
   type = string
 }
 
-variable "instance_type" {
+variable "metrics_ip" {
   type = string
+}
+
+variable "instance_type" {
+  type    = string
   default = "t3.nano"
 }
 
@@ -34,10 +38,10 @@ data "aws_region" "current" {}
 module "ecs_cluster" {
   source = "../ecs_cluster"
 
-  name = "monitor"
-  instance_type = var.instance_type
+  name               = "monitor"
+  instance_type      = var.instance_type
   security_group_ids = var.security_group_ids
-  key_name = var.key_name
+  key_name           = var.key_name
 }
 
 resource "aws_eip" "monitor" {
@@ -45,8 +49,8 @@ resource "aws_eip" "monitor" {
   vpc      = true
 
   tags = {
-    "project": "serratus"
-    "component": "serratus-scheduler"
+    "project" : "serratus"
+    "component" : "serratus-scheduler"
   }
 }
 
@@ -86,27 +90,28 @@ resource "aws_cloudwatch_log_group" "g" {
 resource aws_ecs_task_definition "monitor" {
   family = "monitor"
   container_definitions = templatefile("../monitoring/monitor-task-definition.json", {
-    dockerhub_account  = var.dockerhub_account
-    sched_ip = var.scheduler_ip,
-    aws_region = data.aws_region.current.name
+    dockerhub_account = var.dockerhub_account
+    sched_ip          = var.scheduler_ip,
+    aws_region        = data.aws_region.current.name
+    metrics_ip        = var.metrics_ip,
   })
   task_role_arn = module.ecs_cluster.task_role.arn
-  network_mode = "host"
+  network_mode  = "host"
 
   volume {
     name = "prometheus-data"
 
     docker_volume_configuration {
-      scope = "shared"
+      scope         = "shared"
       autoprovision = true
-      driver = "local"
+      driver        = "local"
     }
   }
 }
 
 resource aws_ecs_service "monitor" {
-  name = "serratus-monitor"
-  cluster = module.ecs_cluster.cluster.id
+  name            = "serratus-monitor"
+  cluster         = module.ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.monitor.arn
 
   # "Daemon" indicates that only one can be running at a time.  If we use the

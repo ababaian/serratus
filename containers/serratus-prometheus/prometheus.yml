@@ -1,6 +1,11 @@
 global:
   scrape_interval: 15s
 
+remote_write:
+  - url: "http://metrics:9201/write"
+remote_read:
+  - url: "http://metrics:9201/read"
+
 scrape_configs:
   - job_name: 'prometheus'
     scrape_interval: 15s
