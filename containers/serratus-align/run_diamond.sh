@@ -188,7 +188,7 @@ diamond blastx \
   -k 1 \
   -p 1 \
   -b 0.4 \
-  -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue bitscore mismatch gapopen \
+  -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue btop cigar qstrand qseq sseq \
   > "$OUTNAME".bam
 
   # --unal 0 Do not report unmapped reads
