@@ -3,7 +3,7 @@
     "name": "postgres",
     "image": "postgres:12",
     "memoryReservation": 128,
-    "essential": false,
+    "essential": true,
     "command": [
       "-c", "shared_preload_libraries=pg_stat_statements",
       "-c", "max_connections=400",
@@ -38,7 +38,7 @@
   {
     "name": "postgres-exporter",
     "image": "${dockerhub_account}/serratus-scheduler-postgres-exporter",
-    "cpu": 128,
+    "cpu": 256,
     "memoryReservation": 128,
     "environment": [
       { "name": "DATA_SOURCE_NAME", "value": "postgresql://postgres@localhost:5432/postgres?sslmode=disable" }
@@ -61,9 +61,8 @@
   {
     "name": "flask",
     "image": "${dockerhub_account}/serratus-scheduler",
-    "cpu": 256,
     "memoryReservation": 128,
-    "essential": false,
+    "essential": true,
     "portMappings": [
       {
         "containerPort": 8000,
@@ -82,7 +81,6 @@
   {
     "name": "cron",
     "image": "${dockerhub_account}/serratus-scheduler",
-    "cpu": 256,
     "memoryReservation": 128,
     "essential": false,
     "portMappings": [
