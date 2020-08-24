@@ -17,9 +17,190 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": 3,
-  "iteration": 1592104545297,
+  "iteration": 1592157979017,
   "links": [],
   "panels": [
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 34,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "rate(scheduler_done_items_total{kind=\"dl\"}[$interval]) * 3600",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "DLed / hr",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 31,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "rate(scheduler_done_items_total{kind=\"merge\"}[$interval]) * 3600",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Merged / hr",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 35,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "rate(scheduler_done_items_total{kind=\"align\"}[$interval]) * 3600",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Aligned / hr",
+      "type": "stat"
+    },
     {
       "datasource": null,
       "fieldConfig": {
@@ -46,7 +227,7 @@
         "h": 3,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 3
       },
       "id": 18,
       "options": {
@@ -104,7 +285,7 @@
         "h": 3,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 3
       },
       "id": 16,
       "links": [],
@@ -138,181 +319,6 @@
       "type": "stat"
     },
     {
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": null
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 0,
-        "y": 3
-      },
-      "id": 34,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "mean"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "pluginVersion": "7.0.3",
-      "targets": [
-        {
-          "expr": "rate(scheduler_done_items_total{kind=\"dl\"}[$interval]) * 3600",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "DLed / Hour",
-      "type": "stat"
-    },
-    {
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": null
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 8,
-        "y": 3
-      },
-      "id": 31,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "mean"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "pluginVersion": "7.0.3",
-      "targets": [
-        {
-          "expr": "rate(scheduler_done_items_total{kind=\"merge\"}[$interval]) * 3600",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Merged / Hour",
-      "type": "stat"
-    },
-    {
-      "datasource": null,
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": null
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 3
-      },
-      "id": 35,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "mean"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "pluginVersion": "7.0.3",
-      "targets": [
-        {
-          "expr": "rate(scheduler_done_items_total{kind=\"align\"}[$interval]) * 3600",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Aligned / Hour",
-      "type": "stat"
-    },
-    {
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -330,7 +336,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 6
       },
       "hiddenSeries": false,
       "id": 8,
@@ -426,7 +432,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 7
+        "y": 6
       },
       "hiddenSeries": false,
       "id": 10,
@@ -505,6 +511,180 @@
       }
     },
     {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "id": 37,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "count (node_cpu_seconds_total{job=\"ec2\",mode=\"user\"})",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Total vCPUs",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "id": 38,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "sum(node_memory_MemTotal_bytes{job=\"ec2\"})",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Total Memory",
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "id": 39,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.3",
+      "targets": [
+        {
+          "expr": "sum(node_filesystem_size_bytes{mountpoint=\"/\"})",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Total Disk",
+      "type": "stat"
+    },
+    {
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -522,7 +702,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 15
+        "y": 17
       },
       "hiddenSeries": false,
       "id": 2,
@@ -562,7 +742,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "CPU Used Percent",
+      "title": "Average CPU Used Percent",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -619,7 +799,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 15
+        "y": 17
       },
       "hiddenSeries": false,
       "id": 4,
@@ -648,7 +828,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg by (autoscaling_group) ( 1 - (node_memory_MemAvailable_bytes{instance=~\"$instance\"}/node_memory_MemTotal_bytes{instance=~\"$instance\"} ) )",
+          "expr": "max by (autoscaling_group) ( 1 - (node_memory_MemAvailable_bytes{instance=~\"$instance\"}/node_memory_MemTotal_bytes{instance=~\"$instance\"} ) )",
           "format": "time_series",
           "interval": "",
           "legendFormat": "{{autoscaling_group}}",
@@ -659,7 +839,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Memory Used Percent",
+      "title": "Max Memory Used Percent",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -716,7 +896,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 15
+        "y": 17
       },
       "hiddenSeries": false,
       "id": 6,
@@ -745,7 +925,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg by (autoscaling_group) (1- (node_filesystem_avail_bytes{instance=~\"$instance\"} / node_filesystem_size_bytes{instance=~\"$instance\"}))",
+          "expr": "max by (autoscaling_group) (1- (node_filesystem_avail_bytes{instance=~\"$instance\"} / node_filesystem_size_bytes{instance=~\"$instance\"}))",
           "interval": "",
           "legendFormat": "{{autoscaling_group}}",
           "refId": "A"
@@ -755,7 +935,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Disk Used Percent",
+      "title": "Max Disk Used Percent",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -802,7 +982,23 @@
       "datasource": null,
       "fieldConfig": {
         "defaults": {
-          "custom": {}
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -812,11 +1008,12 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 25
       },
       "hiddenSeries": false,
       "id": 26,
       "legend": {
+        "alignAsTable": false,
         "avg": false,
         "current": false,
         "max": false,
@@ -832,6 +1029,7 @@
         "dataLinks": []
       },
       "percentage": false,
+      "pluginVersion": "7.0.3",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -908,7 +1106,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 25
       },
       "hiddenSeries": false,
       "id": 27,
@@ -987,7 +1185,7 @@
       }
     }
   ],
-  "refresh": "30s",
+  "refresh": false,
   "schemaVersion": 25,
   "style": "dark",
   "tags": [],
@@ -1074,7 +1272,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
@@ -1093,5 +1291,5 @@
   "timezone": "",
   "title": "Serratus",
   "uid": "-jAPZ9rWzthtaoeueue",
-  "version": 4
+  "version": 14
 }

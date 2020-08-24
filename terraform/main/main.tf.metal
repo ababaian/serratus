@@ -102,6 +102,10 @@ module "scheduler" {
   instance_type      = "m5.8xlarge"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
+
+  # https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server
+  pg_shared_buffers  = "32GB" # 1/4 of RAM
+  pg_effective_cache = "96GB" # 3/4 of RAM
 }
 
 // Cluster monitor
