@@ -31,6 +31,14 @@ variable "security_group_ids" {
   default = []
 }
 
+variable "pg_shared_buffers" {
+  type = string
+}
+
+variable "pg_effective_cache" {
+  type = string
+}
+
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["self"]
@@ -107,6 +115,9 @@ resource aws_ecs_task_definition "scheduler" {
     aws_region        = data.aws_region.current.name
     log_group         = aws_cloudwatch_log_group.scheduler.name
     pg_password       = random_password.pg_password.result
+
+    pg_shared_buffers  = var.pg_shared_buffers
+    pg_effective_cache = var.pg_effective_cache
   })
   task_role_arn = module.ecs_cluster.task_role.arn
   network_mode  = "host"
