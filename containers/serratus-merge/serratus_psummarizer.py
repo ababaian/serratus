@@ -315,8 +315,15 @@ def Report():
 		Rep(s)
 
 for Line in sys.stdin:
-	if fEcho != None:
-		fEcho.write(Line)
+	if Line.startswith("@diamond@"):
+		Line = Line[9:]
+		if fEcho != None:
+			fEcho.write(Line)
+	else:
+		Prefix = "sumbler:%s " % SRA
+		Line = Prefix + Line
+		fRep.write(Line)
+		continue
 	DoAln()
 	AlnCount += 1
 	if AlnCount >= MAXALNS or ExceptCount >= MAXX:
