@@ -126,13 +126,13 @@ module "download" {
   source = "../worker"
 
   desired_size = 0
-  max_size     = 200
+  max_size     = 5000
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
-  instance_type = "r5.large" // Mitigate the memory leak in fastq-dump
-  volume_size   = 250        // Mitigate the storage leak in fastq-dump
+  instance_type = "r5.xlarge" // Mitigate the memory leak in fastq-dump
+  volume_size   = 100         // Mitigate the storage leak in fastq-dump
   spot_price    = 0.10
 
   s3_bucket = module.work_bucket.name
@@ -150,11 +150,11 @@ module "align" {
   source = "../worker"
 
   desired_size       = 0
-  max_size           = 500
+  max_size           = 10000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "c5.large" # c5.large
-  volume_size        = 10
+  instance_type      = "c5.xlarge" # c5.large
+  volume_size        = 12
   spot_price         = 0.10
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "fq-blocks"
@@ -163,7 +163,7 @@ module "align" {
   image_name         = "serratus-align"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${module.work_bucket.name} -a bowtie2"
+  options            = "-k ${module.work_bucket.name} -a diamond"
 }
 
 //Serratus-merge
@@ -178,17 +178,12 @@ module "merge" {
   volume_size        = 150 // prevent disk overflow via samtools cat
   spot_price         = 0.05
   s3_bucket          = module.work_bucket.name
-  // TODO: Add delete permissions for *-blocks
-  // to merge as redundant delete of completed data
   s3_delete_prefix  = "bam-blocks"
   s3_prefix         = "out"
   dockerhub_account = var.dockerhub_account
   image_name        = "serratus-merge"
   key_name          = var.key_name
   scheduler         = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  // TODO: the credentials are not properly set-up to
-  //       upload to serratus-public, requires a *Object policy
-  //       on the bucket.
   options = "-k ${module.work_bucket.name} -b ${var.output_bucket}"
 }
 
