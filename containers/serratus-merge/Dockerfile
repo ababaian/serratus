@@ -63,7 +63,7 @@ COPY serratus-merge/*py ./
 # sumbler exe
 #RUN aws s3 cp s3://serratus-public/sumbler/sumbler ./ \
 # && chmod 755 sumbler
-RUN curl https://serratus-public.s3.amazonaws.com/sumbler/sumbler > \
+RUN curl https://serratus-public.s3.amazonaws.com/var/sumbler > \
   ./sumbler \
  && chmod 755 sumbler
 
