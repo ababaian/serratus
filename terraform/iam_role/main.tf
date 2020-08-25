@@ -6,8 +6,8 @@
 
 // VARIABLES ==============================================
 
-variable "name" { 
-  type = string
+variable "name" {
+  type        = string
   description = "Descriptive name used to identify components"
 }
 

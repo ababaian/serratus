@@ -16,8 +16,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": 1,
-  "iteration": 1592096748370,
+  "id": 2,
+  "iteration": 1592122343709,
   "links": [],
   "panels": [
     {
@@ -35,7 +35,7 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 0,
         "y": 0
@@ -131,7 +131,7 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 12,
         "y": 0
@@ -227,10 +227,10 @@
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 8,
         "x": 0,
-        "y": 8
+        "y": 6
       },
       "hiddenSeries": false,
       "id": 2,
@@ -364,10 +364,10 @@
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 8,
         "x": 8,
-        "y": 8
+        "y": 6
       },
       "hiddenSeries": false,
       "id": 12,
@@ -393,7 +393,7 @@
       "renderer": "flot",
       "repeat": null,
       "repeatDirection": "h",
-      "repeatIteration": 1592096748370,
+      "repeatIteration": 1592122343709,
       "repeatPanelId": 2,
       "scopedVars": {
         "asg": {
@@ -503,10 +503,10 @@
       "fill": 0,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 8,
         "x": 16,
-        "y": 8
+        "y": 6
       },
       "hiddenSeries": false,
       "id": 13,
@@ -532,7 +532,7 @@
       "renderer": "flot",
       "repeat": null,
       "repeatDirection": "h",
-      "repeatIteration": 1592096748370,
+      "repeatIteration": 1592122343709,
       "repeatPanelId": 2,
       "scopedVars": {
         "asg": {
@@ -643,9 +643,9 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 8,
         "x": 0,
-        "y": 16
+        "y": 13
       },
       "hiddenSeries": false,
       "id": 4,
@@ -674,7 +674,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(scheduler_request_latency_seconds_sum[1m]) / rate(scheduler_request_latency_seconds_count[1m])",
+          "expr": "rate(scheduler_request_latency_seconds_sum[1m]) / rate(scheduler_request_latency_seconds_count[1m]) * 1000.",
           "interval": "",
           "legendFormat": "{{method}} {{endpoint}}",
           "refId": "A"
@@ -684,7 +684,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Average Request Latency [seconds]",
+      "title": "Average Request Latency [ms]",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -705,7 +705,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -724,41 +724,6 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                0.8
-              ],
-              "type": "gt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "5m",
-        "frequency": "1m",
-        "handler": 1,
-        "name": "Total Request Time [per second] alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -774,9 +739,9 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
+        "w": 8,
+        "x": 8,
+        "y": 13
       },
       "hiddenSeries": false,
       "id": 6,
@@ -811,19 +776,11 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 0.8
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Total Request Time [per second]",
+      "title": "Total Request Time [s/s]",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -844,7 +801,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -878,9 +835,9 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
+        "w": 8,
+        "x": 16,
+        "y": 13
       },
       "hiddenSeries": false,
       "id": 7,
@@ -940,7 +897,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -1020,7 +977,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
@@ -1040,5 +997,5 @@
   "timezone": "",
   "title": "Serratus Scheduler",
   "uid": "t_HhOqeZk",
-  "version": 1
+  "version": 6
 }
