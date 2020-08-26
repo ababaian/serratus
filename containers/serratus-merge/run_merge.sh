@@ -164,7 +164,7 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   export SUMZER_THROWX="NO"
 
   # usage: sumbler -prod /dev/stdin -db OTU.afa -output out.sumbler
-  psumbler="./sumbler -prod /dev/stdin -db /home/serratus/$GENOME.msa -output $SRA.sumbler"
+  psumbler="/home/serratus/sumbler -prod /dev/stdin -db /home/serratus/$GENOME.msa -output $SRA.sumbler"
 
   cat $BAMREGEX \
     | $psumbler \
