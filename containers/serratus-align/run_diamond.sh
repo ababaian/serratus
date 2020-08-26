@@ -169,7 +169,7 @@ fi
 #   -k 1 \
 #   -p 1 \
 #   -b 0.2 \
-#   -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue bitscore mismatch gapopen \
+#   -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue btop cigar qstrand qseq sseq \
 #   > tmp.bam
 ## 3357 Alignments
 ## 7cd7eefa94d29ef9f1e3d588dc79713b  tmp.bam
@@ -183,7 +183,7 @@ fi
 
 cat *.fq* |\
 diamond blastx \
-  -d "$GENOME".dmnd --sensitive \
+  -d "$GENOME".dmnd \ 
   --unal 0 \
   -k 1 \
   -p 1 \
