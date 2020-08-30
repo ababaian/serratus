@@ -173,18 +173,15 @@ def DoAln_():
 	global SumReadLength
 
 	Fields = Line.split()
-	if len(Fields) < 10:
-		print >> sys.stderr, len(Fields), Fields, Line
-		assert False
-
-	RefLabel = Fields[1]
-#	QLo = int(Fields[2])
-#	QHi = int(Fields[3])
-	QL = int(Fields[4])
-	TLo = int(Fields[5])
-	THi = int(Fields[6])
-	TL = int(Fields[7])
-	PctId = float(Fields[8])
+	try:
+		RefLabel = Fields[1]
+		QL = int(Fields[4])
+		TLo = int(Fields[5])
+		THi = int(Fields[6])
+		TL = int(Fields[7])
+		PctId = float(Fields[8])
+	except:
+		return
 
 	Acc = RefLabel
 	Family = GetFamily(RefLabel)
