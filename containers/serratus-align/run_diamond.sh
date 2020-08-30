@@ -183,12 +183,12 @@ fi
 
 cat *.fq* |\
 diamond blastx \
-  -d "$GENOME".dmnd \ 
+  -d "$GENOME".dmnd \
   --unal 0 \
   -k 1 \
   -p 1 \
   -b 0.4 \
-  -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue btop cigar qstrand qseq sseq \
+  -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue btop cigar qstrand full_qseq sseq \
   > "$OUTNAME".bam
 
   # --unal 0 Do not report unmapped reads
