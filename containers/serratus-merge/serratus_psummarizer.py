@@ -30,6 +30,17 @@ ERR2756788.4545 Coronaviridae.repl1a.1  152     298     299     1230    1278    
 ERR2756788.4927 Adenoviridae.Q9WF13.1   238     158     301     97      123     485     63.0    3.0e-06
 '''
 
+'''
+# diamond -f command: "-f 6 qseqid  qstart qend qlen qstrand sseqid  sstart send slen pident evalue cigar qseq_translated full_qseq full_qseq_mate"
+#
+#        ReadLabel QLo QHi   QL    .                                         RefLabel  TLo THi  TL PctId  Evalue     .        .      .     .
+#                0   1   2    3    4                                                5    6   7   8     9      10    11       12     13    14
+ERR2756788.3010670 170   3  302    - pisu.Coronaviridae.bat_alphacoronavirus:QLE11824  497 552 553  92.9 5.8e-30   56M TPSDTQGL.. AACT.. CAT..
+ERR2756788.3061525 295 137  299    -         pisu.unc0998.unidentified_virus:APB88808   89 141 424  56.6 1.3e-14   53M LFGLDELH.. CTAA.. TAC..
+#                                QSt                                                                             CIGAR    TrSeq     R1    R2   
+
+'''
+
 def CmpKey__(i):
 	global d, Keys
 
@@ -177,14 +188,14 @@ def DoAln_():
 		print >> sys.stderr, len(Fields), Fields, Line
 		assert False
 
-	RefLabel = Fields[1]
-#	QLo = int(Fields[2])
-#	QHi = int(Fields[3])
-	QL = int(Fields[4])
-	TLo = int(Fields[5])
-	THi = int(Fields[6])
-	TL = int(Fields[7])
-	PctId = float(Fields[8])
+	RefLabel = Fields[5]
+#	QLo = int(Fields[1])
+#	QHi = int(Fields[2])
+	QL = int(Fields[3])
+	TLo = int(Fields[6])
+	THi = int(Fields[7])
+	TL = int(Fields[8])
+	PctId = float(Fields[9])
 
 	Acc = RefLabel
 	Family = GetFamily(RefLabel)
@@ -248,16 +259,27 @@ def GetLine(Id):
 	if Alns > 0:
 		AvgCols = float(SumBases)/Alns
 
+#	NOTE: For RdRP Analysis output labels changed for clarity
+#   "Family" level changed to "Phylum"
+#         famcvg --> phycvg
+#            fam --> phy
+#   "Gene" level changed to "Family"
+#         gencvg --> famcvg
+#            gen --> fam
+#   "Sequence" level changed to "Virus"
+#         seqcvg --> vircvg
+#            seq --> vir
+
 	s = ""
 	if IsGene:
-		s += "gencvg=%s;" % Cartoon
-		s += "gen=%s;" % Id
-	elif IsFamily:
 		s += "famcvg=%s;" % Cartoon
 		s += "fam=%s;" % Id
+	elif IsFamily:
+		s += "phycvg=%s;" % Cartoon
+		s += "phy=%s;" % Id
 	else:
-		s += "seqcvg=%s;" % Cartoon
-		s += "seq=%s;" % Id
+		s += "vircvg=%s;" % Cartoon
+		s += "vir=%s;" % Id
 	s += "score=%.0f;" % Score
 	s += "pctid=%.0f;" % PctId
 	s += "alns=%.0f;" % Alns
