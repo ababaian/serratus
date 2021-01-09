@@ -5,7 +5,7 @@ FROM serratus-base:latest AS build_base
 ENV BOWTIEVERSION='2.4.1'
 ENV GATKVERSION='4.1.5.0'
 ENV BWAVERSION='0.7.17'
-ENV DIAMONDVERSION='0.9.35'
+ENV DIAMONDVERSION='2.0.6-dev'
 #ENV MBVERSION='1.5.0'
 
 
@@ -31,10 +31,15 @@ RUN mv bowtie2-"$BOWTIEVERSION"*/bowtie2* /usr/local/bin/ &&\
   rm -rf bowtie2-"$BOWTIEVERSION"*
 
 # DIAMOND ======================================
-RUN wget --quiet https://github.com/bbuchfink/diamond/releases/download/v"$DIAMONDVERSION"/diamond-linux64.tar.gz &&\
-  tar -xvf diamond-linux64.tar.gz &&\
-  rm    diamond-linux64.tar.gz &&\
-  mv    diamond /usr/local/bin/
+# RUN wget --quiet https://github.com/bbuchfink/diamond/releases/download/v"$DIAMONDVERSION"/diamond-linux64.tar.gz &&\
+#   tar -xvf diamond-linux64.tar.gz &&\
+#   rm    diamond-linux64.tar.gz &&\
+#   mv    diamond /usr/local/bin/
+
+# Use serratus-built dev version
+RUN wget --quiet https://serratus-public.s3.amazonaws.com/bin/diamond &&\
+    chmod 755 diamond &&\
+    mv    diamond /usr/local/bin/
 
 # BWA ===========================================
 RUN wget https://github.com/lh3/bwa/releases/download/v"$BWAVERSION"/bwa-"$BWAVERSION".tar.bz2 &&\
