@@ -181,14 +181,20 @@ fi
 # -p threads
 # -b block-size
 
+
+
 cat *.fq* |\
 diamond blastx \
   -d "$GENOME".dmnd \
-  --unal 0 \
-  -k 1 \
-  -p 1 \
-  -b 0.4 \
-  -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue btop cigar qstrand full_qseq sseq \
+  --mmap-target-index \
+  --target-indexed \
+  --masking 0 \
+  --mid-sensitive -s 1 \
+  -c1 -p1 -k1 -b 0.75 \
+  -f 6 qseqid  qstart qend qlen qstrand \
+       sseqid  sstart send slen \
+       pident evalue cigar \
+       qseq_translated full_qseq full_qseq_mate \
   > "$OUTNAME".bam
 
   # --unal 0 Do not report unmapped reads
