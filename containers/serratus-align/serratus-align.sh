@@ -355,7 +355,7 @@ aws s3 cp --only-show-errors $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
 # Tell the scheduler we're done
 curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID?state=done" > /dev/null
 
-cd $BASEDIR; rm -rf $WORKDIR/*
+cd $BASEDIR; rm -rf $WORKDIR
 
 # Free up fq-blocks from s3
 if [[ "$PAIRED" = true ]]; then
