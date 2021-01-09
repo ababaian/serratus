@@ -11,6 +11,11 @@ SUMZER_COMMENT = os.getenv("SUMZER_COMMENT", None)
 
 CVG_BINS = 25
 MINCVGPCT = 50
+MAX_EVALUE = 1e-5
+RDRP_LENGTH = 500
+MIN_DEPTH_LOW = 2
+MIN_DEPTH_HIGH = 5
+MIN_DEPTH_HIGH_DIVERGENCE = 0.5
 
 ReportFileName = sys.argv[1]
 EchoFileName = None
@@ -196,6 +201,9 @@ def DoAln_():
 	THi = int(Fields[7])
 	TL = int(Fields[8])
 	PctId = float(Fields[9])
+	Evalue = float(Fields[10])
+	if Evalue > MAX_EVALUE:
+		return
 
 	Acc = RefLabel
 	Family = GetFamily(RefLabel)
@@ -255,9 +263,11 @@ def GetLine(Id):
 	IsGene = (Id in Genes)
 	IsFamily = (Id in Families)
 
+	Depth = 0
 	AvgCols = 0
 	if Alns > 0:
 		AvgCols = float(SumBases)/Alns
+		Depth = float(SumBases)/RDRP_LENGTH
 
 #	NOTE: For RdRP Analysis output labels changed for clarity
 #   "Family" level changed to "Phylum"
@@ -270,6 +280,24 @@ def GetLine(Id):
 #         seqcvg --> vircvg
 #            seq --> vir
 
+	Cat = None
+	if PctId < 50 and Depth > MIN_DEPTH_HIGH_DIVERGENCE:
+		Cat = "H"
+	elif Depth >= MIN_DEPTH_HIGH:
+		if PctId > 95:
+			Cat = "K"	# Low-coverage known
+		elif PctId > 90:
+			Cat = "P"	# Low-coverage possible novel
+		else:
+			Cat = "N"	# Low-coverage novel
+	elif Depth >= MIN_DEPTH_LOW:
+		if PctId > 95:
+			Cat = "k"	# Low-coverage known
+		elif PctId > 90:
+			Cat = "p"	# Low-coverage possible novel
+		else:
+			Cat = "n"	# Low-coverage novel
+
 	s = ""
 	if IsGene:
 		s += "famcvg=%s;" % Cartoon
@@ -280,7 +308,10 @@ def GetLine(Id):
 	else:
 		s += "vircvg=%s;" % Cartoon
 		s += "vir=%s;" % Id
+	if Cat != None:
+		s += "cat=%s;" % Cat
 	s += "score=%.0f;" % Score
+	s += "depth=%.1f;" % Depth
 	s += "pctid=%.0f;" % PctId
 	s += "alns=%.0f;" % Alns
 	s += "avgcols=%.0f;" % AvgCols
