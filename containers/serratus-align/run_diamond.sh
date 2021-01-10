@@ -134,9 +134,11 @@ then
     usage
   else
     paired_run="F"
+    FQ_IN="$FQ3"
   fi
 else
   paired_run="T"
+  FQ_IN="$FQ1 $FQ2"
 fi
 
 # Required parameters
@@ -181,10 +183,8 @@ fi
 # -p threads
 # -b block-size
 
-
-
-cat *.fq* |\
 diamond blastx \
+  -q $FQ_IN \
   -d "$GENOME".dmnd \
   --mmap-target-index \
   --target-indexed \
