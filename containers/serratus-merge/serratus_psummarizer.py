@@ -284,16 +284,16 @@ def GetLine(Id):
 	if PctId < 50 and Depth > MIN_DEPTH_HIGH_DIVERGENCE:
 		Cat = "H"
 	elif Depth >= MIN_DEPTH_HIGH:
-		if PctId > 95:
+		if PctId > 90:
 			Cat = "K"	# Low-coverage known
-		elif PctId > 90:
+		elif PctId > 85:
 			Cat = "P"	# Low-coverage possible novel
 		else:
 			Cat = "N"	# Low-coverage novel
 	elif Depth >= MIN_DEPTH_LOW:
-		if PctId > 95:
+		if PctId > 90:
 			Cat = "k"	# Low-coverage known
-		elif PctId > 90:
+		elif PctId > 85:
 			Cat = "p"	# Low-coverage possible novel
 		else:
 			Cat = "n"	# Low-coverage novel
