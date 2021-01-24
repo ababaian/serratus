@@ -11,6 +11,7 @@ data/sra/*
 notebook/*/*
 
 # Ignore wiki sub-repo ===================================
+wiki
 wiki/*
 
 # AWS gitignore ===========================================
