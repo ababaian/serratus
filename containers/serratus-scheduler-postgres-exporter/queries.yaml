@@ -83,6 +83,25 @@ pg_stat_user_tables:
     - autoanalyze_count:
         usage: "COUNTER"
         description: "Number of times this table has been analyzed by the autovacuum daemon"
+    
+pg_stat_user_indexes:
+  query: "SELECT relname, indexrelname, idx_scan, idx_tup_read, idx_tup_fetch from pg_stat_user_indexes;"
+  metrics:
+    - relname:
+        usage: "LABEL"
+        description: "Name of this table"
+    - indexrelname:
+        usage: "LABEL"
+        description: "Name of this index"
+    - idx_scan:
+        usage: "COUNTER"
+        description: "Number of index scans"
+    - idx_tup_read:
+        usage: "COUNTER"
+        description: "Number of tuple reads"
+    - idx_tup_fetch:
+        usage: "COUNTER"
+        description: "Number of tuple fetches"
 
 pg_statio_user_tables:
   query: "SELECT current_database() datname, schemaname, relname, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit, tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables"
@@ -225,3 +244,15 @@ scheduler_block_state:
         usage: "GAUGE"
         description: "Number of blocks in this state"
 
+pg_relation:
+  query: "SELECT relname, pg_relation_size(C.oid) as size, pg_total_relation_size(C.oid) AS total_size FROM pg_class C LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) WHERE nspname = 'public'"
+  metrics:
+  - relname:
+      usage: LABEL
+      description: "Name of relation"
+  - size:
+      usage: "GAUGE"
+      description: "pg_relation_size()"
+  - total_size:
+      usage: "GAUGE"
+      description: "pg_relation_total_size()"

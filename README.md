@@ -2,7 +2,8 @@
 
 Serratus is a collaborative Open Science project for ultra-rapid discovery of known and unknown coronaviruses in response to the COVID-19 pandemic.
 
-![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash.png)
+#### _Preprint:_ [Petabase-scale sequence alignment catalyses viral discovery](https://www.biorxiv.org/content/10.1101/2020.08.07.241729v1)
+[![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash_xmas.png)](https://www.biorxiv.org/content/10.1101/2020.08.07.241729v1)
 
 ### Background
 While there is an intense research effort to sequence and analyze SARS-CoV-2 isolates for tracking real-time virus evolution, our understanding of the virus's evolutionary origins is limited by incomplete genomic characterization of other members of the Coronaviridae (CoV) and related families.

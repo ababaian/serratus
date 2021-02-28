@@ -31,6 +31,14 @@ variable "security_group_ids" {
   default = []
 }
 
+variable "pg_shared_buffers" {
+  type = string
+}
+
+variable "pg_effective_cache" {
+  type = string
+}
+
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["self"]
@@ -49,10 +57,10 @@ data "aws_region" "current" {}
 module "ecs_cluster" {
   source = "../ecs_cluster"
 
-  name = "scheduler"
-  instance_type = var.instance_type
+  name               = "scheduler"
+  instance_type      = var.instance_type
   security_group_ids = var.security_group_ids
-  key_name = var.key_name
+  key_name           = var.key_name
 }
 
 # Give the scheduler an Elastic-IP so we can destroy and recreate it without
@@ -62,8 +70,8 @@ resource "aws_eip" "sch" {
   vpc      = true
 
   tags = {
-    "project": "serratus"
-    "component": "serratus-scheduler"
+    "project" : "serratus"
+    "component" : "serratus-scheduler"
   }
 }
 
@@ -95,36 +103,39 @@ resource "aws_cloudwatch_log_group" "scheduler" {
 
 
 resource "random_password" "pg_password" {
-  length = 16
+  length  = 16
   special = false
 }
 
 resource aws_ecs_task_definition "scheduler" {
   family = "scheduler"
   container_definitions = templatefile("../scheduler/scheduler-task-definition.json", {
-    dockerhub_account  = var.dockerhub_account
-    sched_port = var.scheduler_port,
-    aws_region = data.aws_region.current.name
-    log_group  = aws_cloudwatch_log_group.scheduler.name
-    pg_password = random_password.pg_password.result
+    dockerhub_account = var.dockerhub_account
+    sched_port        = var.scheduler_port,
+    aws_region        = data.aws_region.current.name
+    log_group         = aws_cloudwatch_log_group.scheduler.name
+    pg_password       = random_password.pg_password.result
+
+    pg_shared_buffers  = var.pg_shared_buffers
+    pg_effective_cache = var.pg_effective_cache
   })
   task_role_arn = module.ecs_cluster.task_role.arn
-  network_mode = "host"
+  network_mode  = "host"
 
   volume {
     name = "postgres-data"
 
     docker_volume_configuration {
-      scope = "shared"
+      scope         = "shared"
       autoprovision = true
-      driver = "local"
+      driver        = "local"
     }
   }
 }
 
 resource aws_ecs_service "scheduler" {
-  name = "serratus-scheduler"
-  cluster = module.ecs_cluster.cluster.id
+  name            = "serratus-scheduler"
+  cluster         = module.ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.scheduler.arn
 
   # TODO: Allow this to scale-out to many instances.

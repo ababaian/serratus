@@ -12,14 +12,14 @@ variable "aws_region" {
 }
 
 variable "dl_size" {
-  type    = number
-  default = 0
+  type        = number
+  default     = 0
   description = "Default number of downloader nodes (ASG)"
 }
 
 variable "align_size" {
-  type    = number
-  default = 0
+  type        = number
+  default     = 0
   description = "Default number of aligner nodes (ASG)"
 }
 
@@ -38,14 +38,22 @@ variable "dockerhub_account" {
 }
 
 variable "scheduler_port" {
-  type  = number
+  type    = number
   default = 8000
+}
+
+variable "output_bucket" {
+  type = string
+}
+
+variable "metrics_ip" {
+  type = string
 }
 
 // PROVIDER/AWS ##############################
 provider "aws" {
-  version     = "~> 2.49"
-  region      = var.aws_region
+  version = "~> 2.49"
+  region  = var.aws_region
 }
 
 provider "local" {
@@ -81,67 +89,72 @@ resource "aws_security_group" "internal" {
 
 // Working S3 storage for Serratus
 module "work_bucket" {
-  source   = "../bucket"
+  source = "../bucket"
 
   prefixes = ["fq-blocks", "bam-blocks", "out"]
 }
 
 // Cluster scheduler and task manager
 module "scheduler" {
-  source             = "../scheduler"
-  
+  source = "../scheduler"
+
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
-  instance_type      = "c5.large"
+  instance_type      = "m5.large"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
+
+  # https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server
+  pg_shared_buffers  = "2GB" # 1/4 of RAM
+  pg_effective_cache = "6GB" # 3/4 of RAM
 }
 
 // Cluster monitor
 module "monitoring" {
-  source             = "../monitoring"
+  source = "../monitoring"
 
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
+  metrics_ip         = var.metrics_ip
   dockerhub_account  = var.dockerhub_account
   instance_type      = "r5.large"
 }
 
 // Serratus-dl
 module "download" {
-  source             = "../worker"
+  source = "../worker"
 
-  desired_size       = 0
-  max_size           = 200
+  desired_size = 0
+  max_size     = 5000
 
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
 
-  instance_type      = "r5.large" // Mitigate the memory leak in fastq-dump
-  volume_size        = 250 // Mitigate the storage leak in fastq-dump
-  spot_price         = 0.10
+  instance_type = "r5.xlarge" // Mitigate the memory leak in fastq-dump
+  volume_size   = 100         // Mitigate the storage leak in fastq-dump
+  spot_price    = 0.10
 
-  s3_bucket          = module.work_bucket.name
-  s3_prefix          = "fq-blocks"
+  s3_bucket = module.work_bucket.name
+  s3_prefix = "fq-blocks"
 
-  image_name         = "serratus-dl"
-  dockerhub_account  = var.dockerhub_account
-  key_name           = var.key_name
-  scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${module.work_bucket.name}"
+  image_name        = "serratus-dl"
+  dockerhub_account = var.dockerhub_account
+  key_name          = var.key_name
+  scheduler         = "${module.scheduler.public_dns}:${var.scheduler_port}"
+  options           = "-k ${module.work_bucket.name}"
 }
 
 // Serratus-align
 module "align" {
-  source             = "../worker"
+  source = "../worker"
 
   desired_size       = 0
-  max_size           = 500
+  max_size           = 10000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
-  instance_type      = "c5.large" # c5.large
-  volume_size        = 10
+  instance_type      = "c5.xlarge" # c5.large
+  volume_size        = 12
   spot_price         = 0.10
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "fq-blocks"
@@ -150,12 +163,12 @@ module "align" {
   image_name         = "serratus-align"
   key_name           = var.key_name
   scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  options            = "-k ${module.work_bucket.name} -a bowtie2"
+  options            = "-k ${module.work_bucket.name} -a diamond"
 }
 
 //Serratus-merge
 module "merge" {
-  source             = "../worker"
+  source = "../worker"
 
   desired_size       = 0
   max_size           = 50
@@ -165,36 +178,31 @@ module "merge" {
   volume_size        = 150 // prevent disk overflow via samtools cat
   spot_price         = 0.05
   s3_bucket          = module.work_bucket.name
-  // TODO: Add delete permissions for *-blocks
-  // to merge as redundant delete of completed data
-  s3_delete_prefix   = "bam-blocks"
-  s3_prefix          = "out"
-  dockerhub_account  = var.dockerhub_account
-  image_name         = "serratus-merge"
-  key_name           = var.key_name
-  scheduler          = "${module.scheduler.public_dns}:${var.scheduler_port}"
-  // TODO: the credentials are not properly set-up to
-  //       upload to serratus-public, requires a *Object policy
-  //       on the bucket.
-  options            = "-k ${module.work_bucket.name} -b ${var.output_bucket}"
+  s3_delete_prefix  = "bam-blocks"
+  s3_prefix         = "out"
+  dockerhub_account = var.dockerhub_account
+  image_name        = "serratus-merge"
+  key_name          = var.key_name
+  scheduler         = "${module.scheduler.public_dns}:${var.scheduler_port}"
+  options = "-k ${module.work_bucket.name} -b ${var.output_bucket}"
 }
 
 // RESOURCES ##############################
 // Controller scripts created locally
 
 resource "local_file" "hosts" {
-  filename = "${path.module}/serratus-hosts"
+  filename        = "${path.module}/serratus-hosts"
   file_permission = 0666
-  content = <<-EOF
+  content         = <<-EOF
     aws_monitor ${module.monitoring.public_dns}
     aws_scheduler ${module.scheduler.public_dns}
   EOF
 }
 
 resource "local_file" "create_tunnel" {
-  filename = "${path.module}/create_tunnels.sh"
+  filename        = "${path.module}/create_tunnels.sh"
   file_permission = 0777
-  content = <<-EOF
+  content         = <<-EOF
     #!/bin/bash
     set -eu
     ssh -Nf -L 3000:localhost:3000 -L 9090:localhost:9090 ec2-user@${module.monitoring.public_dns}
@@ -208,9 +216,9 @@ resource "local_file" "create_tunnel" {
 }
 
 resource "local_file" "upload_sra" {
-  filename = "${path.module}/uploadSRA.sh"
+  filename        = "${path.module}/uploadSRA.sh"
   file_permission = 0777
-  content = <<-EOF
+  content         = <<-EOF
     #!/bin/bash
     # =====================================
     # Serratus - uploadSRA.sh

@@ -166,7 +166,7 @@ if [ "$MERGE_ARGS" = "protein" ]; then
   # usage: sumbler -prod /dev/stdin -db OTU.afa -output out.sumbler
   #psumbler="/home/serratus/sumbler -prod /dev/stdin -db /home/serratus/$GENOME.msa -output $SRA.sumbler"
   #| $psumbler \
-   
+  
   cat $BAMREGEX \
     | $psummarizer \
     | gzip \

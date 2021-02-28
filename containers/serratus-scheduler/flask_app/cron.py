@@ -173,9 +173,16 @@ def check_and_clear(instances, table, active_state, new_state, name):
     session = db.get_session()
     missing_instances = set()
 
-    accessions = (
-        session.query(table).filter(table.state == active_state).with_for_update().all()
-    )
+    # Don't lock these rows when loading them, even though we're
+    # planning to update them.  The reasoning is:
+    #  1. This would involve locking every row in an active state.  We
+    #     encountered problems in the past when locking around 200k rows.
+    #  2. In theory these rows should not be updated from anywhere.  We check
+    #     that the instance that created them is gone, so these are orphans.
+    #     Admittedly this is a fragile assumption, but at the moment the only
+    #     code path that looks at "aligning/merging/splitting" rows are the
+    #     `finish_*_job()` functions in jobs.py.
+    accessions = session.query(table).filter(table.state == active_state).all()
 
     count = 0
     for accession in accessions:
