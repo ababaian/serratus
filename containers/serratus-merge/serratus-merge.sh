@@ -208,10 +208,10 @@ if [ ! -f "$BASEDIR/$GENOME.sumzer.tsv" ]; then
 fi
 
 # Download pan-proteome MSA for sumbler
-ln -s $BASEDIR/sumbler $WORKDIR/sumbler
-if [ ! -f "$BASEDIR/$GENOME.msa" ]; then
-  aws s3 cp --only-show-errors "s3://serratus-public/seq/$GENOME/$GENOME.msa" $BASEDIR/
-fi
+#ln -s $BASEDIR/sumbler $WORKDIR/sumbler
+#if [ ! -f "$BASEDIR/$GENOME.msa" ]; then
+#  aws s3 cp --only-show-errors "s3://serratus-public/seq/$GENOME/$GENOME.msa" $BASEDIR/
+#fi
 
 cp $BASEDIR/"$GENOME".sumzer.tsv $WORKDIR/ # copy summarizer tables into runid
 

@@ -292,61 +292,124 @@ GENDIR=$BASEDIR/$GENOME
 cd "$WORKDIR"
 ln -s "$GENDIR"/* ./
 
-# DOWNlOAD FQ Files =======================================
+# # DOWNlOAD FQ Files (DISK MODE) ==========================
 
-if [[ "$PAIRED" = true ]]
-then
-  # Download Paired-end fq-block data..."
-  aws s3 cp --only-show-errors $S3_FQ1 ./
-  aws s3 cp --only-show-errors $S3_FQ2 ./
+# if [[ "$PAIRED" = true ]]
+# then
+#   # Download Paired-end fq-block data..."
+#   aws s3 cp --only-show-errors $S3_FQ1 ./
+#   aws s3 cp --only-show-errors $S3_FQ2 ./
 
-  FQ1=$(basename $S3_FQ1)
-  FQ2=$(basename $S3_FQ2)
+#   FQ1=$(basename $S3_FQ1)
+#   FQ2=$(basename $S3_FQ2)
 
-else
-  # Download unpaired fq-block data..."
-  aws s3 cp --only-show-errors $S3_FQ3 ./
+# else
+#   # Download unpaired fq-block data..."
+#   aws s3 cp --only-show-errors $S3_FQ3 ./
 
-  FQ3=$(basename $S3_FQ3)
-fi
+#   FQ3=$(basename $S3_FQ3)
+# fi
 
-# RUN ALIGN ===============================================
+# # RUN ALIGN ===============================================
+# if [ "$ALIGNER" = "bowtie2" ]
+# then 
+#   if [[ "$PAIRED" = true ]]
+#   then
+#     # Paired-end read alignment -----------------
+#     bash $BASEDIR/run_bowtie2.sh \
+#       -1 $FQ1 -2 $FQ2 -x $GENOME \
+#       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+#       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
+#   else
+#     # Single-end read alignment -----------------
+#     bash $BASEDIR/run_bowtie2.sh \
+#       -3 $FQ3 -x $GENOME \
+#       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+#       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
+#   fi
+# elif [ "$ALIGNER" = "diamond" ];
+# then
+#   if [[ "$PAIRED" = true ]]
+#   then
+#     # Paired-end read alignment -----------------
+#     bash $BASEDIR/run_diamond.sh \
+#       -1 $FQ1 -2 $FQ2 -x $GENOME \
+#       -o $SRA.$BL_N -p $THREADS
+#   else
+#     # Single-end read alignment -----------------
+#     bash $BASEDIR/run_diamond.sh \
+#       -3 $FQ3 -x $GENOME \
+#       -o $SRA.$BL_N -p $THREADS
+#   fi
 
+# else
+#   echo "Unknown aligner $ALIGNER"
+#   false # Call the error handler and exit
+# fi
+# # (DISK MODE END) =========================================
+
+
+# STREAM + ALIGN (NAMED PIPE MODE) ==========================
 if [ "$ALIGNER" = "bowtie2" ]
 then 
-  if [[ "$PAIRED" = true ]]
-  then
-    # Paired-end read alignment -----------------
-    bash $BASEDIR/run_bowtie2.sh \
-      -1 $FQ1 -2 $FQ2 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
-      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
-  else
-    # Single-end read alignment -----------------
-    bash $BASEDIR/run_bowtie2.sh \
-      -3 $FQ3 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
-      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
-  fi
+  echo "bowtie2 not yet supported with named pipes"
+  false
 elif [ "$ALIGNER" = "diamond" ];
 then
+
   if [[ "$PAIRED" = true ]]
   then
-    # Paired-end read alignment -----------------
-    bash $BASEDIR/run_diamond.sh \
-      -1 $FQ1 -2 $FQ2 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS
-  else
-    # Single-end read alignment -----------------
-    bash $BASEDIR/run_diamond.sh \
-      -3 $FQ3 -x $GENOME \
-      -o $SRA.$BL_N -p $THREADS
-  fi
+    # Download Paired-end fq-block data..."
+    FQ1=$(basename $S3_FQ1)
+    FQ2=$(basename $S3_FQ2)
+    mkfifo "$FQ1" "$FQ2"
 
+    aws s3 cp --only-show-errors $S3_FQ1 - > $FQ1 &
+    aws s3 cp --only-show-errors $S3_FQ2 - > $FQ2 &
+
+    # Paired-end read alignment -----------------
+    diamond blastx \
+      -q $FQ1 $FQ2 \
+      -d "$GENOME".dmnd \
+      --mmap-target-index \
+      --target-indexed \
+      --masking 0 \
+      --mid-sensitive -s 1 \
+      -c1 -p1 -k1 -b 0.75 \
+      -f 6 qseqid  qstart qend qlen qstrand \
+           sseqid  sstart send slen \
+           pident evalue cigar \
+           qseq_translated full_qseq full_qseq_mate \
+      > "$SRA.$BL_N".bam
+
+  else
+    # Download unpaired fq-block data..."
+    FQ3=$(basename $S3_FQ3)
+    mkfifo "$FQ3"
+
+    aws s3 cp --only-show-errors $S3_FQ3 - > $FQ3 &
+
+     # Single-end read alignment -----------------
+    diamond blastx \
+      -q $FQ3 \
+      -d "$GENOME".dmnd \
+      --mmap-target-index \
+      --target-indexed \
+      --masking 0 \
+      --mid-sensitive -s 1 \
+      -c1 -p1 -k1 -b 0.75 \
+      -f 6 qseqid  qstart qend qlen qstrand \
+           sseqid  sstart send slen \
+           pident evalue cigar \
+           qseq_translated full_qseq full_qseq_mate \
+      > "$SRA.$BL_N".bam
+  fi
 else
   echo "Unknown aligner $ALIGNER"
   false # Call the error handler and exit
 fi
+# (NAMED PIPE MODE END) ===================================
+
 
 # RUN UPLOAD ==============================================
 aws s3 cp --only-show-errors $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
@@ -355,7 +418,7 @@ aws s3 cp --only-show-errors $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
 # Tell the scheduler we're done
 curl -X POST -s "$SCHEDULER/jobs/align/$BLOCK_ID?state=done" > /dev/null
 
-cd $BASEDIR; rm -rf $WORKDIR/*
+cd $BASEDIR; rm -rf $WORKDIR
 
 # Free up fq-blocks from s3
 if [[ "$PAIRED" = true ]]; then

@@ -46,9 +46,15 @@ variable "output_bucket" {
   type = string
 }
 
+<<<<<<< HEAD
+//variable "metrics_ip" {
+//  type = string
+//}
+=======
 variable "metrics_ip" {
   type = string
 }
+>>>>>>> d0fff74d593fc0da9cf5adc7da41fbd26498cefc
 
 // PROVIDER/AWS ##############################
 provider "aws" {
@@ -100,6 +106,15 @@ module "scheduler" {
 
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
+<<<<<<< HEAD
+  instance_type      = "r5.2xlarge"
+  dockerhub_account  = var.dockerhub_account
+  scheduler_port     = var.scheduler_port
+
+  //# https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server
+  //pg_shared_buffers  = "2GB" # 1/4 of RAM
+  //pg_effective_cache = "6GB" # 3/4 of RAM
+=======
   instance_type      = "m5.large"
   dockerhub_account  = var.dockerhub_account
   scheduler_port     = var.scheduler_port
@@ -107,6 +122,7 @@ module "scheduler" {
   # https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server
   pg_shared_buffers  = "2GB" # 1/4 of RAM
   pg_effective_cache = "6GB" # 3/4 of RAM
+>>>>>>> d0fff74d593fc0da9cf5adc7da41fbd26498cefc
 }
 
 // Cluster monitor
@@ -116,9 +132,13 @@ module "monitoring" {
   security_group_ids = [aws_security_group.internal.id]
   key_name           = var.key_name
   scheduler_ip       = module.scheduler.private_ip
+<<<<<<< HEAD
+  //metrics_ip         = var.metrics_ip
+=======
   metrics_ip         = var.metrics_ip
+>>>>>>> d0fff74d593fc0da9cf5adc7da41fbd26498cefc
   dockerhub_account  = var.dockerhub_account
-  instance_type      = "r5.large"
+  instance_type      = "r5.xlarge"
 }
 
 // Serratus-dl
@@ -132,8 +152,13 @@ module "download" {
   security_group_ids = [aws_security_group.internal.id]
 
   instance_type = "r5.xlarge" // Mitigate the memory leak in fastq-dump
+<<<<<<< HEAD
+  volume_size   = 150         // Mitigate the storage leak in fastq-dump
+  spot_price    = 0.12
+=======
   volume_size   = 100         // Mitigate the storage leak in fastq-dump
   spot_price    = 0.10
+>>>>>>> d0fff74d593fc0da9cf5adc7da41fbd26498cefc
 
   s3_bucket = module.work_bucket.name
   s3_prefix = "fq-blocks"
@@ -153,9 +178,15 @@ module "align" {
   max_size           = 10000
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
+<<<<<<< HEAD
+  instance_type      = "c5n.large" # c5.large
+  volume_size        = 10
+  spot_price         = 0.08
+=======
   instance_type      = "c5.xlarge" # c5.large
   volume_size        = 12
   spot_price         = 0.10
+>>>>>>> d0fff74d593fc0da9cf5adc7da41fbd26498cefc
   s3_bucket          = module.work_bucket.name
   s3_delete_prefix   = "fq-blocks"
   s3_prefix          = "bam-blocks"
@@ -169,9 +200,12 @@ module "align" {
 //Serratus-merge
 module "merge" {
   source = "../worker"
+<<<<<<< HEAD
+=======
 
+>>>>>>> d0fff74d593fc0da9cf5adc7da41fbd26498cefc
   desired_size       = 0
-  max_size           = 50
+  max_size           = 1500
   dev_cidrs          = var.dev_cidrs
   security_group_ids = [aws_security_group.internal.id]
   instance_type      = "c5.large"
@@ -296,7 +330,6 @@ resource "local_file" "upload_sra" {
     echo " uploadSRA complete."
   EOF
 }
-
 
 // OUTPUT ##############################
 output "help" {

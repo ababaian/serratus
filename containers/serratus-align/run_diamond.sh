@@ -134,9 +134,11 @@ then
     usage
   else
     paired_run="F"
+    FQ_IN="$FQ3"
   fi
 else
   paired_run="T"
+  FQ_IN="$FQ1 $FQ2"
 fi
 
 # Required parameters
@@ -169,7 +171,7 @@ fi
 #   -k 1 \
 #   -p 1 \
 #   -b 0.2 \
-#   -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue bitscore mismatch gapopen \
+#   -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue btop cigar qstrand qseq sseq \
 #   > tmp.bam
 ## 3357 Alignments
 ## 7cd7eefa94d29ef9f1e3d588dc79713b  tmp.bam
@@ -181,14 +183,18 @@ fi
 # -p threads
 # -b block-size
 
-cat *.fq* |\
 diamond blastx \
-  -d "$GENOME".dmnd --sensitive \
-  --unal 0 \
-  -k 1 \
-  -p 1 \
-  -b 0.4 \
-  -f 6 qseqid sseqid qstart qend qlen sstart send slen pident evalue btop cigar qstrand qseq sseq \
+  -q $FQ_IN \
+  -d "$GENOME".dmnd \
+  --mmap-target-index \
+  --target-indexed \
+  --masking 0 \
+  --mid-sensitive -s 1 \
+  -c1 -p1 -k1 -b 0.75 \
+  -f 6 qseqid  qstart qend qlen qstrand \
+       sseqid  sstart send slen \
+       pident evalue cigar \
+       qseq_translated full_qseq full_qseq_mate \
   > "$OUTNAME".bam
 
   # --unal 0 Do not report unmapped reads
