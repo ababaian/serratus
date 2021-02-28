@@ -93,17 +93,17 @@ resource "aws_iam_role_policy_attachment" "instance_attachment" {
 }
 
 resource aws_instance "i" {
-  ami = data.aws_ami.ecs.id
-  instance_type = var.instance_type
+  ami                                  = data.aws_ami.ecs.id
+  instance_type                        = var.instance_type
   instance_initiated_shutdown_behavior = "terminate"
   vpc_security_group_ids               = var.security_group_ids
   key_name                             = var.key_name
   iam_instance_profile                 = aws_iam_instance_profile.p.name
 
   tags = {
-    "Name": "serratus-${var.name}"
-    "project": "serratus"
-    "component": "serratus-${var.name}"
+    "Name" : "serratus-${var.name}"
+    "project" : "serratus"
+    "component" : "serratus-${var.name}"
   }
 
   user_data = <<-EOF

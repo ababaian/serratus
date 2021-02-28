@@ -1,5 +1,13 @@
 """Master job scheduler.  Listens for requests from workers and feeds
 them information about work that needs doing."""
+
+# Monkey patches
+from gevent import monkey
+from psycogreen.gevent import patch_psycopg
+
+monkey.patch_all()
+patch_psycopg()
+
 import os
 import json
 import subprocess

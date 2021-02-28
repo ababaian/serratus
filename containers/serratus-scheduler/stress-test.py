@@ -7,6 +7,7 @@ import sys
 import queue
 import time
 
+import click
 import requests
 
 BLOCKS = 10
@@ -16,7 +17,20 @@ THREADS = 100
 def load_sch(sch, csv, lines):
     """Load some test data into the scheduler"""
     # Reset db
+    print("Resetting db...")
     requests.put("http://{}/db".format(sch))
+
+    # Reconfigure so that no real instances get started up.
+    config = {
+        "ALIGN_SCALING_MAX": 0,
+        "DL_SCALING_MAX": 0,
+        "MERGE_SCALING_MAX": 0,
+    }
+    print("Disabling ASG startup...")
+    requests.put("http://{}/config".format(sch), json=config)
+
+    # Load in the data
+    print("Loading data...")
     data = "\n".join(open(csv).readlines()[: lines + 1])
     requests.post("http://{}/jobs/add_sra_run_info/data.csv".format(sch), data=data)
 
@@ -47,11 +61,14 @@ def serratus_worker(sch, q, type_, params=()):
         )
 
 
-def main():
+@click.command()
+@click.argument("scheduler_url")
+@click.argument("csv")
+@click.argument("lines", type=int)
+def main(scheduler_url, csv, lines):
+    sch = scheduler_url
     # Load the scheduler
-    sch, csv, lines = sys.argv[1:]
-
-    load_sch(sch, csv, int(lines))
+    load_sch(sch, csv, lines)
 
     manager = Manager()
     dl_jobs = manager.list()
@@ -67,6 +84,7 @@ def main():
     # Create fake instances of all 3 types.
     procs = []
     for args in argses:
+        print("Running {}".format(args[2]))
         start = time.monotonic()
         for _ in range(THREADS):
             p = Process(target=serratus_worker, args=args)
@@ -88,6 +106,8 @@ def main():
     # Same jobs in all parts of the pipeline.
     assert set(dl_jobs) == set(al_jobs)
     assert set(dl_jobs) == set(mg_jobs)
+
+    print("All assertions passed, good to go!")
 
 
 if __name__ == "__main__":
