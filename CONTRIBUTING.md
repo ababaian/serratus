@@ -4,18 +4,17 @@
 
 _We welcome all scientists and developers to contribute._
 
-## Looking for Collaborators
-To acheive rapid analysis of this data to help fight the COVID-19 pandemic we are seeking collaborators in:
--	computational virology
+## Looking for Team Members
+To rapidly analyze Earth's virome, we're always looking for talented and enthusiatic people to join!
+-	computational and traditional virology
 -	phylogenetics
 -	viral ecology and zoonosis modeling
 -	web-interface development
 -	R package development
 -	AWS cloud computing
 
-**Data Co-operation**
-
-Collaborators with access to large amounts of sequencing data from bats, wild rodents, or any sample taken from an animal with respiratory/GI disease are also sought. We are offering a no-cost virus-report on all shared data within 72 hours. We only ask that adequate meta-data is provided and if samples are CoV+, the reports and CoV viral assemblies be shared with the research community immediately.
+## Collaborating with Serratus
+Our data is free and available for everyone. If you require assistance with accessing or using Serratus data, please let use know we would love to help. We are set up and capable to run assemblies and retrieve full-length viruses where available. We ask for nothing in return.
 
 ## Overview
 
@@ -52,6 +51,10 @@ If you have an idea you'd like to develop, would like to run an experiment or re
 < Outline any additional information you require to do this task or resources you'll need access to >
 
 ```
+
+## Authorship guidelines
+
+There is no formal structure to the Serratus team, everyone is encouraged to take full ownership of the components they develop. For publications authorship is determined by the [ICMJE Guidelines](http://www.icmje.org/recommendations/browse/roles-and-responsibilities/defining-the-role-of-authors-and-contributors.html). Specific emphasis is placed on that authors must be directly involved in the collaboration.
 
 ## Data Release Policy
 
