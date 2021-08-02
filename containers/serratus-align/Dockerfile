@@ -6,7 +6,7 @@ ENV BOWTIEVERSION='2.4.1'
 ENV GATKVERSION='4.1.5.0'
 ENV BWAVERSION='0.7.17'
 ENV DIAMONDVERSION='2.0.6-dev'
-ENV INFERNALVERSION=''
+ENV INFERNALVERSION='1.1.4'
 #ENV MBVERSION='1.5.0'
 
 
@@ -53,11 +53,23 @@ RUN wget https://github.com/shenwei356/seqkit/releases/download/v0.12.0/seqkit_l
   tar -xvf seqkit* && mv seqkit /usr/local/bin/ &&\
   rm seqkit_linux*
 
+# Bowtie2 =======================================
 # Set up only the bowtie2 binaries we need
 RUN mkdir -p /opt/bowtie2-align \
  && cp /usr/local/bin/{bowtie2,bowtie2-align-s} /opt/bowtie2-align
 
+# INFERNAL ======================================
+# cmsearch is required alone (in theory)
+RUN wget http://eddylab.org/infernal/infernal-"$INFERNALVERSION"-linux-intel-gcc.tar.gz &&\
+  tar -xvf infernal-1.1.4-linux-intel-gcc.tar.gz &&\
+  cp infernal*/binaries/cmsearch /usr/local/bin/ &&\
+  chmod 755 /usr/local/bin/cmsearch &&\
+  rm -rf infernal*
+
+
 FROM amazonlinux:2 AS runtime
+
+
 
 #==========================================================
 # Container Meta-data =====================================
@@ -96,6 +108,9 @@ COPY --from=build_base /usr/local/bin/diamond /usr/local/bin/
 
 # samtools
 COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
+
+# INFERNAL
+COPY --from=build_base /usr/local/bin/cmsearch /usr/local/bin/
 
 # flock
 COPY --from=build_base /usr/bin/flock /usr/bin/
