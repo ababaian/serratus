@@ -60,16 +60,17 @@ RUN mkdir -p /opt/bowtie2-align \
 
 # INFERNAL ======================================
 # cmsearch is required alone (in theory)
+# build from source
 RUN wget http://eddylab.org/infernal/infernal-"$INFERNALVERSION"-linux-intel-gcc.tar.gz &&\
   tar -xvf infernal-1.1.4-linux-intel-gcc.tar.gz &&\
-  cp infernal*/binaries/cmsearch /usr/local/bin/ &&\
-  chmod 755 /usr/local/bin/cmsearch &&\
-  rm -rf infernal*
+  cd infernal* &&\
+  bash configure && make && make install &&\
+  cd .. && rm -rf infernal*
 
-
-FROM amazonlinux:2 AS runtime
-
-
+# binaries copy (does not work)
+#  chmod 755 infernal*/binaries/* &&\
+#  cp infernal*/binaries/* /usr/local/bin/ &&\
+#  rm -rf infernal*
 
 #==========================================================
 # Container Meta-data =====================================
@@ -111,6 +112,8 @@ COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
 
 # INFERNAL
 COPY --from=build_base /usr/local/bin/cmsearch /usr/local/bin/
+#COPY --from=build_base /usr/local/bin/cmscan /usr/local/bin/
+
 
 # flock
 COPY --from=build_base /usr/bin/flock /usr/bin/
