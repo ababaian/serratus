@@ -113,7 +113,7 @@ COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
 # INFERNAL
 COPY --from=build_base /usr/local/bin/cmsearch /usr/local/bin/
 #COPY --from=build_base /usr/local/bin/cmscan /usr/local/bin/
-
+# ...
 
 # flock
 COPY --from=build_base /usr/bin/flock /usr/bin/

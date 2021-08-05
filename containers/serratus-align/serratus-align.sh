@@ -37,8 +37,7 @@ function usage {
   echo "    -k    S3 bucket path for bam-blocks [s3://serratus-public/bam-blocks]"
   echo ""
   echo "    Alignment Parameters"
-  echo "    -a    Alignment software ['bowtie2'] (default)"
-  echo "          or ['bwa']"
+  echo "    -a    Alignment software ['bowtie2' (default) | 'diamond' | 'infernal' ]"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
   echo ""
   echo "    Manual overwrites"
@@ -283,7 +282,15 @@ GENDIR=$BASEDIR/$GENOME
             echo "        upload index files to s3_path"
             false; exit 1              
           fi
-
+        elif [ "$ALIGNER" = "infernal" ]; then
+          # Check for Covariance Model file
+          if [ ! -e "$GENDIR/$GENOME.cm" ]; then
+            echo " ERROR:  infernal covariance model $GENOME.cm not found"
+            echo "        run 'cmbuild $GENOME.cm $GENOME.sto'"
+            echo "            'cmcalibrate $GENOME.cm'"
+            echo "        upload index files to s3_path"
+            false; exit 1              
+          fi
         fi
     fi
 ) 200> "$BASEDIR/.genome-lock"  
@@ -292,73 +299,57 @@ GENDIR=$BASEDIR/$GENOME
 cd "$WORKDIR"
 ln -s "$GENDIR"/* ./
 
-# # DOWNlOAD FQ Files (DISK MODE) ==========================
 
-# if [[ "$PAIRED" = true ]]
-# then
-#   # Download Paired-end fq-block data..."
-#   aws s3 cp --only-show-errors $S3_FQ1 ./
-#   aws s3 cp --only-show-errors $S3_FQ2 ./
-
-#   FQ1=$(basename $S3_FQ1)
-#   FQ2=$(basename $S3_FQ2)
-
-# else
-#   # Download unpaired fq-block data..."
-#   aws s3 cp --only-show-errors $S3_FQ3 ./
-
-#   FQ3=$(basename $S3_FQ3)
-# fi
-
-# # RUN ALIGN ===============================================
-# if [ "$ALIGNER" = "bowtie2" ]
-# then 
-#   if [[ "$PAIRED" = true ]]
-#   then
-#     # Paired-end read alignment -----------------
-#     bash $BASEDIR/run_bowtie2.sh \
-#       -1 $FQ1 -2 $FQ2 -x $GENOME \
-#       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
-#       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
-#   else
-#     # Single-end read alignment -----------------
-#     bash $BASEDIR/run_bowtie2.sh \
-#       -3 $FQ3 -x $GENOME \
-#       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
-#       -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
-#   fi
-# elif [ "$ALIGNER" = "diamond" ];
-# then
-#   if [[ "$PAIRED" = true ]]
-#   then
-#     # Paired-end read alignment -----------------
-#     bash $BASEDIR/run_diamond.sh \
-#       -1 $FQ1 -2 $FQ2 -x $GENOME \
-#       -o $SRA.$BL_N -p $THREADS
-#   else
-#     # Single-end read alignment -----------------
-#     bash $BASEDIR/run_diamond.sh \
-#       -3 $FQ3 -x $GENOME \
-#       -o $SRA.$BL_N -p $THREADS
-#   fi
-
-# else
-#   echo "Unknown aligner $ALIGNER"
-#   false # Call the error handler and exit
-# fi
-# # (DISK MODE END) =========================================
-
-
-# STREAM + ALIGN (NAMED PIPE MODE) ==========================
+# RUN ALIGN ===============================================
+# BOWTIE2 =================================================
 if [ "$ALIGNER" = "bowtie2" ]
 then 
-  echo "bowtie2 not yet supported with named pipes"
-  false
-elif [ "$ALIGNER" = "diamond" ];
-then
+  # DOWNlOAD +Align FQ Files (DISK MODE)
 
   if [[ "$PAIRED" = true ]]
   then
+    # Paired-end read alignment -----------------
+
+    # Download Paired-end fq-block data..."
+    aws s3 cp --only-show-errors $S3_FQ1 ./
+    aws s3 cp --only-show-errors $S3_FQ2 ./
+
+    FQ1=$(basename $S3_FQ1)
+    FQ2=$(basename $S3_FQ2)
+
+    # run align
+    bash $BASEDIR/run_bowtie2.sh \
+      -1 $FQ1 -2 $FQ2 -x $GENOME \
+      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
+
+  else
+    # Single-end read alignment -----------------
+
+    # Download unpaired fq-block data..."
+    aws s3 cp --only-show-errors $S3_FQ3 ./
+
+    FQ3=$(basename $S3_FQ3)
+
+    # run align
+    bash $BASEDIR/run_bowtie2.sh \
+      -3 $FQ3 -x $GENOME \
+      -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+  fi
+
+  #if [ "$ALIGNER" = "bowtie2" ]
+  #then 
+  #  echo "bowtie2 not yet supported with named pipes"
+  #  false
+
+# DIAMOND =================================================
+elif [ "$ALIGNER" = "diamond" ];
+then
+  # STREAM + ALIGN (NAMED PIPE MODE)
+  if [[ "$PAIRED" = true ]]
+  then
+    # Paired-end read alignment -----------------
+
     # Download Paired-end fq-block data..."
     FQ1=$(basename $S3_FQ1)
     FQ2=$(basename $S3_FQ2)
@@ -367,7 +358,7 @@ then
     aws s3 cp --only-show-errors $S3_FQ1 - > $FQ1 &
     aws s3 cp --only-show-errors $S3_FQ2 - > $FQ2 &
 
-    # Paired-end read alignment -----------------
+    # run align
     diamond blastx \
       -q $FQ1 $FQ2 \
       -d "$GENOME".dmnd \
@@ -383,13 +374,15 @@ then
       > "$SRA.$BL_N".bam
 
   else
+    # Single-end read alignment -----------------
+
     # Download unpaired fq-block data..."
     FQ3=$(basename $S3_FQ3)
     mkfifo "$FQ3"
 
     aws s3 cp --only-show-errors $S3_FQ3 - > $FQ3 &
 
-     # Single-end read alignment -----------------
+    # run align
     diamond blastx \
       -q $FQ3 \
       -d "$GENOME".dmnd \
@@ -404,12 +397,59 @@ then
            qseq_translated full_qseq full_qseq_mate \
       > "$SRA.$BL_N".bam
   fi
+
+# INFERNAL ================================================
+elif [ "$ALIGNER" = "infernal" ];
+then
+  # DISK + ALIGN
+  if [[ "$PAIRED" = true ]]
+  then
+    # Paired-end read alignment -----------------
+
+    # Download Paired-end fq-block data..."
+    FQ1=$(basename $S3_FQ1)
+    FA0=$FQ1
+    #FQ2=$(basename $S3_FQ2)
+    #mkfifo "$FQ1" "$FQ2"
+
+    # Stream and convert fastq file to fasta file
+    aws s3 cp --only-show-errors $S3_FQ1 - \
+      | sed -e '/+.*/,+1d' - \
+      | tr '@' '>' \
+      > $FQ1
+
+    aws s3 cp --only-show-errors $S3_FQ2 - \
+      | sed -e '/+.*/,+1d' - \
+      | tr '@' '>' \
+      >> $FQ1
+
+  else
+    # Single-end read alignment -----------------
+
+    # Download Paired-end fq-block data..."
+    FQ3=$(basename $S3_FQ3)
+    FA0=$FQ3
+    # Stream and convert fastq file to fasta file
+    aws s3 cp --only-show-errors $S3_FQ1 - \
+      | sed -e '/+.*/,+1d' - \
+      | tr '@' '>' \
+      > $FQ3
+  fi
+
+  # run align
+    cmsearch \
+      -o /dev/null \
+      --cpu 1 -Z 1000 \
+      --tblout "$SRA.$BL_N".bam \
+      "$GENOME".cm \
+      $FA0
+      
+
+# UNIDENTIFIED ALIGNER ====================================
 else
   echo "Unknown aligner $ALIGNER"
   false # Call the error handler and exit
 fi
-# (NAMED PIPE MODE END) ===================================
-
 
 # RUN UPLOAD ==============================================
 aws s3 cp --only-show-errors $SRA.$BL_N.bam s3://$S3_BUCKET/bam-blocks/$SRA/
