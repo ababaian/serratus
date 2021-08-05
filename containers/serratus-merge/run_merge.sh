@@ -172,6 +172,29 @@ if [ "$MERGE_ARGS" = "protein" ]; then
     | gzip \
     > $OUTFILE
 
+elif [ "$MERGE_ARGS" = "rna" ]; then
+  # RNA (.cmo) merge ----------------------------
+  # (INFERNAL covariation model)
+
+  # Output Filename
+  OUTFILE="$SRA.cmo.gz"
+
+  # Output header
+  echo \#$SUMZER_COMMENT > head.tmp
+
+  # usage: serratus_cmsummarizer.py (TODO)
+  # cmsummarizer="python2 /home/serratus/serratus_cmsummarizer.py $SRA.psummary /dev/stdout"
+
+  # Cat all cmo files, remove native header
+  sed '/^#/d' $BAMREGEX \
+    | cat head.tmp - \
+    | gzip \
+    > $OUTFILE
+
+  # TODO: Add real summary functionality
+  touch "$OUTFILE".cmsummary
+
+
 elif [ "$MERGE_ARGS" = "dna" ]; then
   # DNA (.bam) merge ----------------------------
   # Default fallback to "dna"

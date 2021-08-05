@@ -185,12 +185,14 @@ GENOME=$(echo $JOB_JSON | jq -r .genome)
 # `dna` bam output (bowtie2 / bwa) [Default]
 # or
 # `protein` pro output (diamond)
+# or
+# `rna` cmo output (infernal)
 
 ## TODO: This isn't returning anything, it's 'null'
 MERGE_ARGS=$(echo $JOB_JSON | jq -r .merge_args)
 
 if [ "$MERGE_ARGS" = 'null' ]; then
-  MERGE_ARGS='protein'
+  MERGE_ARGS='rna'
 fi
 
 echo "Merge type: $MERGE_ARGS"
@@ -278,6 +280,16 @@ fi
 if [[ -s "$SRA.sumbler" ]]; then
   aws s3 cp --only-show-errors $SRA.sumbler $S3_OUT/sumbler/
 fi
+
+# RNA -------------------------------------------
+if [[ -s "$SRA.cmo" ]]; then
+  aws s3 cp --only-show-errors $SRA.cmo.gz $S3_OUT/cmo/
+fi
+
+if [[ -s "$SRA.cmsummary" ]]; then
+  aws s3 cp --only-show-errors $SRA.cmsummary $S3_OUT/cmsummary/
+fi
+
 
 # CLEAN-UP ================================================
 # Tell the scheduler we're done
