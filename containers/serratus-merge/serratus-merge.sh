@@ -282,7 +282,7 @@ if [[ -s "$SRA.sumbler" ]]; then
 fi
 
 # RNA -------------------------------------------
-if [[ -s "$SRA.cmo" ]]; then
+if [[ -s "$SRA.cmo.gz" ]]; then
   aws s3 cp --only-show-errors $SRA.cmo.gz $S3_OUT/cmo/
 fi
 
