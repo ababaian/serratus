@@ -73,8 +73,10 @@ RUN wget http://eddylab.org/infernal/infernal-"$INFERNALVERSION"-linux-intel-gcc
 #  rm -rf infernal*
 
 #==========================================================
-# Container Meta-data =====================================
+# Image Build =============================================
 #==========================================================
+FROM amazonlinux:2 AS runtime
+
 # Container Information
 ARG TYPE='aligner'
 ARG VERSION='0.3.0'

@@ -47,14 +47,16 @@ RUN wget --quiet https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/${SRATOOLKITVERSION}
 # BVFILTER =====================================
 #COPY bin/bvfilter /usr/local/bin/
 
-#==========================================================
-# Serratus Initialize =====================================
-#==========================================================
+# Serratus Initialize ==========================
 # Set working directory to /home/serratus
 # Create a serratus user fro use of FUSE / fusera
 COPY serratus-dl/VDB_user-settings.mkfg /root/.ncbi/user-settings.mkfg
 RUN mkdir -p /root/.ncbi; vdb-config --report-cloud-identity yes
 
+
+#==========================================================
+# Image Build =============================================
+#==========================================================
 FROM amazonlinux:2 AS runtime
 
 # Additional Metadata
