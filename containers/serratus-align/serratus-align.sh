@@ -335,6 +335,8 @@ then
     bash $BASEDIR/run_bowtie2.sh \
       -3 $FQ3 -x $GENOME \
       -o $SRA.$BL_N -p $THREADS -a "$ALIGN_ARGS" \
+      -L "$RGLB" -I "$RGID" -S "$RGSM" -P "$RGPO"
+
   fi
 
   #if [ "$ALIGNER" = "bowtie2" ]
