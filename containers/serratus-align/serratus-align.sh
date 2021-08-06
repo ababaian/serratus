@@ -432,7 +432,7 @@ then
     FQ3=$(basename $S3_FQ3)
     FA0=$FQ3
     # Stream and convert fastq file to fasta file
-    aws s3 cp --only-show-errors $S3_FQ1 - \
+    aws s3 cp --only-show-errors $S3_FQ3 - \
       | sed -e '/+.*/,+1d' - \
       | tr '@' '>' \
       > $FQ3
