@@ -245,6 +245,7 @@ def clear_terminated_jobs():
 
 
 def clean_terminated_jobs_loop(app):
+    print('    entering termination loop')
     time.sleep(10)  # Give postgres a few seconds to start
     while True:
         with app.app_context():
