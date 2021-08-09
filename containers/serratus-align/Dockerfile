@@ -58,6 +58,16 @@ RUN wget https://github.com/shenwei356/seqkit/releases/download/v0.12.0/seqkit_l
 RUN mkdir -p /opt/bowtie2-align \
  && cp /usr/local/bin/{bowtie2,bowtie2-align-s} /opt/bowtie2-align
 
+# bioawk ========================================
+RUN wget https://github.com/lh3/bioawk/archive/refs/heads/master.zip &&\
+  unzip master.zip &&\
+  cd bioawk-master &&\
+  make &&\
+  chmod 755 bioawk &&\
+  mv bioawk /usr/local/bin/ &&\
+  cd .. && rm -rf bioawk-master && rm -rf master.zip
+
+
 # INFERNAL ======================================
 # cmsearch is required alone (in theory)
 # build from source
@@ -116,6 +126,9 @@ COPY --from=build_base /usr/local/bin/samtools /usr/local/bin/
 COPY --from=build_base /usr/local/bin/cmsearch /usr/local/bin/
 #COPY --from=build_base /usr/local/bin/cmscan /usr/local/bin/
 # ...
+
+# bioawk
+COPY --from=build_base /usr/local/bin/bioawk /usr/local/bin/bioawk
 
 # flock
 COPY --from=build_base /usr/bin/flock /usr/bin/

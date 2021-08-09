@@ -415,15 +415,26 @@ then
     #mkfifo "$FQ1" "$FQ2"
 
     # Stream and convert fastq file to fasta file
+
+    # bioawk -- with seq in header
     aws s3 cp --only-show-errors $S3_FQ1 - \
-      | sed -e '/+.*/,+1d' - \
-      | tr '@' '>' \
+      | bioawk -c fastx '{print ">"$name"_1 "$seq;print $seq}' - \
       > $FQ1
 
     aws s3 cp --only-show-errors $S3_FQ2 - \
-      | sed -e '/+.*/,+1d' - \
-      | tr '@' '>' \
+      | bioawk -c fastx '{print ">"$name"_2 "$seq;print $seq}' - \
       >> $FQ1
+
+    # # sed -- does not support seq in header
+    # aws s3 cp --only-show-errors $S3_FQ1 - \
+    #   | sed -e '/+.*/,+1d' - \
+    #   | tr '@' '>' \
+    #   > $FQ1
+
+    # aws s3 cp --only-show-errors $S3_FQ2 - \
+    #   | sed -e '/+.*/,+1d' - \
+    #   | tr '@' '>' \
+    #   >> $FQ1
 
   else
     # Single-end read alignment -----------------
@@ -431,11 +442,18 @@ then
     # Download Paired-end fq-block data..."
     FQ3=$(basename $S3_FQ3)
     FA0=$FQ3
+
     # Stream and convert fastq file to fasta file
+    # bioawk -- with seq in header
     aws s3 cp --only-show-errors $S3_FQ3 - \
-      | sed -e '/+.*/,+1d' - \
-      | tr '@' '>' \
+      | bioawk -c fastx '{print ">"$name"_0 "$seq;print $seq}' - \
       > $FQ3
+
+    # # sed
+    # aws s3 cp --only-show-errors $S3_FQ3 - \
+    #   | sed -e '/+.*/,+1d' - \
+    #   | tr '@' '>' \
+    #   > $FQ3
   fi
 
   # run align

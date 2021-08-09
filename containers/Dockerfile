@@ -41,7 +41,8 @@ RUN yum -y install vim htop
 
 # Update Core
 RUN yum -y update
-RUN yum -y install tar wget gzip which sudo shadow-utils util-linux
+RUN yum -y install tar wget gzip which sudo shadow-utils \
+           util-linux byacc
 
 # Python3
 RUN yum -y install python3 python3-devel
