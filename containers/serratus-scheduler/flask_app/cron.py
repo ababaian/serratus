@@ -235,8 +235,9 @@ def clear_terminated_jobs():
     This should run inside of a session context, since the current DB doesn't
     handle transactions well.  What we should do is implement a global DB lock
     but I would need to test how that impacts performance."""
-    instances = set(get_running_instances())
     print( 'Clear terminated jobs')
+    
+    instances = set(get_running_instances())
 
     check_and_clear(instances, db.Accession, "splitting", "new", "dl")
     check_and_clear(instances, db.Accession, "merging", "split_done", "merge")
@@ -256,11 +257,15 @@ def clean_terminated_jobs_loop(app):
 @click.command("cron")
 @with_appcontext
 def cron():
-    print("Creating asg and cleaning background processes")
+    print("Creating background processes")
     print( '  verbose logging enabled')
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
+
+    print('  starting termination loop')
     Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
+
+    print('  starting autoscaling loop')
     Thread(target=adjust_autoscaling_loop, args=(app,)).start()
 
 
