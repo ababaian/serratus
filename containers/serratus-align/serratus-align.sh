@@ -415,8 +415,12 @@ then
     #mkfifo "$FQ1" "$FQ2"
 
     # Stream and convert fastq file to fasta file
+    # network time:
+    # real    0m11.696s \ user    0m1.281s \ sys     0m1.124s
 
     # bioawk -- with seq in header
+    # bioawk time (from disk):
+    # real    0m3.396s \ user    0m1.770s \ sys     0m0.263s
     aws s3 cp --only-show-errors $S3_FQ1 - \
       | bioawk -c fastx '{print ">"$name"_1 "$seq;print $seq}' - \
       > $FQ1
@@ -426,6 +430,9 @@ then
       >> $FQ1
 
     # # sed -- does not support seq in header
+    # sed time (from disk):
+    # real    0m2.116 \ user    0m1.369s \ sys     0m0.819s
+
     # aws s3 cp --only-show-errors $S3_FQ1 - \
     #   | sed -e '/+.*/,+1d' - \
     #   | tr '@' '>' \
