@@ -12,8 +12,13 @@ from flask import current_app
 from flask.cli import with_appcontext
 from prometheus_client import Gauge, start_http_server, CollectorRegistry
 from sqlalchemy import or_
+import logging
 
 from . import db
+
+# Create application logger
+logger = logging.getLogger('workflow')
+logger.setLevel(logging.DEBUG)
 
 CRON_REGISTRY = CollectorRegistry()
 
@@ -27,6 +32,7 @@ asg_virt_size_gauge = Gauge(
 
 
 def get_asg_name(autoscaling, pattern):
+    logger.info( 'Get Autosclaing via pattern: ', pattern )
     """Look through all available ASGs to find one matching a pattern"""
     paginator = autoscaling.get_paginator("describe_auto_scaling_groups").paginate()
     for page in paginator:
@@ -72,7 +78,9 @@ def set_asg_size(
 
 
 def adjust_autoscaling_loop(app):
-    time.sleep(10)  # Give postgres a few seconds to start
+    time.sleep(15)  # Give postgres a few seconds to start
+    logger.info( 'Adjusting autoscaling groups')
+
     autoscaling = boto3.session.Session().client(
         "autoscaling", region_name=app.config["AWS_REGION"]
     )
@@ -120,6 +128,7 @@ def adjust_autoscaling_loop(app):
                 "dl",
                 int(config["DL_MAX_INCREASE"]),
             )
+            logger.info( '    dl-scaled')
         if config["ALIGN_SCALING_ENABLE"]:
             constant = float(config["ALIGN_SCALING_CONSTANT"])
             max_ = int(config["ALIGN_SCALING_MAX"])
@@ -131,6 +140,7 @@ def adjust_autoscaling_loop(app):
                 "align",
                 int(config["ALIGN_MAX_INCREASE"]),
             )
+            logger.info( '    align-scaled')
         if config["MERGE_SCALING_ENABLE"]:
             constant = float(config["MERGE_SCALING_CONSTANT"])
             max_ = int(config["MERGE_SCALING_MAX"])
@@ -142,6 +152,7 @@ def adjust_autoscaling_loop(app):
                 "merge",
                 int(config["MERGE_MAX_INCREASE"]),
             )
+            logger.info( '    merge-scaled')
 
         scale_interval = int(config["SCALING_INTERVAL"])
         virt_interval = int(config["VIRTUAL_SCALING_INTERVAL"])
@@ -225,6 +236,7 @@ def clear_terminated_jobs():
     handle transactions well.  What we should do is implement a global DB lock
     but I would need to test how that impacts performance."""
     instances = set(get_running_instances())
+    logger.info( 'Clear terminated jobs')
 
     check_and_clear(instances, db.Accession, "splitting", "new", "dl")
     check_and_clear(instances, db.Accession, "merging", "split_done", "merge")
@@ -244,7 +256,8 @@ def clean_terminated_jobs_loop(app):
 @click.command("cron")
 @with_appcontext
 def cron():
-    print("Creating background processes")
+    print("Creating asg and cleaning background processes")
+    logger.info( '  verbose logging enabled')
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
     Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
