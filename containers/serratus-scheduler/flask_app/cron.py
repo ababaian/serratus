@@ -63,6 +63,9 @@ def set_asg_size(
     asg_virt_size_gauge.labels(name).set(asg_desired_size)
 
     asg_name = get_asg_name(autoscaling, "serratus-" + name)
+
+    print( '    -- asg scaling:', num_jobs,' jobs to ', asg_desired_size,' nodes'
+
     try:
         autoscaling.set_desired_capacity(
             AutoScalingGroupName=asg_name, DesiredCapacity=asg_desired_size,
@@ -78,12 +81,14 @@ def set_asg_size(
 
 
 def adjust_autoscaling_loop(app):
+    print('    -- asg loop')
     time.sleep(15)  # Give postgres a few seconds to start
-    print( 'Adjusting autoscaling groups')
 
     autoscaling = boto3.session.Session().client(
         "autoscaling", region_name=app.config["AWS_REGION"]
     )
+
+    print('    -- asg region: ', autoscaling)
 
     while True:
         with app.app_context():
@@ -118,6 +123,7 @@ def adjust_autoscaling_loop(app):
             )
 
         if config["DL_SCALING_ENABLE"]:
+            print( '    -- asg: dl-scaling')
             constant = float(config["DL_SCALING_CONSTANT"])
             max_ = int(config["DL_SCALING_MAX"])
             virt_dl = set_asg_size(
@@ -128,8 +134,8 @@ def adjust_autoscaling_loop(app):
                 "dl",
                 int(config["DL_MAX_INCREASE"]),
             )
-            print( '    dl-scaled')
         if config["ALIGN_SCALING_ENABLE"]:
+            print( '    -- asg: align-scaling')
             constant = float(config["ALIGN_SCALING_CONSTANT"])
             max_ = int(config["ALIGN_SCALING_MAX"])
             virt_align = set_asg_size(
@@ -140,8 +146,8 @@ def adjust_autoscaling_loop(app):
                 "align",
                 int(config["ALIGN_MAX_INCREASE"]),
             )
-            print( '    align-scaled')
         if config["MERGE_SCALING_ENABLE"]:
+            print( '    -- asg: merge-scaling')
             constant = float(config["MERGE_SCALING_CONSTANT"])
             max_ = int(config["MERGE_SCALING_MAX"])
             virt_merge = set_asg_size(
@@ -152,8 +158,6 @@ def adjust_autoscaling_loop(app):
                 "merge",
                 int(config["MERGE_MAX_INCREASE"]),
             )
-            print( '    merge-scaled')
-
         scale_interval = int(config["SCALING_INTERVAL"])
         virt_interval = int(config["VIRTUAL_SCALING_INTERVAL"])
         if virt_dl or virt_align or virt_merge:
@@ -245,7 +249,7 @@ def clear_terminated_jobs():
 
 
 def clean_terminated_jobs_loop(app):
-    print('    entering termination loop')
+    print('    -- termination loop')
     time.sleep(10)  # Give postgres a few seconds to start
     while True:
         with app.app_context():
@@ -263,11 +267,13 @@ def cron():
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
 
+    print('  starting autoscaling loop')
+    Thread(target=adjust_autoscaling_loop, args=(app,)).start()
+
     print('  starting termination loop')
     Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
 
-    print('  starting autoscaling loop')
-    Thread(target=adjust_autoscaling_loop, args=(app,)).start()
+
 
 
 def register(app):
