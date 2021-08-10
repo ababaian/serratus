@@ -64,8 +64,8 @@ def set_asg_size(
 
     asg_name = get_asg_name(autoscaling, "serratus-" + name)
 
-    print( '    -- asg scaling:', num_jobs,' jobs to ', asg_desired_size,' nodes'
-
+    print( '    -- asg scaling:', num_jobs,' jobs to ', asg_desired_size,' nodes')
+    
     try:
         autoscaling.set_desired_capacity(
             AutoScalingGroupName=asg_name, DesiredCapacity=asg_desired_size,
