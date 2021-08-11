@@ -260,7 +260,7 @@ def clean_terminated_jobs_loop(app):
 
 def cron():
     print("Creating background processes")
-    print( '  verbose logging enabled')30
+    print( '  verbose logging enabled')
 
     # Delay to allow postgres to boot
     print( '  initializing...')
