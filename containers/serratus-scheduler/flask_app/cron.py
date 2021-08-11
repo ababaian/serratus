@@ -258,17 +258,19 @@ def clean_terminated_jobs_loop(app):
 
 @click.command("cron")
 @with_appcontext
-time.sleep(15)  # Give postgres a few seconds to start
 
 def cron():
     print("Creating background processes")
     print( '  verbose logging enabled')
+
+    time.sleep(15)  # Give postgres a few seconds to start
+
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
 
     print('  starting autoscaling loop')
     Thread(target=adjust_autoscaling_loop, args=(app,)).start()
-
+    
     #print('  starting termination loop')
     #Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
 
