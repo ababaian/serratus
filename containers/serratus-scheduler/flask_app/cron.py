@@ -83,12 +83,11 @@ def set_asg_size(
 def adjust_autoscaling_loop(app):
     print('    -- asg loop')
     print('       region: ', app.config["AWS_REGION"])
-
     autoscaling = boto3.session.Session().client(
         "autoscaling", region_name=app.config["AWS_REGION"]
     )
-
     while True:
+        print('       asg start')
         with app.app_context():
             config = dict(db.get_config())
 
@@ -100,13 +99,11 @@ def adjust_autoscaling_loop(app):
                 )
                 .count()
             )
-
             num_align_jobs = (
                 session.query(db.Block)
                 .filter(or_(db.Block.state == "new", db.Block.state == "aligning"))
                 .count()
             )
-
             exclude_accs = (
                 session.query(db.Block.acc_id)
                 .distinct()
@@ -119,7 +116,6 @@ def adjust_autoscaling_loop(app):
                 .filter(~(db.Accession.acc_id.in_(exclude_accs)))
                 .count()
             )
-
         if config["DL_SCALING_ENABLE"]:
             print( '    -- asg: dl-scaling')
             constant = float(config["DL_SCALING_CONSTANT"])
@@ -270,7 +266,7 @@ def cron():
 
     print('  starting autoscaling loop')
     Thread(target=adjust_autoscaling_loop, args=(app,)).start()
-    
+
     #print('  starting termination loop')
     #Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
 
