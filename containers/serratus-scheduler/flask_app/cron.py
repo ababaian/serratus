@@ -82,13 +82,11 @@ def set_asg_size(
 
 def adjust_autoscaling_loop(app):
     print('    -- asg loop')
-    time.sleep(15)  # Give postgres a few seconds to start
+    print('       region: ', app.config["AWS_REGION"])
 
     autoscaling = boto3.session.Session().client(
         "autoscaling", region_name=app.config["AWS_REGION"]
     )
-
-    print('    -- asg region: ', autoscaling)
 
     while True:
         with app.app_context():
@@ -250,7 +248,6 @@ def clear_terminated_jobs():
 
 def clean_terminated_jobs_loop(app):
     print('    -- termination loop')
-    time.sleep(10)  # Give postgres a few seconds to start
     while True:
         with app.app_context():
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
@@ -261,6 +258,8 @@ def clean_terminated_jobs_loop(app):
 
 @click.command("cron")
 @with_appcontext
+time.sleep(15)  # Give postgres a few seconds to start
+
 def cron():
     print("Creating background processes")
     print( '  verbose logging enabled')
@@ -270,8 +269,8 @@ def cron():
     print('  starting autoscaling loop')
     Thread(target=adjust_autoscaling_loop, args=(app,)).start()
 
-    print('  starting termination loop')
-    Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
+    #print('  starting termination loop')
+    #Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
 
 
 
