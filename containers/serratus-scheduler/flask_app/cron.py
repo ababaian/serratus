@@ -248,20 +248,18 @@ def clear_terminated_jobs():
 def clean_terminated_jobs_loop(app):
     print('    -- termination loop')
     while True:
-        print('        db-get')
-        clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
-        print('        clear interval:', clear_interval)
-        clear_terminated_jobs()
-        # with app.app_context():
-        #     print('        db-get')
-        #     clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
-        #     print('        clear interval:', clear_interval)
-        #     clear_terminated_jobs()
+        with app.app_context():
+            print('        db-get')
+            clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
+            print('        clear interval:', clear_interval)
+            clear_terminated_jobs()
+
         time.sleep(clear_interval)
 
 
 @click.command("cron")
 @with_appcontext
+
 def cron():
     print("Creating background processes")
     print( '  verbose logging enabled')
@@ -278,8 +276,6 @@ def cron():
 
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
-
-    print('  application context: ', app)
 
     #print('  starting autoscaling loop')
     #Thread(target=adjust_autoscaling_loop, args=(app,)).start()
