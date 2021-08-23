@@ -17,8 +17,12 @@ import logging
 from . import db
 
 # Create application logger
-logger = logging.getLogger('workflow')
-logger.setLevel(logging.DEBUG)
+#logger = logging.getLogger('workflow')
+#logger.setLevel(logging.DEBUG)
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='[%(levelname)s] (%(threadName)-10s) %(message)s',
+                    )
 
 CRON_REGISTRY = CollectorRegistry()
 
@@ -226,12 +230,15 @@ def clear_terminated_jobs():
     print( '       clearing complete')
 
 def clean_terminated_jobs_loop(app):
+    logging.debug('Starting')
     print('    -- termination loop')
     import time
     try:
+        print('nap')
         time.sleep(10)
     except Exception as e:
-        print(e)
+        print('errors': e)
+    print('try clear')
     while True:
         with app.app_context():
             print('        db-get')
