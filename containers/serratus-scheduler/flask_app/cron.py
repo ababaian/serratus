@@ -47,7 +47,6 @@ def set_asg_size(
     autoscaling, constant, max_, num_jobs, name, virt_max_increase, _virt_sizes={},
 ):
     true_desired_size = min(max_, math.ceil(constant * num_jobs))
-
     # XXX: Creating too many instances causes problems in serratus-dl when
     # it tries to query SRA, maybe due to too many simultaneous queries?
     # We're fixing this by rate-limiting the increases to ASG size.
@@ -56,16 +55,11 @@ def set_asg_size(
     virt_size_max = _virt_sizes.get(name, 0) + virt_max_increase
     asg_desired_size = min(true_desired_size, virt_size_max)
     _virt_sizes[name] = asg_desired_size
-
     virt_asg = asg_desired_size != true_desired_size
-
     asg_desired_size_gauge.labels(name).set(true_desired_size)
     asg_virt_size_gauge.labels(name).set(asg_desired_size)
-
     asg_name = get_asg_name(autoscaling, "serratus-" + name)
-
     print( '    -- asg scaling:', num_jobs,' jobs to ', asg_desired_size,' nodes')
-    
     try:
         autoscaling.set_desired_capacity(
             AutoScalingGroupName=asg_name, DesiredCapacity=asg_desired_size,
@@ -90,7 +84,6 @@ def adjust_autoscaling_loop(app):
         print('       asg start')
         with app.app_context():
             config = dict(db.get_config())
-
             session = db.get_session()
             num_dl_jobs = (
                 session.query(db.Accession)
@@ -181,7 +174,6 @@ def check_and_clear(instances, table, active_state, new_state, name):
     """Check and reset jobs of a given type."""
     session = db.get_session()
     missing_instances = set()
-
     # Don't lock these rows when loading them, even though we're
     # planning to update them.  The reasoning is:
     #  1. This would involve locking every row in an active state.  We
@@ -192,7 +184,6 @@ def check_and_clear(instances, table, active_state, new_state, name):
     #     code path that looks at "aligning/merging/splitting" rows are the
     #     `finish_*_job()` functions in jobs.py.
     accessions = session.query(table).filter(table.state == active_state).all()
-
     count = 0
     for accession in accessions:
         if name == "dl":
@@ -203,14 +194,11 @@ def check_and_clear(instances, table, active_state, new_state, name):
             worker_id = accession.align_worker
         else:
             raise AssertionError("Invalid job type {}".format(name))
-
         instance_id = worker_to_instance_id(worker_id)
-
         if instance_id not in instances:
             accession.state = new_state
             missing_instances.add(instance_id)
             count += 1
-
     if missing_instances:
         print(
             "Reset jobs on {} {} instances, which were terminated:".format(
@@ -219,79 +207,60 @@ def check_and_clear(instances, table, active_state, new_state, name):
         )
         for instance in sorted(missing_instances):
             print("   {}".format(instance))
-
     if count:
         session.commit()
-
     return count
 
 
 def clear_terminated_jobs():
     """Reset all jobs (dl, align, merge) which is in the running state but
     where the instance no longer exists.
-
     This should run inside of a session context, since the current DB doesn't
     handle transactions well.  What we should do is implement a global DB lock
     but I would need to test how that impacts performance."""
     print( '       clearing terminated jobs')
-    
     instances = set(get_running_instances())
-
     check_and_clear(instances, db.Accession, "splitting", "new", "dl")
     check_and_clear(instances, db.Accession, "merging", "split_done", "merge")
     check_and_clear(instances, db.Block, "aligning", "new", "align")
-
     print( '       clearing complete')
-
-
 
 def clean_terminated_jobs_loop(app):
     print('    -- termination loop')
     while True:
-        try:
-            app.app_context()
+        with app.app_context():
             print('        db-get')
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
             print('        clear interval:', clear_interval)
-            clear_terminated_jobs()    
-        except Exception as e:
-             print(e)
-             print(clear_interval)
-        # with app.app_context():
-        #     print('        db-get')
-        #     clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
-        #     print('        clear interval:', clear_interval)
-        #     clear_terminated_jobs()
+            clear_terminated_jobs()
         print('   -- end loop')
         time.sleep(30)
 
 
 @click.command("cron")
 @with_appcontext
-
 def cron():
     print("Creating background processes")
     print( '  verbose logging enabled')
-
     # Delay to allow postgres to boot
-    print( '  initializing...')
-    time.sleep(30)
-    print( '  initializing...')
-    time.sleep(30)
-    print( '  initializing...')
-    time.sleep(30)
-    print( '  initializing...')
-    time.sleep(30)
-
+    # print( '  initializing...')
+    # time.sleep(30)
+    # print( '  initializing...')
+    # time.sleep(30)
+    # print( '  initializing...')
+    # time.sleep(30)
+    # print( '  initializing...')
+    # time.sleep(30)
+    # start
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
-
+    #
     #print('  starting autoscaling loop')
     #Thread(target=adjust_autoscaling_loop, args=(app,)).start()
-
+    #
     print('  starting termination loop')
     Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
-
+    #
 
 def register(app):
     app.cli.add_command(cron)
