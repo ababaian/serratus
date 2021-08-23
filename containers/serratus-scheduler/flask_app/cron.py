@@ -63,7 +63,7 @@ def set_asg_size(
     asg_desired_size_gauge.labels(name).set(true_desired_size)
     asg_virt_size_gauge.labels(name).set(asg_desired_size)
     asg_name = get_asg_name(autoscaling, "serratus-" + name)
-    logging.debug('    -- asg scaling:' + num_jobs + ' jobs to ' + asg_desired_size,' nodes')
+    logging.debug('    -- asg scaling:' + str(num_jobs) + ' jobs to ' + str(asg_desired_size) + ' nodes')
     try:
         autoscaling.set_desired_capacity(
             AutoScalingGroupName=asg_name, DesiredCapacity=asg_desired_size,
@@ -235,12 +235,11 @@ def clean_terminated_jobs_loop(app):
         with app.app_context():
             logging.debug('        db-get')
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
-            logging.debug('        clear interval retrieved:' + clear_interval)
+            logging.debug('        clear interval retrieved: ' + str(clear_interval) )
             clear_terminated_jobs()
         logging.debug('   -- end loop')
         time.sleep(clear_interval)
-
-
+        
 @click.command("cron")
 @with_appcontext
 def cron():
