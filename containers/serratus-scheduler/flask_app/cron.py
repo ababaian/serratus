@@ -243,8 +243,8 @@ def cron():
     print("Creating background processes")
     print( '  verbose logging enabled')
     # Delay to allow postgres to boot
-    # print( '  initializing...')
-    # time.sleep(30)
+    print( '  initializing...')
+    time.sleep(30)
     # print( '  initializing...')
     # time.sleep(30)
     # print( '  initializing...')
