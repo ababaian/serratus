@@ -237,7 +237,7 @@ def clean_terminated_jobs_loop(app):
         print('nap')
         time.sleep(10)
     except Exception as e:
-        print('errors': e)
+        print('errors':, e)
     print('try clear')
     while True:
         with app.app_context():
