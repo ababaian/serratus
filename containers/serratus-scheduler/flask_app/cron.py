@@ -36,7 +36,7 @@ asg_virt_size_gauge = Gauge(
 
 
 def get_asg_name(autoscaling, pattern):
-    logging.debug( 'Get Autosclaing via pattern: ', pattern )
+    logging.debug( 'Get Autosclaing via pattern' )
     """Look through all available ASGs to find one matching a pattern"""
     paginator = autoscaling.get_paginator("describe_auto_scaling_groups").paginate()
     for page in paginator:
@@ -63,7 +63,7 @@ def set_asg_size(
     asg_desired_size_gauge.labels(name).set(true_desired_size)
     asg_virt_size_gauge.labels(name).set(asg_desired_size)
     asg_name = get_asg_name(autoscaling, "serratus-" + name)
-    logging.debug( '    -- asg scaling:', num_jobs,' jobs to ', asg_desired_size,' nodes')
+    logging.debug('    -- asg scaling:' + num_jobs + ' jobs to ' + asg_desired_size,' nodes')
     try:
         autoscaling.set_desired_capacity(
             AutoScalingGroupName=asg_name, DesiredCapacity=asg_desired_size,
@@ -80,7 +80,8 @@ def set_asg_size(
 
 def adjust_autoscaling_loop(app):
     logging.debug('    -- asg loop')
-    logging.debug('       region: ', app.config["AWS_REGION"])
+    log_region = 
+    logging.debug('       region: ' + app.config["AWS_REGION"])
     autoscaling = boto3.session.Session().client(
         "autoscaling", region_name=app.config["AWS_REGION"]
     )
@@ -236,7 +237,6 @@ def clean_terminated_jobs_loop(app):
             logging.debug('        db-get')
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
             logging.debug('        clear interval retrieved:')
-            logging.debug('        ', clear_interval )
             clear_terminated_jobs()
         logging.debug('   -- end loop')
         time.sleep(30)
