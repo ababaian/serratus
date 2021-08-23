@@ -267,7 +267,9 @@ def cron():
     #Thread(target=adjust_autoscaling_loop, args=(app,)).start()
     #
     print('  starting termination loop')
-    Thread(target=clean_terminated_jobs_loop, args=(app,)).start()
+    term_loop = Thread(target=clean_terminated_jobs_loop, args=(app,))
+    term_loop.start()
+    term_loop.join()
     #
 
 def register(app):
