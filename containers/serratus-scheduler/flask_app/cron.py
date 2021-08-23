@@ -80,7 +80,6 @@ def set_asg_size(
 
 def adjust_autoscaling_loop(app):
     logging.debug('    -- asg loop')
-    log_region = 
     logging.debug('       region: ' + app.config["AWS_REGION"])
     autoscaling = boto3.session.Session().client(
         "autoscaling", region_name=app.config["AWS_REGION"]
