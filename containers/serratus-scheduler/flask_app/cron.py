@@ -227,11 +227,13 @@ def clear_terminated_jobs():
 
 def clean_terminated_jobs_loop(app):
     print('    -- termination loop')
+    time.sleep(10)  # Give postgres a few seconds to start
     while True:
         with app.app_context():
             print('        db-get')
             clear_interval = int(db.get_config_val("CLEAR_INTERVAL"))
-            print('        clear interval:', clear_interval)
+            print('        clear interval retrieved:')
+            print('        ', clear_interval )
             clear_terminated_jobs()
         print('   -- end loop')
         time.sleep(30)
@@ -244,13 +246,8 @@ def cron():
     print( '  verbose logging enabled')
     # Delay to allow postgres to boot
     print( '  initializing...')
-    time.sleep(30)
-    # print( '  initializing...')
-    # time.sleep(30)
-    # print( '  initializing...')
-    # time.sleep(30)
-    # print( '  initializing...')
-    # time.sleep(30)
+    time.sleep(15)
+    # time.sleep(120)
     # start
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
