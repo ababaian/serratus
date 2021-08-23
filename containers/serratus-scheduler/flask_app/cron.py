@@ -255,14 +255,16 @@ def cron():
     app = current_app._get_current_object()
     start_http_server(9101, registry=CRON_REGISTRY)
     
-    print('  starting autoscaling loop')
     asg_loop = Thread(target=adjust_autoscaling_loop, args=(app,))
-    asg_loop.start()
-    asg_loop.join()
-    
-    print('  starting termination loop')
     term_loop = Thread(target=clean_terminated_jobs_loop, args=(app,))
+
+
+    print('  starting autoscaling loop')
+    asg_loop.start()
+    print('  starting termination loop')
     term_loop.start()
+
+    asg_loop.join()
     term_loop.join()
     #
 
