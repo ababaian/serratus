@@ -21,15 +21,15 @@ The `Serratus` team is actively looking to collaborate with all scientists and d
 # Serratus Usage
 Learn more on the [Serratus Wiki](https://github.com/ababaian/serratus/wiki/)
 
-### [Serratus Data Explorer](https://serratus.io) 
+### [Serratus Data Explorer](https://serratus.io)
+
+### [palmID: Sequence-based interface for the RNA viruses from Serratus](https://serratus.io/palmid)
 
 ### [Accessing Data](https://github.com/ababaian/serratus/wiki/Access-Data-Release) 
 
 ### [Cloud Architecture](https://github.com/ababaian/serratus/wiki/Architecture-and-Pipeline)
 
 ### [Serratus Usage](https://github.com/ababaian/serratus/wiki/Running-Serratus)
-
-### [Tantalus: R interface for Serratus Data](https://github.com/serratus-bio/tantalus)
 
 # Data Release Policy
 
