@@ -23,13 +23,13 @@ Learn more on the [Serratus Wiki](https://github.com/ababaian/serratus/wiki/)
 
 ### [Serratus Data Explorer](https://serratus.io)
 
-### [palmID: Sequence-based interface for the RNA viruses from Serratus](https://serratus.io/palmid)
+### [How To: Finding Novel Viruses](https://github.com/ababaian/serratus/wiki/Find_novel_viruses)
 
-### [Accessing Data](https://github.com/ababaian/serratus/wiki/Access-Data-Release) 
+### [Accessing Raw Data](https://github.com/ababaian/serratus/wiki/Access-Data-Release) 
 
 ### [Cloud Architecture](https://github.com/ababaian/serratus/wiki/Architecture-and-Pipeline)
 
-### [Serratus Usage](https://github.com/ababaian/serratus/wiki/Running-Serratus)
+### [Serratus CLI Usage](https://github.com/ababaian/serratus/wiki/Running-Serratus)
 
 # Data Release Policy
 
