@@ -2,7 +2,7 @@
 
 Serratus is a collaborative Open Science project for ultra-rapid discovery of all viruses.
 
-#### _Preprint:_ [Petabase-scale sequence alignment catalyses viral discovery](https://www.biorxiv.org/content/10.1101/2020.08.07.241729v2)
+#### Paper:_ [Petabase-scale sequence alignment catalyses viral discovery](https://www.nature.com/articles/s41586-021-04332-2)
 
 [![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash.png)](https://www.biorxiv.org/content/10.1101/2020.08.07.241729v1)
 
