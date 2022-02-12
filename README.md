@@ -1,5 +1,4 @@
 # Serratus
-_Forewarned is Forearmed._
 
 Serratus is a collaborative Open Science project for ultra-rapid discovery of all viruses.
 
@@ -8,15 +7,16 @@ Serratus is a collaborative Open Science project for ultra-rapid discovery of al
 [![Serratus Mountain in Squamish, BC. Canada](https://github.com/ababaian/serratus/wiki/img/splash.png)](https://www.biorxiv.org/content/10.1101/2020.08.07.241729v1)
 
 ### Background
-While there is an intense research effort to sequence and analyze SARS-CoV-2 isolates for tracking real-time virus evolution, our understanding of the virus's evolutionary origins is limited by incomplete genomic characterization of other members of the Coronaviridae (CoV) and related families.
 
-We are re-analyzing all RNA-seq, meta-genomics, meta-transcriptomics and environmental sequencing data in the NCBI Short Read Archive to discover new coronaviruses. That is **>5 million biological samples** or >10 petabases of sequencing data.
+_Forewarned is Forearmed._
+
+Our primary goal is to generate the viral data to accelerate the global research efforts in fighting emerging pathogens. We are re-analyzing all RNA-seq, meta-genomics, meta-transcriptomics and environmental sequencing data in the NCBI Short Read Archive to discover new viruses. That is **>6 million biological samples** or >10 petabases of sequencing data.
 
 ### Contribute to Serratus
 The `Serratus` team is actively looking to collaborate with all scientists and developers.
 
 - See: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Email (ababaian AT bccrc DOT ca)
+- Email (artem AT rRNA DOT ca)
 - Join us on  [Slack (`/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-ewlzh9qf-SiNkxvvTJflcutFN0h5jIQ)
 
 # Serratus Usage
@@ -38,7 +38,7 @@ Our primary goal is to generate the viral data to accelerate the global research
 
 - All software development is open-source and freely available (GPLv3)
 
-- All sequencing data generated, raw and processed, will be freely and immediatly available in the public domain in accordance with the [Bermuda Principles](https://en.wikipedia.org/wiki/Bermuda_Principles) set out by the Human Genome Project.
+- All data, raw and processed, will be freely and immediatly available in the public domain in accordance with the [Bermuda Principles](https://en.wikipedia.org/wiki/Bermuda_Principles) set out by the Human Genome Project.
 
 ---
 
