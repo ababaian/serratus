@@ -24,6 +24,8 @@ Learn more on the [Serratus Wiki](https://github.com/ababaian/serratus/wiki/)
 
 ### [Serratus Data Explorer](https://serratus.io)
 
+### [palmID: RdRP search](https://serratus.io/palmid)
+
 ### [How To: Finding Novel Viruses](https://github.com/ababaian/serratus/wiki/Find_novel_viruses)
 
 ### [Accessing Raw Data](https://github.com/ababaian/serratus/wiki/Access-Data-Release) 
@@ -38,7 +40,7 @@ Our primary goal is to generate the viral data to accelerate the global research
 
 - All software development is open-source and freely available (GPLv3)
 
-- All data, raw and processed, will be freely and immediatly available in the public domain in accordance with the [Bermuda Principles](https://en.wikipedia.org/wiki/Bermuda_Principles) set out by the Human Genome Project.
+- All data, raw and processed, will be freely and immediatly available in the public domain in accordance with the [INSDC Policy](https://www.insdc.org/policy.html).
 
 ---
 
