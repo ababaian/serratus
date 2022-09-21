@@ -42,6 +42,14 @@ variable "scheduler_port" {
   default = 8000
 }
 
+variable "metrics_ip" {
+	type = string
+}
+
+variable "output_bucket" {
+	type = string
+}
+
 // PROVIDER/AWS ##############################
 provider "aws" {
   version     = "~> 2.49"
@@ -117,6 +125,7 @@ module "monitoring" {
   scheduler_ip       = module.scheduler.private_ip
   dockerhub_account  = var.dockerhub_account
   instance_type      = "r5.2xlarge"
+	metrics_ip         = var.metrics_ip
 }
 
 // Serratus-dl
@@ -313,6 +322,7 @@ output "scheduler_dns" {
 }
 output "scheduler_pg_password" {
   value = module.scheduler.pg_password
+	sensitive = true
 }
 
 output "monitor_dns" {
