@@ -16,8 +16,7 @@ Our primary goal is to generate the viral data to accelerate the global research
 The `Serratus` team is actively looking to collaborate with all scientists and developers.
 
 - See: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Email (artem AT rRNA DOT ca)
-- Join us on  [Slack (`/join #serratus`)](https://join.slack.com/t/hackseq-rna/shared_invite/zt-ewlzh9qf-SiNkxvvTJflcutFN0h5jIQ)
+- Join the [`Serratus Slack`](mailto:artem@rRNA.ca?subject=Joining%20the%20Serratus%20slack&body=Hello%20I%20would%20like%20to%20join%20the%20Serratus%20chat.%20Thanks!) to chat / ask a question.
 
 # Serratus Usage
 Learn more on the [Serratus Wiki](https://github.com/ababaian/serratus/wiki/)
