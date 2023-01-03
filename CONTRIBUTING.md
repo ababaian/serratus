@@ -13,7 +13,7 @@ Below are a few outlines of things which need development. Skill-sets listed are
 
 ### Command Line Interface Design
 
-The `Serratus` command line interface is currently a mixture of scripts, jupityer notebooks and tweaking terraform configuration files. The goal is to create a stream-lined command-line interface for running `Serratus` and writing the associated documentation. The outcome will be a readily deployable workflow.
+The `Serratus` command line interface is currently a mixture of scripts, jupyter notebooks and tweaking terraform configuration files. The goal is to create a stream-lined command-line interface for running `Serratus` and writing the associated documentation. The outcome will be a readily deployable workflow.
 
 Skills: BASH scripting, written communication, AWS systems, Terraform deployment.
 
