@@ -39,7 +39,7 @@ Our primary goal is to generate the viral data to accelerate the global research
 
 - All software development is open-source and freely available (GPLv3)
 
-- All data, raw and processed, will be freely and immediatly available in the public domain in accordance with the [INSDC Policy](https://www.insdc.org/policy.html).
+- All data, raw and processed, will be freely and immediatly available in the public domain in accordance with the [INSDC Policy](https://www.insdc.org/policy/).
 
 ---
 
