@@ -47,7 +47,7 @@ Everything we didn't think of. If you have a cool idea and think it can fit in, 
 
 # How to Contribute
 
-Skim this document and [join our slack](https://join.slack.com/t/hackseq-rna/shared_invite/zt-ewlzh9qf-SiNkxvvTJflcutFN0h5jIQ) and say hello!
+Skim this document and [email us](mailto:artem@rRNA.ca?subject=Joining%20the%20Serratus%20slack&body=Hello%20I%20would%20like%20to%20join%20the%20Serratus%20chat.%20Thanks!) to say hello and join our Slack!
 
 ## Project Development Overview
 
