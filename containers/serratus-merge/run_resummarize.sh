@@ -15,7 +15,7 @@ function usage {
   echo "    Required Parameters"
   echo "    -s    SRA Accession"
   echo "    -g    Genome identifier [cov3ma] (used for sumzer)"
-  echo "    -L    S3 bucket path [s3://lovelywater]"
+  echo "    -L    S3 bucket path [s3://lovelywater2]"
   echo ""
   echo "    Merge Parameters"
   echo "    -n    parallel CPU threads to use where applicable  [1]"
@@ -45,7 +45,7 @@ function usage {
 # Run Parameters
 SRA=''
 GENOME='cov3ma'
-S3='s3://lovelywater'
+S3='s3://lovelywater2'
 
 # Merge Options
 THREADS='1'
